@@ -16,6 +16,7 @@ import { createStore } from "../filter/store.ts";
 import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url.ts";
 import { chip } from "./chips.ts";
 import { mountDiagnostics } from "./diagnostics.ts";
+import { renderFilterSheet } from "./filter-sheet.ts";
 import { renderList, sortByName } from "./list.ts";
 import { createSheet } from "./sheet.ts";
 
@@ -70,7 +71,7 @@ export function mountApp(root: HTMLElement): void {
   const placeList = $<HTMLUListElement>(".place-list");
   const emptyState = $(".empty-state");
 
-  const filterSheet = createSheet(root, "Filters");
+  const filterSheet = createSheet(root, "Filters", () => renderSheet());
   const diagSheet = createSheet(root, "Diagnostics");
   const diagnostics = mountDiagnostics(diagSheet.body, () => void reload());
 
@@ -78,9 +79,20 @@ export function mountApp(root: HTMLElement): void {
   filtersButton.addEventListener("click", filterSheet.open);
   $(".info").addEventListener("click", diagSheet.open);
 
+  function renderSheet(): void {
+    const state = filters.get();
+    renderFilterSheet(filterSheet.body, state, {
+      region: regions.find((r) => r.id === state.region)!,
+      layers: layersInRegion(layers, state.region),
+      places,
+      dispatch: filters.dispatch,
+    });
+  }
+
   function render(): void {
     const state = filters.get();
     const regionLayers = layersInRegion(layers, state.region);
+    if (filterSheet.isOpen()) renderSheet();
 
     regionSwitch.replaceChildren(
       ...regions.map((r) =>

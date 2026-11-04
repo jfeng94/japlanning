@@ -357,6 +357,36 @@ button {
   margin-top: 0;
 }
 
+/* ---------- filter sheet ---------- */
+
+.filter-section + .filter-section {
+  margin-top: 0.75rem;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.unknown-toggle {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.sheet-actions {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: center;
+}
+
+.chip.clear {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ---------- diagnostics (M1 data status + M0 capabilities) ---------- */
 
 .data-head {
