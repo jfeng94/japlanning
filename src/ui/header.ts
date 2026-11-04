@@ -9,7 +9,6 @@ export interface HeaderHandlers {
   onSearch: (text: string) => void;
   onFilters: () => void;
   onSettings: () => void;
-  onDiagnostics: () => void;
 }
 
 export interface HeaderState {
@@ -30,8 +29,7 @@ const SEARCH_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden
 /**
  * One row: region menu, layers button, then search, Filters and
  * Settings as icon buttons. Search expands into a field across the row
- * and collapses on Cancel. Diagnostics hides at the bottom of the region
- * menu.
+ * and collapses on Cancel. Diagnostics lives in the Settings sheet.
  */
 export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: HeaderHandlers): Header {
   const el = document.createElement("header");
@@ -71,14 +69,13 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
 
   let current: HeaderState | undefined;
 
-  createMenu(regionButton, () => [
-    ...regions.map((r) => ({
+  createMenu(regionButton, () =>
+    regions.map((r) => ({
       label: r.label,
       selected: r.id === current?.region.id,
       onPick: () => h.onRegion(r.id),
     })),
-    { label: "Diagnostics", separator: true, onPick: h.onDiagnostics },
-  ]);
+  );
 
   layersButton.addEventListener("click", h.onLayers);
   filtersButton.addEventListener("click", h.onFilters);

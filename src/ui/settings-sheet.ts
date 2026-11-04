@@ -53,8 +53,33 @@ const FIELDS: Field<keyof Settings>[] = [
   },
 ];
 
-/** Render the settings sheet body. `onChange` fires after every save with the new settings. */
-export function renderSettingsSheet(body: HTMLElement, onChange: (s: Settings) => void): void {
+export interface SettingsSheetHandlers {
+  /** Fires after every save with the new settings. */
+  onChange: (s: Settings) => void;
+  onDiagnostics: () => void;
+}
+
+/**
+ * Reload the app from scratch: drop any service-worker-cached shell
+ * (none until M7) and Cache Storage, then reload. The IndexedDB data
+ * cache is data, not app, and is left alone.
+ */
+async function reloadFromScratch(): Promise<void> {
+  try {
+    if ("serviceWorker" in navigator) {
+      for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+    }
+    if ("caches" in window) {
+      for (const key of await caches.keys()) await caches.delete(key);
+    }
+  } finally {
+    location.reload();
+  }
+}
+
+/** Render the settings sheet body. */
+export function renderSettingsSheet(body: HTMLElement, handlers: SettingsSheetHandlers): void {
+  const { onChange } = handlers;
   const s = settings();
   body.replaceChildren();
 
@@ -83,7 +108,7 @@ export function renderSettingsSheet(body: HTMLElement, onChange: (s: Settings) =
       const raw = select.value;
       const value = typeof DEFAULT_SETTINGS[field.key] === "number" ? Number(raw) : raw;
       const next = updateSettings({ [field.key]: value } as Partial<Settings>);
-      renderSettingsSheet(body, onChange);
+      renderSettingsSheet(body, handlers);
       onChange(next);
     });
     row.append(title, select);
@@ -96,19 +121,23 @@ export function renderSettingsSheet(body: HTMLElement, onChange: (s: Settings) =
     body.append(row);
   }
 
+  const actions = document.createElement("div");
+  actions.className = "sheet-actions sheet-actions--wrap";
   if (settingsChanged(s)) {
-    const wrap = document.createElement("div");
-    wrap.className = "sheet-actions";
-    wrap.append(
+    actions.append(
       chip("Reset to defaults", {
         className: "clear",
         onClick: () => {
           const next = resetSettings();
-          renderSettingsSheet(body, onChange);
+          renderSettingsSheet(body, handlers);
           onChange(next);
         },
       }),
     );
-    body.append(wrap);
   }
+  actions.append(
+    chip("Diagnostics", { onClick: handlers.onDiagnostics }),
+    chip("Reload app", { onClick: () => void reloadFromScratch() }),
+  );
+  body.append(actions);
 }

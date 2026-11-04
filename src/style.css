@@ -741,6 +741,11 @@ button {
   justify-content: center;
 }
 
+.sheet-actions--wrap {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .chip.clear {
   border-color: var(--accent);
   color: var(--accent);

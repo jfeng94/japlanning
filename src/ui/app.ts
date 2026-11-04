@@ -70,7 +70,9 @@ export function mountApp(root: HTMLElement): void {
   `;
   const filterSheet = createSheet(root, "Filters", () => renderSheet());
   const diagSheet = createSheet(root, "Diagnostics");
-  const settingsSheet = createSheet(root, "Settings", () => renderSettingsSheet(settingsSheet.body, () => swapPinRenderer()));
+  const settingsSheet = createSheet(root, "Settings", () =>
+    renderSettingsSheet(settingsSheet.body, { onChange: () => swapPinRenderer(), onDiagnostics: () => diagSheet.open() }),
+  );
   const diagnostics = mountDiagnostics(diagSheet.body, () => void reload());
 
   const header = mountHeader(root, regions, {
@@ -79,7 +81,6 @@ export function mountApp(root: HTMLElement): void {
     onSearch: (text) => filters.dispatch({ type: "setText", text }),
     onFilters: filterSheet.open,
     onSettings: settingsSheet.open,
-    onDiagnostics: diagSheet.open,
   });
 
   const panel = mountPanel(root, (_h, px) => view.setBottomPadding(px));
