@@ -20,6 +20,9 @@ export default defineConfig({
   // The app is served from the root of the custom domain. On a GitHub Pages
   // project site without a custom domain this would need to be "/japlanning/".
   base: "/",
+  // Serve MapLibre from node_modules in dev rather than a pre-bundled copy, so
+  // its worker and shared chunk resolve next to each other.
+  optimizeDeps: { exclude: ["maplibre-gl"] },
   define: {
     __BUILD_SHA__: JSON.stringify(buildSha()),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),

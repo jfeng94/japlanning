@@ -24,7 +24,10 @@
     "vitest": "^5.1.0"
   },
   "dependencies": {
+    "@protomaps/basemaps": "^5.7.2",
     "idb-keyval": "^6.3.0",
-    "papaparse": "^5.7.0"
+    "maplibre-gl": "^6.16.0",
+    "papaparse": "^5.7.0",
+    "pmtiles": "^4.5.0"
   }
 }

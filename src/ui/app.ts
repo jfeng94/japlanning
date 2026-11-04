@@ -17,9 +17,10 @@ import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url
 import { chip } from "./chips.ts";
 import { mountDiagnostics } from "./diagnostics.ts";
 import { renderFilterSheet } from "./filter-sheet.ts";
+import { mountMap, watchFlavor } from "../map/map.ts";
 import { mountHeader } from "./header.ts";
 import { renderList, sortByName } from "./list.ts";
-import { mountPanel } from "./panel.ts";
+import { mountPanel, type PanelHeight } from "./panel.ts";
 import { createSheet } from "./sheet.ts";
 
 const REGION_KEY = "japlanning.region";
@@ -57,7 +58,14 @@ export function mountApp(root: HTMLElement): void {
     onDiagnostics: diagSheet.open,
   });
 
-  const panel = mountPanel(root);
+  const panel = mountPanel(root, (h) => view.setBottomPadding(panelPadding(h)));
+  const view = mountMap(
+    root.querySelector<HTMLElement>(".map-pane")!,
+    regions.find((r) => r.id === filters.get().region)!,
+    watchFlavor((flavor) => view.setFlavor(flavor)),
+  );
+  view.setBottomPadding(panelPadding(panel.getHeight()));
+
   panel.strip.innerHTML = `<p class="results-count"></p><p class="status" role="status" hidden></p>`;
   panel.content.innerHTML = `<ul class="place-list"></ul><div class="empty-state" hidden></div>`;
   const resultsCount = panel.strip.querySelector<HTMLElement>(".results-count")!;
@@ -155,6 +163,7 @@ export function mountApp(root: HTMLElement): void {
   filters.subscribe((state) => {
     syncUrl(state, ctx);
     rememberRegion(state.region);
+    view.setRegion(regions.find((r) => r.id === state.region)!);
     ui.dispatch({ type: "deselect" });
     render();
   });
@@ -223,6 +232,14 @@ function relativeTime(d: Date): string {
   if (mins < 60) return `${mins} min ago`;
   if (mins < 60 * 48) return `${Math.round(mins / 60)} h ago`;
   return `${Math.round(mins / 1440)} d ago`;
+}
+
+/** How much of the viewport the panel covers at each height; mirrors the CSS. */
+function panelPadding(h: PanelHeight): number {
+  const vh = window.innerHeight;
+  if (h === "strip") return 90;
+  if (h === "half") return vh * 0.46;
+  return vh * 0.85;
 }
 
 function regionLabel(id: RegionId): string {
