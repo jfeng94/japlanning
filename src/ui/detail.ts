@@ -51,7 +51,15 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   actions.className = "detail-actions";
   // Share copies the place's link, nothing else: no OS share sheet, no name prefix.
   actions.append(iconButton("Copy link to this place", shareIcon, () => copyToClipboard(shareUrl(place, h.origin), "Link copied")));
-  if (place.link) actions.append(iconAnchor(linkLabel(place.link), linkIcon, place.link));
+  // Always present so the row keeps its shape; greyed and inert when the sheet has no link.
+  if (place.link) {
+    actions.append(iconAnchor(linkLabel(place.link), linkIcon, place.link));
+  } else {
+    const none = iconButton("No link in the sheet", linkIcon, () => showToast("No link for this place"));
+    none.classList.add("is-disabled");
+    none.setAttribute("aria-disabled", "true");
+    actions.append(none);
+  }
 
   // ---- essentials ----
   const essentials = document.createElement("dl");

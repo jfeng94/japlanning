@@ -551,6 +551,11 @@ button {
   height: 1.7rem;
 }
 
+.icon-button--action.is-disabled {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
 .detail-rows {
   margin: 0;
   display: grid;
