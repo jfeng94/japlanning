@@ -1,6 +1,6 @@
 import { Marker } from "maplibre-gl";
 import { iconAssetUrl } from "../config/icons.ts";
-import { PIN_LABEL_MIN_ZOOM } from "../config/map.ts";
+import { PIN_LABEL_MIN_ZOOM, pinStyle } from "../config/map.ts";
 import type { MapView } from "./map.ts";
 import type { Pin, PinRenderer } from "./pins.ts";
 
@@ -19,6 +19,7 @@ interface Entry {
  */
 export function createDomPinRenderer(view: MapView): PinRenderer {
   const map = view.map;
+  const style = pinStyle();
   const entries = new Map<string, Entry>();
   let selectedId: string | undefined;
   let selectCb: (id?: string) => void = () => {};
@@ -37,7 +38,7 @@ export function createDomPinRenderer(view: MapView): PinRenderer {
   function create(pin: Pin): Entry {
     const el = document.createElement("button");
     el.type = "button";
-    el.className = "dom-pin";
+    el.className = `dom-pin dom-pin--${style}`;
     el.setAttribute("aria-label", pin.name);
     el.innerHTML = `<img alt="" draggable="false"><span class="dom-pin-label"></span>`;
     el.addEventListener("click", (e) => {

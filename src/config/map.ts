@@ -14,5 +14,15 @@ export function pinRendererKind(search = location.search): PinRendererKind {
   return v === "sdf" || v === "dom" ? v : PIN_RENDERER;
 }
 
+export type PinStyle = "disc" | "bare";
+
+/** DOM pin look: artwork on a white disc with the layer ring, or the artwork alone. `?pinstyle=` overrides. */
+export const PIN_STYLE: PinStyle = "disc";
+
+export function pinStyle(search = location.search): PinStyle {
+  const v = new URLSearchParams(search).get("pinstyle");
+  return v === "disc" || v === "bare" ? v : PIN_STYLE;
+}
+
 /** Zoom from which pin name labels show. */
 export const PIN_LABEL_MIN_ZOOM = 14;
