@@ -1,6 +1,6 @@
 import { Marker } from "maplibre-gl";
 import { iconAssetUrl } from "../config/icons.ts";
-import { PIN_LABEL_MIN_ZOOM, pinStyle } from "../config/map.ts";
+import { pinLabelMinZoom, pinStyle } from "../config/map.ts";
 import type { MapView } from "./map.ts";
 import type { Pin, PinRenderer } from "./pins.ts";
 
@@ -25,7 +25,8 @@ export function createDomPinRenderer(view: MapView): PinRenderer {
   let selectCb: (id?: string) => void = () => {};
 
   const container = map.getContainer();
-  const updateLabelVisibility = () => container.classList.toggle("show-pin-labels", map.getZoom() >= PIN_LABEL_MIN_ZOOM);
+  const labelZoom = pinLabelMinZoom();
+  const updateLabelVisibility = () => container.classList.toggle("show-pin-labels", map.getZoom() >= labelZoom);
   map.on("zoom", updateLabelVisibility);
   updateLabelVisibility();
 
@@ -89,6 +90,7 @@ export function createDomPinRenderer(view: MapView): PinRenderer {
     destroy() {
       map.off("zoom", updateLabelVisibility);
       map.off("click", onMapClick);
+      container.classList.remove("show-pin-labels");
       for (const entry of entries.values()) entry.marker.remove();
       entries.clear();
     },

@@ -1,6 +1,6 @@
 import type { GeoJSONSource, MapLayerMouseEvent, Map as MapLibreMap } from "maplibre-gl";
 import { ICON_IDS, iconAssetUrl, type IconId } from "../config/icons.ts";
-import { PIN_LABEL_MIN_ZOOM } from "../config/map.ts";
+import { pinLabelMinZoom } from "../config/map.ts";
 import type { MapView } from "./map.ts";
 import { pinsToGeoJson, type Pin, type PinRenderer } from "./pins.ts";
 import { loadSdfImage, type SdfImage } from "./sdf.ts";
@@ -97,7 +97,7 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
       id: LABEL_LAYER,
       type: "symbol",
       source: SOURCE,
-      minzoom: PIN_LABEL_MIN_ZOOM,
+      minzoom: pinLabelMinZoom(),
       layout: {
         "text-field": ["get", "name"],
         "text-font": FONT,
@@ -129,6 +129,7 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
   const onLeave = () => (map.getCanvas().style.cursor = "");
 
   view.onStyleLoad((m) => {
+    if (disposed) return;
     addLayers(m);
     void addImages(m);
   });
@@ -156,6 +157,10 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
       map.off("click", onMapClick);
       map.off("mouseenter", ICON_LAYER, onEnter);
       map.off("mouseleave", ICON_LAYER, onLeave);
+      if (map.getStyle()) {
+        for (const id of [LABEL_LAYER, STAR_LAYER, ICON_LAYER]) if (map.getLayer(id)) map.removeLayer(id);
+        if (map.getSource(SOURCE)) map.removeSource(SOURCE);
+      }
     },
   };
 }

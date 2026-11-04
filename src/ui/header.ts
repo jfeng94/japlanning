@@ -1,4 +1,6 @@
 import type { RegionConfig, RegionId } from "../data/types.ts";
+import filtersIcon from "./icons/filters.webp";
+import settingsIcon from "./icons/settings.webp";
 import { createMenu } from "./menu.ts";
 
 export interface HeaderHandlers {
@@ -6,6 +8,7 @@ export interface HeaderHandlers {
   onLayers: () => void;
   onSearch: (text: string) => void;
   onFilters: () => void;
+  onSettings: () => void;
   onDiagnostics: () => void;
 }
 
@@ -25,9 +28,10 @@ export interface Header {
 const SEARCH_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
 
 /**
- * One row: region menu, layers button, then search, Filters. Search
- * expands into a field across the row and collapses on Cancel.
- * Diagnostics hides at the bottom of the region menu.
+ * One row: region menu, layers button, then search, Filters and
+ * Settings as icon buttons. Search expands into a field across the row
+ * and collapses on Cancel. Diagnostics hides at the bottom of the region
+ * menu.
  */
 export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: HeaderHandlers): Header {
   const el = document.createElement("header");
@@ -38,7 +42,8 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
       <button type="button" class="menu-button layers-button"><span class="label"></span><span class="caret">▾</span></button>
       <span class="spacer"></span>
       <button type="button" class="icon-button search-toggle" aria-label="Search">${SEARCH_ICON}<span class="dot" hidden></span></button>
-      <button type="button" class="filters-button">Filters</button>
+      <button type="button" class="icon-button filters-button" aria-label="Filters"><img alt="" draggable="false"><span class="dot" hidden></span></button>
+      <button type="button" class="icon-button settings-button" aria-label="Settings"><img alt="" draggable="false"></button>
     </div>
     <div class="topbar-search" hidden>
       <input type="search" class="search" placeholder="Search names, areas, notes" autocomplete="off" aria-label="Search" />
@@ -55,9 +60,14 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
   const searchToggle = $(".search-toggle");
   const searchDot = $(".search-toggle .dot");
   const filtersButton = $(".filters-button");
+  const filtersDot = $(".filters-button .dot");
+  const settingsButton = $(".settings-button");
   const mainRow = $(".topbar-main");
   const searchRow = $(".topbar-search");
   const input = $<HTMLInputElement>(".search");
+
+  $<HTMLImageElement>(".filters-button img").src = filtersIcon;
+  $<HTMLImageElement>(".settings-button img").src = settingsIcon;
 
   let current: HeaderState | undefined;
 
@@ -72,6 +82,7 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
 
   layersButton.addEventListener("click", h.onLayers);
   filtersButton.addEventListener("click", h.onFilters);
+  settingsButton.addEventListener("click", h.onSettings);
 
   const showSearch = (show: boolean) => {
     searchRow.hidden = !show;
@@ -98,6 +109,7 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
       layersLabel.textContent = state.layersLabel;
       if (input.value !== state.text) input.value = state.text;
       searchDot.hidden = state.text === "";
+      filtersDot.hidden = !state.filtersActive;
       filtersButton.classList.toggle("is-active", state.filtersActive);
       // A query cleared from elsewhere (region change, Clear) collapses the field.
       if (state.text === "" && !searchRow.hidden && document.activeElement !== input) showSearch(false);

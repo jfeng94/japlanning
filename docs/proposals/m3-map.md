@@ -340,8 +340,12 @@ bbox).
   but worse for finding a side street.
 - **Pin labels from zoom 14** (proposed). Could be always-on or never.
 - **Default renderer: DOM** (decided on the phone 2026-11-04; SDF stays
-  behind `?pins=sdf` in case hundreds of markers prove heavy once every
-  layer has pins).
+  available in case hundreds of markers prove heavy once every layer has
+  pins). **Pin style: bare artwork** at 80% of the first cut, no disc or
+  ring; the disc stays available. Both are chosen in the Settings sheet
+  (gear icon), saved on the device, with URL parameters `pins=`,
+  `pinstyle=` and `labelzoom=` as overrides for comparison links. The
+  header's Filters became an icon to make room.
 - **Icon enum values**: `coffee` for now. Jerry names the rest as the
   other sheets take shape; each needs a silhouette and, optionally, a
   full-colour drawing.

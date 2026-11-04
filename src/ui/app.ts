@@ -26,6 +26,7 @@ import { renderFilterSheet } from "./filter-sheet.ts";
 import { mountHeader } from "./header.ts";
 import { renderList, sortByName } from "./list.ts";
 import { mountPanel } from "./panel.ts";
+import { renderSettingsSheet } from "./settings-sheet.ts";
 import { createSheet } from "./sheet.ts";
 
 const REGION_KEY = "japlanning.region";
@@ -68,6 +69,7 @@ export function mountApp(root: HTMLElement): void {
   `;
   const filterSheet = createSheet(root, "Filters", () => renderSheet());
   const diagSheet = createSheet(root, "Diagnostics");
+  const settingsSheet = createSheet(root, "Settings", () => renderSettingsSheet(settingsSheet.body, () => swapPinRenderer()));
   const diagnostics = mountDiagnostics(diagSheet.body, () => void reload());
 
   const header = mountHeader(root, regions, {
@@ -75,6 +77,7 @@ export function mountApp(root: HTMLElement): void {
     onLayers: filterSheet.open,
     onSearch: (text) => filters.dispatch({ type: "setText", text }),
     onFilters: filterSheet.open,
+    onSettings: settingsSheet.open,
     onDiagnostics: diagSheet.open,
   });
 
@@ -85,8 +88,16 @@ export function mountApp(root: HTMLElement): void {
     watchFlavor((flavor) => view.setFlavor(flavor)),
   );
   view.setBottomPadding(panel.heightPx());
-  const pins: PinRenderer = createPinRenderer();
+  let pins: PinRenderer = createPinRenderer();
   pins.onSelect((id) => (id === undefined ? deselect() : select(id)));
+
+  /** Settings changed: tear the renderer down and build it again from the new settings. */
+  function swapPinRenderer(): void {
+    pins.destroy();
+    pins = createPinRenderer();
+    pins.onSelect((id) => (id === undefined ? deselect() : select(id)));
+    render();
+  }
   root.querySelector(".fit-button")!.addEventListener("click", () => fitToResults());
 
   // The panel's two contents. The strip is always visible; the body shows at half and full.
