@@ -53,6 +53,89 @@ body {
   font-size: 0.85rem;
 }
 
+.data {
+  margin-bottom: 2rem;
+}
+
+.data-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.data-head h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.refresh {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg);
+}
+
+.refresh:disabled {
+  opacity: 0.5;
+}
+
+.layer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.layer-row {
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--rule);
+  font-size: 0.9rem;
+}
+
+.layer-region {
+  color: var(--muted);
+}
+
+.layer-summary,
+.layer-error {
+  margin: 0.2rem 0 0;
+}
+
+.layer-error {
+  color: var(--bad);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: var(--rule);
+}
+
+.badge[data-source="network"] {
+  background: var(--ok);
+  color: #fff;
+}
+
+.badge[data-source="none"] {
+  background: var(--bad);
+  color: #fff;
+}
+
+.layer-row details {
+  margin-top: 0.3rem;
+  color: var(--muted);
+}
+
+.layer-row details ul {
+  margin: 0.3rem 0 0;
+  padding-left: 1.2rem;
+}
+
 .capabilities h2 {
   margin: 0 0 0.25rem;
   font-size: 1.1rem;
