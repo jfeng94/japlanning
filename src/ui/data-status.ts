@@ -1,18 +1,6 @@
 import { layers } from "../config/layers.ts";
 import { regionById } from "../config/regions.ts";
-import { loadAllLayers, type LoadDeps } from "../data/load.ts";
-import { createIdbStore } from "../data/store.ts";
 import type { LoadResult, LoadSource } from "../data/types.ts";
-
-/** The real browser dependencies. Built once; the IndexedDB handle is cheap. */
-export function browserDeps(): LoadDeps {
-  return {
-    fetch: (url, init) => fetch(url, init),
-    store: createIdbStore(),
-    now: () => new Date(),
-    bundledBuiltAt: new Date(__BUILD_TIME__),
-  };
-}
 
 const SOURCE_LABEL: Record<LoadSource, string> = {
   network: "live",
@@ -22,38 +10,21 @@ const SOURCE_LABEL: Record<LoadSource, string> = {
 };
 
 /**
- * Mount the data status section into `root`: one row per configured layer
- * with count, source, fetch time and warnings, plus a Refresh button that
- * re-runs the load so the cache path can be exercised by hand.
+ * One row per configured layer: count, source badge, fetch time, the reason
+ * a better source was skipped, and an expandable warning list. Pure
+ * rendering; the app owns loading.
  */
-export function mountDataStatus(root: HTMLElement, deps: LoadDeps = browserDeps()): void {
-  root.innerHTML = `
-    <div class="data-head">
-      <h2>Data</h2>
-      <button type="button" class="refresh">Refresh</button>
-    </div>
-    <ul class="layer-list"></ul>
-  `;
-  const list = root.querySelector<HTMLUListElement>(".layer-list")!;
-  const button = root.querySelector<HTMLButtonElement>(".refresh")!;
-
-  const run = async () => {
-    button.disabled = true;
+export function renderDataStatus(list: HTMLElement, results: LoadResult[], loading: boolean): void {
+  if (loading && results.length === 0) {
     list.replaceChildren(...layers.map((l) => row(l.label, regionById(l.region).label, "loading…")));
-    try {
-      const results = await loadAllLayers(layers, deps);
-      list.replaceChildren(...results.map(renderResult));
-    } finally {
-      button.disabled = false;
-    }
-  };
-  button.addEventListener("click", () => void run());
-  void run();
+    return;
+  }
+  list.replaceChildren(...results.map(renderResult));
 }
 
 function renderResult(r: LoadResult): HTMLLIElement {
-  const layer = layers.find((l) => l.id === r.layerId)!;
-  const li = row(layer.label, regionById(layer.region).label);
+  const layer = layers.find((l) => l.id === r.layerId);
+  const li = row(layer?.label ?? r.layerId, layer ? regionById(layer.region).label : "");
   const body = li.querySelector(".layer-body")!;
 
   const summary = document.createElement("p");
@@ -108,8 +79,9 @@ function badge(source: LoadSource): HTMLSpanElement {
   return span;
 }
 
-function formatWhen(d: Date): string {
+export function formatWhen(d: Date): string {
   const mins = Math.round((Date.now() - d.getTime()) / 60_000);
-  const rel = mins < 1 ? "just now" : mins < 60 ? `${mins} min ago` : mins < 60 * 48 ? `${Math.round(mins / 60)} h ago` : `${Math.round(mins / 1440)} d ago`;
+  const rel =
+    mins < 1 ? "just now" : mins < 60 ? `${mins} min ago` : mins < 60 * 48 ? `${Math.round(mins / 60)} h ago` : `${Math.round(mins / 1440)} d ago`;
   return `${rel} (${d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })})`;
 }

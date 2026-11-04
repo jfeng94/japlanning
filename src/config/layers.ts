@@ -17,6 +17,7 @@ export const layers: LayerConfig[] = [
     color: "#b5452b",
     icon: "coffee",
     hasHours: true,
+    rowFacets: ["Format", "Specialty", "Linger"],
     facets: [
       { column: "Format", values: ["Stand", "Café", "Kissaten", "Tasting bar", "Bean shop"] },
       { column: "Roasting", values: ["In-house", "Guest roasters", "Both"] },

@@ -40,6 +40,8 @@ export interface LayerConfig {
   /** Whether rows carry hours and take part in "open now". */
   hasHours: boolean;
   facets: FacetConfig[];
+  /** Facet columns shown as chips on a list row. Defaults to the first two facets. */
+  rowFacets?: string[];
 }
 
 /** One row of a sheet after parsing. Blank cells become undefined, never "". */
