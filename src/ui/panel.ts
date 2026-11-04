@@ -37,6 +37,7 @@ export function mountPanel(root: HTMLElement, onHeightChange?: (h: PanelHeight, 
     <div class="panel-drag">
       <button type="button" class="panel-handle" aria-label="Expand or collapse the list"><span class="grabber"></span></button>
       <div class="panel-strip"></div>
+      <a class="osm-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
     </div>
     <div class="panel-content"></div>
   `;

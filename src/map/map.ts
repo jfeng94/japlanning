@@ -1,6 +1,5 @@
 import {
   addProtocol,
-  AttributionControl,
   Map as MapLibreMap,
   ScaleControl,
   setWorkerUrl,
@@ -71,8 +70,9 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
     // Japanese labels without shipping CJK glyphs: the device's own font.
     localIdeographFontFamily: "'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans CJK JP', 'Yu Gothic', sans-serif",
   });
-  // The bottom edge sits under the panel, so controls go on top.
-  map.addControl(new AttributionControl({ compact: true }), "top-right");
+  // The bottom edge sits under the panel, so the scale goes on top. The
+  // OpenStreetMap credit the licence requires lives in the panel strip
+  // (always on screen) instead of MapLibre's attribution control.
   map.addControl(new ScaleControl({ maxWidth: 90, unit: "metric" }), "top-left");
 
   map.on("style.load", () => {
