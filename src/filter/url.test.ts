@@ -30,6 +30,12 @@ describe("toSearchParams", () => {
     expect(query(state({ type: "setStarredOnly", value: true }))).toBe("star=1");
     expect(query(state({ type: "setBookmarkedOnly", value: true }))).toBe("b=1");
     expect(fromSearchParams(new URLSearchParams("b=1"), ctx).bookmarkedOnly).toBe(true);
+    expect(query(state({ type: "setOpenNow", value: true }, { type: "setIncludeUnknownHours", value: false }, { type: "setOpenAt", value: "2026-11-10T10:00" }))).toBe(
+      "open=1&hu=0&at=2026-11-10T10%3A00",
+    );
+    const back = fromSearchParams(new URLSearchParams("open=1&hu=0&at=2026-11-10T10:00"), ctx);
+    expect([back.openNow, back.includeUnknownHours, back.openAt]).toEqual([true, false, "2026-11-10T10:00"]);
+    expect(fromSearchParams(new URLSearchParams("at=tomorrow"), ctx).openAt).toBeUndefined();
   });
 
   it("encodes facet selections and unknown toggles per facet", () => {

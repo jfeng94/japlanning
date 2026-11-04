@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LayerId } from "../data/types.ts";
-import { applyFilters, facetCounts, matchesFacet, neighborhoodCounts, normalise } from "./apply.ts";
+import { applyFilters, facetCounts, matchesFacet, neighborhoodCounts, normalise, openNowCounts, type HoursInput } from "./apply.ts";
 import { defaultState, reduce, type FilterAction, type FilterState } from "./state.ts";
 import { allLayers, coffee, NEIGHBORHOODS, samplePlaces } from "./testing.ts";
 
@@ -46,6 +46,26 @@ describe("applyFilters", () => {
     const counts = facetCounts(places, state(on, coffeeOnly), coffee, { bookmarks: new Set(ids) });
     expect([...counts.get("Format")!.values]).toEqual([["Stand", 0], ["Café", 1], ["Kissaten", 0]]);
     expect([...neighborhoodCounts(places, state(on), NEIGHBORHOODS, { bookmarks: new Set(ids) })]).toEqual([["Central", 1], ["Shibuya", 1], ["East", 0]]);
+  });
+
+  it("open now: open passes, closed fails, unknown follows the toggle, hour-less layers untouched, no map passes all", () => {
+    const on: FilterAction = { type: "setOpenNow", value: true };
+    const id = (name: string) => places.find((p) => p.name === name)!.id;
+    const hours: HoursInput = {
+      states: new Map([
+        [id("Glitch"), "open"],
+        [id("Fuglen"), "closed"],
+        [id("Bear Pond"), "unknown"],
+        // "Unknown Kissa" and "ＧＬＩＴＣＨ annex" absent from the map -> unknown
+      ]),
+      layersWithHours: new Set(["tokyo-coffee"]), // tea has no hours: untouched
+    };
+    expect(applyFilters(places, state(on), { hours }).map((p) => p.name)).toEqual(["Glitch", "Bear Pond", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo"]);
+    const strict = state(on, { type: "setIncludeUnknownHours", value: false });
+    expect(applyFilters(places, strict, { hours }).map((p) => p.name)).toEqual(["Glitch", "Ippodo"]);
+    expect(applyFilters(places, state(on)).map((p) => p.name)).toHaveLength(6);
+    expect(openNowCounts(places, state(on), { hours })).toEqual({ open: 1, unknown: 3 });
+    expect(openNowCounts(places, state(on, coffeeOnly, { type: "setText", text: "glitch" }), { hours })).toEqual({ open: 1, unknown: 1 });
   });
 
   it("neighborhoods OR together and apply across layers", () => {

@@ -64,13 +64,27 @@ describe("evaluate in Tokyo time", () => {
   });
 });
 
+describe("open at a picked time", () => {
+  it("labels say when they're for", async () => {
+    const { evaluateLocal, tokyoWallClock } = await import("./open.ts");
+    expect(evaluateLocal(OH, GLITCH, tokyoWallClock("2026-11-10T10:00")!, false)).toEqual({
+      state: "open",
+      label: "Open at Tue 10:00 · until 19:00",
+    });
+    expect(evaluateLocal(OH, GLITCH, tokyoWallClock("2026-11-10T20:00")!, false)).toEqual({
+      state: "closed",
+      label: "Closed at Tue 20:00 · opens Wed 08:00",
+    });
+  });
+});
+
 describe("openStatus (async, lazy parser)", () => {
   it("blank hours are unknown with no label", async () => {
     expect(await openStatus(undefined)).toEqual({ state: "unknown", label: "" });
     expect(await openStatus("  ")).toEqual({ state: "unknown", label: "" });
   });
 
-  it("loads the parser and evaluates", async () => {
-    expect((await openStatus(GLITCH, at("2026-11-04T09:30:00Z"))).state).toBe("open");
+  it("loads the parser and evaluates at a Tokyo wall-clock Date", async () => {
+    expect((await openStatus(GLITCH, tokyoNow(at("2026-11-04T09:30:00Z")), true)).state).toBe("open");
   });
 });

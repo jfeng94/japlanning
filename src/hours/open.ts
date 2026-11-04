@@ -40,7 +40,22 @@ export function tokyoNow(now: Date = new Date()): Date {
   return new Date(p["year"]!, p["month"]! - 1, p["day"]!, p["hour"]!, p["minute"]!, p["second"]!);
 }
 
-type OpeningHoursCtor = new (value: string, nominatim?: null, options?: { locale?: string }) => {
+/** "YYYY-MM-DDTHH:MM" (a Tokyo wall-clock moment, as the URL and pickers carry it) to the same kind of Date, or undefined. */
+export function tokyoWallClock(s: string | undefined): Date | undefined {
+  const m = s ? /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(s) : null;
+  if (!m) return undefined;
+  const [, y, mo, d, h, mi] = m.map(Number) as [number, number, number, number, number, number];
+  const date = new Date(y, mo - 1, d, h, mi, 0);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+/** The inverse: a Tokyo wall-clock Date to "YYYY-MM-DDTHH:MM". */
+export function wallClockString(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+export type OpeningHoursCtor = new (value: string, nominatim?: null, options?: { locale?: string }) => {
   getState(date?: Date): boolean;
   getNextChange(date?: Date, maxdate?: Date): Date | undefined;
 };
@@ -48,28 +63,36 @@ type OpeningHoursCtor = new (value: string, nominatim?: null, options?: { locale
 let ctor: Promise<OpeningHoursCtor> | undefined;
 
 /** The parser is a few hundred kB with its helpers; load it on first use. */
-function loadParser(): Promise<OpeningHoursCtor> {
+export function loadParser(): Promise<OpeningHoursCtor> {
   return (ctor ??= import("opening_hours").then((m) => m.default as unknown as OpeningHoursCtor));
 }
 
-const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+export const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-export async function openStatus(hoursOsm: string | undefined, now: Date = new Date()): Promise<OpenStatus> {
+/**
+ * Status for the card. `at` is a Tokyo wall-clock Date (from tokyoNow or
+ * tokyoWallClock); when it isn't "now", the label says when it's for.
+ */
+export async function openStatus(hoursOsm: string | undefined, at?: Date, isNow = at === undefined): Promise<OpenStatus> {
   if (!hoursOsm || hoursOsm.trim() === "") return { state: "unknown", label: "" };
   const OpeningHours = await loadParser();
-  return evaluate(OpeningHours, hoursOsm, now);
+  return evaluateLocal(OpeningHours, hoursOsm, at ?? tokyoNow(), isNow);
 }
 
-/** Synchronous core, for tests and for callers that already have the parser. */
+/** Synchronous core taking an instant; converts to Tokyo wall clock. For tests. */
 export function evaluate(OpeningHours: OpeningHoursCtor, hoursOsm: string, now: Date): OpenStatus {
+  return evaluateLocal(OpeningHours, hoursOsm, tokyoNow(now), true);
+}
+
+/** Synchronous core taking a Tokyo wall-clock Date. */
+export function evaluateLocal(OpeningHours: OpeningHoursCtor, hoursOsm: string, t: Date, isNow = true): OpenStatus {
   let oh: InstanceType<OpeningHoursCtor>;
   try {
     oh = new OpeningHours(hoursOsm, null, { locale: "en" });
   } catch {
     return { state: "unparsable", label: "Hours unparsable" };
   }
-  const t = tokyoNow(now);
   let open: boolean;
   let next: Date | undefined;
   try {
@@ -78,14 +101,16 @@ export function evaluate(OpeningHours: OpeningHoursCtor, hoursOsm: string, now: 
   } catch {
     return { state: "unparsable", label: "Hours unparsable" };
   }
+  const when = isNow ? "" : ` at ${DAY[t.getDay()]} ${clock(t)}`;
   if (open) {
-    return { state: "open", label: next ? `Open · until ${clock(next)}` : "Open" };
+    return { state: "open", label: next ? `Open${when} · until ${clock(next)}` : `Open${when}` };
   }
-  if (!next) return { state: "closed", label: "Closed" };
+  if (!next) return { state: "closed", label: `Closed${when}` };
   const sameDay = next.getFullYear() === t.getFullYear() && next.getMonth() === t.getMonth() && next.getDate() === t.getDate();
-  return { state: "closed", label: sameDay ? `Closed · opens ${clock(next)}` : `Closed today · opens ${DAY[next.getDay()]} ${clock(next)}` };
+  if (sameDay) return { state: "closed", label: `Closed${when} · opens ${clock(next)}` };
+  return { state: "closed", label: `Closed${isNow ? " today" : when} · opens ${DAY[next.getDay()]} ${clock(next)}` };
 }
 
-function clock(d: Date): string {
+export function clock(d: Date): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }

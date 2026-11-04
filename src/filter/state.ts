@@ -23,8 +23,12 @@ export interface FilterState {
   starredOnly: boolean;
   /** Only the device's bookmarked places (the set itself lives outside this state). */
   bookmarkedOnly: boolean;
-  /** Evaluated from M5 on; carried in state now so the URL codec is stable. */
+  /** Only places open (at `openAt`, else now) in Tokyo time; layers without hours are untouched. */
   openNow: boolean;
+  /** With openNow: whether places with blank or unparsable hours pass. Default true. */
+  includeUnknownHours: boolean;
+  /** "YYYY-MM-DDTHH:MM" Tokyo wall clock to evaluate at instead of now. */
+  openAt?: string;
   /** layer id -> facet column -> selection. Absent means the default selection. */
   facets: Record<string, Record<string, FacetSelection>>;
 }
@@ -38,6 +42,8 @@ export type FilterAction =
   | { type: "setStarredOnly"; value: boolean }
   | { type: "setBookmarkedOnly"; value: boolean }
   | { type: "setOpenNow"; value: boolean }
+  | { type: "setIncludeUnknownHours"; value: boolean }
+  | { type: "setOpenAt"; value: string | undefined }
   | { type: "toggleFacetValue"; layer: LayerId; column: string; value: string }
   | { type: "setIncludeUnknown"; layer: LayerId; column: string; value: boolean }
   | { type: "clearFilters" };
@@ -56,6 +62,7 @@ export function defaultState(region: RegionId, _layers: LayerConfig[]): FilterSt
     starredOnly: false,
     bookmarkedOnly: false,
     openNow: false,
+    includeUnknownHours: true,
     facets: {},
   };
 }
@@ -91,6 +98,7 @@ export function hasActiveFilters(state: FilterState): boolean {
     state.starredOnly ||
     state.bookmarkedOnly ||
     state.openNow ||
+    state.openAt !== undefined ||
     Object.keys(state.facets).length > 0
   );
 }
@@ -113,6 +121,14 @@ export function reduce(state: FilterState, action: FilterAction, layers: LayerCo
       return { ...state, bookmarkedOnly: action.value };
     case "setOpenNow":
       return { ...state, openNow: action.value };
+    case "setIncludeUnknownHours":
+      return { ...state, includeUnknownHours: action.value };
+    case "setOpenAt": {
+      const next = { ...state };
+      if (action.value === undefined) delete next.openAt;
+      else next.openAt = action.value;
+      return next;
+    }
     case "toggleFacetValue": {
       const sel = getSelection(state, action.layer, action.column);
       return withSelection(state, action.layer, action.column, {
@@ -130,11 +146,13 @@ export function reduce(state: FilterState, action: FilterAction, layers: LayerCo
     case "clearFilters":
       return {
         ...state,
+        openAt: undefined,
         text: "",
         neighborhoods: new Set(),
         starredOnly: false,
         bookmarkedOnly: false,
         openNow: false,
+        includeUnknownHours: true,
         facets: {},
       };
   }

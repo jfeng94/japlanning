@@ -25,9 +25,19 @@ export function matchesFacet(values: string[], sel: FacetSelection): boolean {
   return values.some((v) => sel.values.has(v));
 }
 
+/** Per-place hours state for the open-now filter; which layers carry hours at all. */
+export interface HoursInput {
+  states: ReadonlyMap<string, "open" | "closed" | "unknown">;
+  layersWithHours: ReadonlySet<string>;
+}
+
 export interface ApplyOptions {
   /** The device's bookmarked place ids; needed when `bookmarkedOnly` is on (none given = nothing matches). */
   bookmarks?: ReadonlySet<string>;
+  /** Evaluated hours; while absent (parser still loading) the open-now filter passes everything. */
+  hours?: HoursInput;
+  /** Ignore the open-now filter (to count what it would keep). */
+  skipOpenNow?: boolean;
   /** Ignore this facet column's selection (used to count "what if I picked this"). */
   skipFacet?: string;
   /** Ignore the neighborhood selection (same reason). */
@@ -51,6 +61,7 @@ export function applyFilters(places: Place[], state: FilterState, opts: ApplyOpt
     if (p.region !== state.region || !layersOn.has(p.layerId)) return false;
     if (state.starredOnly && !p.starred) return false;
     if (state.bookmarkedOnly && !opts.bookmarks?.has(p.id)) return false;
+    if (state.openNow && !opts.skipOpenNow && !passesOpenNow(p, state, opts.hours)) return false;
     if (byNeighborhood && !(p.neighborhood !== undefined && state.neighborhoods.has(p.neighborhood))) return false;
     if (!matchesText(p, state.text)) return false;
     if (facets && p.layerId === facetLayer) {
@@ -61,6 +72,39 @@ export function applyFilters(places: Place[], state: FilterState, opts: ApplyOpt
     }
     return true;
   });
+}
+
+/**
+ * The open-now rule for one place: layers without hours are untouched;
+ * open passes, closed fails, unknown passes iff includeUnknownHours. With
+ * no evaluation yet, everything passes so the list never blanks.
+ */
+export function passesOpenNow(place: Place, state: FilterState, hours: HoursInput | undefined): boolean {
+  if (!hours) return true;
+  if (!hours.layersWithHours.has(place.layerId)) return true;
+  const s = hours.states.get(place.id) ?? "unknown";
+  if (s === "open") return true;
+  if (s === "closed") return false;
+  return state.includeUnknownHours;
+}
+
+export interface OpenNowCounts {
+  open: number;
+  unknown: number;
+}
+
+/** Among the rows the other filters keep: how many are open, and how many have unknown hours. */
+export function openNowCounts(places: Place[], state: FilterState, opts: Omit<ApplyOptions, "skipOpenNow">): OpenNowCounts {
+  const base = applyFilters(places, state, { ...opts, skipOpenNow: true });
+  let open = 0;
+  let unknown = 0;
+  for (const p of base) {
+    if (!opts.hours || !opts.hours.layersWithHours.has(p.layerId)) continue;
+    const s = opts.hours.states.get(p.id) ?? "unknown";
+    if (s === "open") open++;
+    else if (s === "unknown") unknown++;
+  }
+  return { open, unknown };
 }
 
 export interface FacetCount {
@@ -79,7 +123,7 @@ export function facetCounts(
   places: Place[],
   state: FilterState,
   layer: LayerConfig,
-  opts: Pick<ApplyOptions, "bookmarks"> = {},
+  opts: Pick<ApplyOptions, "bookmarks" | "hours"> = {},
 ): Map<string, FacetCount> {
   const out = new Map<string, FacetCount>();
   for (const facet of layer.facets) {
@@ -101,7 +145,7 @@ export function neighborhoodCounts(
   places: Place[],
   state: FilterState,
   neighborhoods: string[],
-  opts: Pick<ApplyOptions, "bookmarks"> = {},
+  opts: Pick<ApplyOptions, "bookmarks" | "hours"> = {},
 ): Map<string, number> {
   const base = applyFilters(places, state, { ...opts, skipNeighborhoods: true });
   const counts = new Map<string, number>(neighborhoods.map((n) => [n, 0]));

@@ -12,6 +12,8 @@ import { defaultSelection, defaultState, layersInRegion, type FacetSelection, ty
  *   &q=glitch                      text
  *   &n=Central&n=East              neighborhoods, repeated
  *   &star=1 &b=1 &open=1           flags (b = this device's bookmarks only)
+ *   &hu=0                          open now: exclude unknown hours
+ *   &at=2026-11-10T10:00           open at this Tokyo wall-clock time instead of now
  *   &f=tokyo-coffee/Format=Stand|Caf%C3%A9   facet values, repeated per facet
  *   &u=tokyo-coffee/Format         include-unknown OFF, repeated per facet
  */
@@ -33,6 +35,8 @@ export function toSearchParams(state: FilterState, ctx: UrlContext): URLSearchPa
   if (state.starredOnly) p.set("star", "1");
   if (state.bookmarkedOnly) p.set("b", "1");
   if (state.openNow) p.set("open", "1");
+  if (!state.includeUnknownHours) p.set("hu", "0");
+  if (state.openAt) p.set("at", state.openAt);
   for (const [layer, columns] of Object.entries(state.facets)) {
     for (const [column, sel] of Object.entries(columns)) {
       if (sel.values.size > 0) {
@@ -63,6 +67,9 @@ export function fromSearchParams(params: URLSearchParams, ctx: UrlContext): Filt
   state.starredOnly = params.get("star") === "1";
   state.bookmarkedOnly = params.get("b") === "1";
   state.openNow = params.get("open") === "1";
+  state.includeUnknownHours = params.get("hu") !== "0";
+  const at = params.get("at");
+  if (at && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(at)) state.openAt = at;
 
   const selection = (layer: string, column: string): FacetSelection | undefined => {
     const config = regionLayers.get(layer);
