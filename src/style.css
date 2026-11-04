@@ -473,6 +473,7 @@ button {
 }
 
 .panel-content {
+  position: relative; /* rows' offsetTop is measured from here */
   flex: 1;
   min-height: 0;
   overflow-y: auto;

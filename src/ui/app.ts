@@ -62,6 +62,8 @@ export function mountApp(root: HTMLElement): void {
   let shownDetailId: string | undefined;
   /** Set for the one render that returns to the list, so the closed place's row can flash. */
   let flashId: string | undefined;
+  /** Where the open card came from: a list row keeps the list's position on return; anything else scrolls to the row. */
+  let openedFrom: "list" | "elsewhere" = "list";
   /** A place id from the URL to select once its data has loaded. */
   let pendingSelection: string | undefined = startParams.get(SELECTED_PARAM) ?? undefined;
   let fittedOnce = false;
@@ -102,13 +104,22 @@ export function mountApp(root: HTMLElement): void {
   );
   view.setBottomPadding(panel.heightPx());
   let pins: PinRenderer = createPinRenderer();
-  pins.onSelect((id) => (id === undefined ? deselect() : select(id)));
+  pins.onSelect(onPinSelect);
+
+  function onPinSelect(id: string | undefined): void {
+    if (id === undefined) {
+      deselect();
+    } else {
+      openedFrom = "elsewhere";
+      select(id);
+    }
+  }
 
   /** Settings changed: tear the renderer down and build it again from the new settings. */
   function swapPinRenderer(): void {
     pins.destroy();
     pins = createPinRenderer();
-    pins.onSelect((id) => (id === undefined ? deselect() : select(id)));
+    pins.onSelect(onPinSelect);
     render();
   }
   root.querySelector(".fit-button")!.addEventListener("click", () => fitToResults());
@@ -147,6 +158,7 @@ export function mountApp(root: HTMLElement): void {
       return false;
     }
     revealPlace(place);
+    openedFrom = "elsewhere";
     select(id);
     panel.setHeight("half");
     return true;
@@ -255,7 +267,10 @@ export function mountApp(root: HTMLElement): void {
       selectedId,
       bookmarks: bookmarks.all(),
       flashId,
-      onSelect: select,
+      onSelect: (id) => {
+        openedFrom = "list";
+        select(id);
+      },
     });
     renderEmptyState(emptyState, state, shown.length, total, loading);
 
@@ -275,7 +290,16 @@ export function mountApp(root: HTMLElement): void {
     if (mode !== shownMode && mode === "detail") listScrollTop = panel.content.scrollTop;
     panel.el.dataset["mode"] = mode;
     if (mode !== shownMode) {
-      panel.content.scrollTop = mode === "detail" ? 0 : listScrollTop;
+      if (mode === "detail") {
+        panel.content.scrollTop = 0;
+      } else if (openedFrom === "list") {
+        panel.content.scrollTop = listScrollTop;
+      } else {
+        // Opened from a pin or a link: bring the closed place's row into view so the highlight is seen.
+        const row = flashId ? placeList.querySelector<HTMLElement>(`.place-row[data-id="${CSS.escape(flashId)}"]`) : null;
+        const content = panel.content;
+        content.scrollTop = row ? Math.max(0, row.offsetTop - (content.clientHeight - row.offsetHeight) / 2) : listScrollTop;
+      }
       shownMode = mode;
     } else if (mode === "detail" && selected && selected.id !== shownDetailId) {
       panel.content.scrollTop = 0; // switched to another place while open
@@ -340,6 +364,7 @@ export function mountApp(root: HTMLElement): void {
       if (place) {
         pendingSelection = undefined;
         revealPlace(place);
+        openedFrom = "elsewhere";
         // Not marked as pushed: this entry is the page itself, so back must leave the app, not the detail.
         ui.dispatch({ type: "select", id });
         history.replaceState(history.state, "", urlFor(filters.get(), id));
