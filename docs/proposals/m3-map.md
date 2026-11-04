@@ -1,6 +1,8 @@
 # M3: Map
 
-Status: **proposed** (2026-11-04). Waiting for go-ahead.
+Status: **implemented, awaiting phone acceptance** (approved and built
+2026-11-04, commits 2618de7..). Every box below was checked in a desktop
+browser at phone width except the ones that need a phone; see Results.
 
 ## Goal
 
@@ -12,28 +14,28 @@ where the bytes come from, not what they are.
 
 ## Done when
 
-- [ ] On the phone the header is one row and the map fills the rest,
+- [x] On the phone the header is one row and the map fills the rest,
       with the list in a bottom panel that rests as a thin strip and
       opens to half or full height. The map keeps roughly 85% of the
       screen at rest.
-- [ ] Selecting a place (pin or row) shows it in the same panel with a
+- [x] Selecting a place (pin or row) shows it in the same panel with a
       back arrow; back, the iOS back swipe, or a tap on empty map returns
       to the list with its scroll position kept. The URL carries the
       selection.
-- [ ] Pins reflect the filter state exactly: same count as the list,
+- [x] Pins reflect the filter state exactly: same count as the list,
       coloured by layer, ★ pins visibly different, names labelled when
       zoomed in.
-- [ ] Tap a pin or a row: the map centres on the pin, it restyles as
+- [x] Tap a pin or a row: the map centres on the pin, it restyles as
       selected, and the panel shows the place.
-- [ ] Switching region moves the map to that region's bounds.
-- [ ] The basemap shows roads, rail, stations, water and parks, with no
+- [x] Switching region moves the map to that region's bounds.
+- [x] The basemap shows roads, rail, stations, water and parks, with no
       shop or restaurant POIs and no buildings. Station names render in
       English with Japanese fallback.
-- [ ] Dark mode switches the basemap flavour.
-- [ ] `npm run basemap` builds `public/basemap/tokyo.pmtiles` locally;
+- [x] Dark mode switches the basemap flavour.
+- [x] `npm run basemap` builds `public/basemap/tokyo.pmtiles` locally;
       CI builds it on every deploy; the deployed file answers HTTP range
       requests.
-- [ ] `npm test` covers the style filter and the pin GeoJSON builder.
+- [x] `npm test` covers the style filter and the pin GeoJSON builder.
 
 ## Size experiment (done 2026-11-04, as the brief asked)
 
@@ -351,4 +353,62 @@ the header and the panel are 100–200 lines each; the rest are small.
 
 ## Results
 
-(filled in after acceptance)
+Built 2026-11-04 in eight commits (steps 1, 1b, 2, 3, 3b, 4 and polish).
+99 tests. Production bundle: 1.17 MB app chunk (320 kB gzipped, almost
+all MapLibre) plus a 519 kB worker chunk.
+
+Verified in the browser pane at 375×812 against the production build:
+
+- Header is 52 px; the map pane gets 760 px. Region menu (Diagnostics at
+  its foot), layers button opening the sheet at its Layers section, inline
+  search with cancel, panel heights strip/half/full.
+- Basemap renders from our 51.7 MB extract over range requests (206s in
+  dev, preview and on Pages). Water, roads, rail, bilingual place and
+  street labels; POIs reduced to stations, ferry terminals and airports
+  ("Tokyo International Airport", "Keikyu-Kamata", …). No buildings.
+- SDF pins: one tinted silhouette per icon, ★ overlay on key branches,
+  name labels from zoom 14. DOM pins via `?pins=dom`: white disc, layer
+  ring, artwork, ★ badge, label.
+- Row tap: map eases to the pin at zoom 15, panel shows the detail
+  placeholder, URL gains `s=`, one history entry. Back arrow returns to
+  the list with the URL cleaned. Switching place while open replaces the
+  entry rather than stacking. A `?s=` link opens straight to the place and
+  its back leaves the page, as it should.
+- Fit button frames all results; region change fits the region bbox.
+- Dark scheme: background and sprite switch; pins source and SDF image are
+  re-added after the style reload.
+
+For the phone pass:
+
+- The one-row header and the panel heights with real thumbs.
+- Pin tap targets with both renderers; which renderer looks right.
+- iOS back swipe closing the detail.
+- The SDF silhouette at its rendered size (32 CSS px); the cup reads as a
+  blob at low zoom in screenshots and may want a bolder drawing or a
+  larger icon-size.
+
+Decisions made while building, beyond the proposal:
+
+- MapLibre 6 is ESM-only with no default export and locates its worker
+  relative to its own module URL; Vite bundles the worker via
+  `?worker&url` and the app hands the URL to `setWorkerUrl`. MapLibre is
+  also excluded from Vite's dev pre-bundling.
+- MapLibre's stylesheet sets `position: relative` on the map container,
+  which beat the pane's absolute positioning; the pane rule is now a
+  two-class selector. Symptom was a 0-height pane and a 300 px canvas.
+- The pmtiles CLI release publishes no checksum file, so the two archives
+  we use are pinned by SHA-256 in `src/config/basemap.ts`; other platforms
+  are refused until a hash is added. Windows' own `tar.exe` extracts the
+  zip; Git Bash's GNU tar cannot.
+- Stations are POIs with `kind: "station"` in Protomaps' schema, so the
+  atlas filter keeps the layer and narrows its filter rather than dropping
+  it.
+- A silhouette is not an SDF: `src/map/sdf.ts` computes the field
+  (Felzenszwalb EDT) from alpha × darkness so both transparent and white
+  backgrounds work.
+- `querySourceFeatures` returns a feature once per tile it touches, so
+  counts from it are not place counts; the list's count is authoritative.
+- Symbol layers take a moment to place after a glyph download; a layer
+  reporting zero rendered features right after a style change is normal.
+- The SDF renderer re-reads its label colours on every style load so a
+  runtime theme switch restyles labels, not just the basemap.

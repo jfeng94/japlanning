@@ -58,7 +58,12 @@ export function mountApp(root: HTMLElement): void {
   root.innerHTML = `
     <main class="panes">
       <section class="map-pane" aria-label="Map"></section>
-      <button type="button" class="fit-button" aria-label="Fit map to results" title="Fit to results">⌖</button>
+      <button type="button" class="fit-button" aria-label="Fit map to results" title="Fit to results">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/>
+          <circle cx="12" cy="12" r="2.5"/>
+        </svg>
+      </button>
     </main>
   `;
   const filterSheet = createSheet(root, "Filters", () => renderSheet());
@@ -268,8 +273,10 @@ export function mountApp(root: HTMLElement): void {
   }
 
   function createPinRenderer(): PinRenderer {
-    const css = getComputedStyle(document.documentElement);
-    const colors = { label: css.getPropertyValue("--fg").trim(), halo: css.getPropertyValue("--bg-raised").trim() };
+    const colors = () => {
+      const css = getComputedStyle(document.documentElement);
+      return { label: css.getPropertyValue("--fg").trim(), halo: css.getPropertyValue("--bg-raised").trim() };
+    };
     return pinRendererKind() === "dom" ? createDomPinRenderer(view) : createSdfPinRenderer(view, colors);
   }
 

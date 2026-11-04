@@ -31,7 +31,7 @@ function sdfImage(id: IconId): Promise<SdfImage> {
  * icon, plus a ★ text overlay and name labels from zoom 14. Re-adds its
  * source, layers and images after every style (re)load.
  */
-export function createSdfPinRenderer(view: MapView, colors: { label: string; halo: string }): PinRenderer {
+export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: string; halo: string }): PinRenderer {
   const map = view.map;
   let pins: Pin[] = [];
   let selectedId: string | undefined;
@@ -55,6 +55,7 @@ export function createSdfPinRenderer(view: MapView, colors: { label: string; hal
 
   const addLayers = (m: MapLibreMap) => {
     if (m.getSource(SOURCE)) return;
+    const colors = colorsNow(); // read per style load so a theme switch restyles labels too
     m.addSource(SOURCE, { type: "geojson", data: data() });
     m.addLayer({
       id: ICON_LAYER,

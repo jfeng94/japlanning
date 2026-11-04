@@ -529,8 +529,10 @@ button {
   border-radius: 50%;
   background: var(--bg-raised);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  font-size: 1.2rem;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .results-count {
