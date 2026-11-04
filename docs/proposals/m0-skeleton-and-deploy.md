@@ -2,8 +2,8 @@
 
 Status: **in progress** (approved 2026-11-04). Code side done: scaffold,
 manifest, capability panel, Actions deploy, Pages enabled with the custom
-domain. Waiting on Jerry's side: Node upgrade, DNS record, HTTPS
-enforcement once the certificate issues, phone verification.
+domain. Node upgraded, DNS live, certificate issued, HTTPS enforced. Waiting on
+phone verification.
 
 ## Goal
 
@@ -14,10 +14,10 @@ through the pipeline this one sets up.
 
 ## Done when
 
-- [ ] `npm run dev` serves the page locally on Node 26.
+- [x] `npm run dev` serves the page locally on Node 26.
 - [x] A push to `main` builds and deploys via GitHub Actions with no manual
       step.
-- [ ] https://japan.garbage.house loads with a valid certificate.
+- [x] https://japan.garbage.house loads with a valid certificate.
 - [x] The page shows the git commit it was built from, so we can confirm a
       deploy landed.
 - [ ] Chrome on the iPhone offers "Add to Home Screen", and the installed
