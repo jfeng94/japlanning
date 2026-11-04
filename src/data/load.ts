@@ -23,68 +23,140 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 
 export const cacheKey = (layerId: LayerId) => `layer:${layerId}`;
 
+type Attempt = { ok: true; result: LoadResult } | { ok: false; reason: string };
+type Source = (layer: LayerConfig, deps: LoadDeps, parse: (text: string) => ParseResult) => Promise<Attempt>;
+
 /**
  * Load one layer, trying the network, then the cached last good copy,
  * then the snapshot bundled with the site. The first source that both
  * fetches and parses wins. Bad data never overwrites a good cache.
  */
 export async function loadLayer(layer: LayerConfig, deps: LoadDeps): Promise<LoadResult> {
-  const key = cacheKey(layer.id);
+  const parse = parserFor(layer);
   const reasons: string[] = [];
-  const parse = (text: string): ParseResult =>
-    parseLayerCsv(text, layer, { neighborhoods: regionById(layer.region).neighborhoods });
-
-  // 1. Network
-  try {
-    const text = await fetchText(deps, layer.csvUrl);
-    const parsed = parse(text); // throws ParseError on an unusable sheet
-    const fetchedAt = deps.now();
-    await deps.store.set(key, { text, fetchedAt: fetchedAt.toISOString() });
-    return { layerId: layer.id, source: "network", fetchedAt, ...parsed };
-  } catch (e) {
-    reasons.push(`network: ${describe(e)}`);
+  for (const source of [fromNetwork, fromCache, fromBundled]) {
+    const attempt = await source(layer, deps, parse);
+    if (attempt.ok) return withReasons(attempt.result, reasons);
+    reasons.push(attempt.reason);
   }
+  return none(layer, reasons);
+}
 
-  // 2. Cache
-  try {
-    const cached = await deps.store.get(key);
-    if (cached) {
-      const parsed = parse(cached.text);
-      return {
-        layerId: layer.id,
-        source: "cache",
-        fetchedAt: new Date(cached.fetchedAt),
-        error: reasons.join("; "),
-        ...parsed,
-      };
+/**
+ * Like loadLayer, but reports twice when it can: first whatever is on the
+ * device (cache, else bundled snapshot) so the UI has something to show
+ * at once, then the network result when it arrives. `emit` is called with
+ * `final: true` exactly once; the promise resolves with that same result.
+ */
+export async function loadLayerStaged(
+  layer: LayerConfig,
+  deps: LoadDeps,
+  emit: (result: LoadResult, final: boolean) => void,
+): Promise<LoadResult> {
+  const parse = parserFor(layer);
+
+  let local: LoadResult | undefined;
+  const localReasons: string[] = [];
+  for (const source of [fromCache, fromBundled]) {
+    const attempt = await source(layer, deps, parse);
+    if (attempt.ok) {
+      local = attempt.result;
+      break;
     }
-    reasons.push("cache: empty");
-  } catch (e) {
-    reasons.push(`cache: ${describe(e)}`);
+    localReasons.push(attempt.reason);
   }
+  if (local) emit(local, false);
 
-  // 3. Bundled snapshot
-  try {
-    const url = (deps.bundledUrl ?? defaultBundledUrl)(layer.id);
-    const text = await fetchText(deps, url);
-    const parsed = parse(text);
-    return {
-      layerId: layer.id,
-      source: "bundled",
-      fetchedAt: deps.bundledBuiltAt,
-      error: reasons.join("; "),
-      ...parsed,
-    };
-  } catch (e) {
-    reasons.push(`bundled: ${describe(e)}`);
-  }
-
-  return { layerId: layer.id, source: "none", places: [], warnings: [], error: reasons.join("; ") };
+  const net = await fromNetwork(layer, deps, parse);
+  const final = net.ok ? net.result : local ? withReasons(local, [net.reason]) : none(layer, [net.reason, ...localReasons]);
+  emit(final, true);
+  return final;
 }
 
 /** Load every layer in parallel. One failing never blocks the others. */
 export function loadAllLayers(layers: LayerConfig[], deps: LoadDeps): Promise<LoadResult[]> {
   return Promise.all(layers.map((layer) => loadLayer(layer, deps)));
+}
+
+/**
+ * Staged load of every layer. `onChange` gets the latest result per layer
+ * (in `layers` order, layers with nothing yet omitted) after every
+ * emission; `done` is true on the last one.
+ */
+export async function loadAllLayersStaged(
+  layers: LayerConfig[],
+  deps: LoadDeps,
+  onChange: (results: LoadResult[], done: boolean) => void,
+): Promise<LoadResult[]> {
+  const latest = new Map<LayerId, LoadResult>();
+  let finals = 0;
+  return Promise.all(
+    layers.map((layer) =>
+      loadLayerStaged(layer, deps, (result, final) => {
+        latest.set(layer.id, result);
+        if (final) finals++;
+        const results = layers.map((l) => latest.get(l.id)).filter((r): r is LoadResult => r !== undefined);
+        onChange(results, finals === layers.length);
+      }),
+    ),
+  );
+}
+
+// ---- sources ----
+
+const fromNetwork: Source = async (layer, deps, parse) => {
+  try {
+    const text = await fetchText(deps, layer.csvUrl);
+    const parsed = parse(text); // throws ParseError on an unusable sheet
+    const fetchedAt = deps.now();
+    await deps.store.set(cacheKey(layer.id), { text, fetchedAt: fetchedAt.toISOString() });
+    return { ok: true, result: { layerId: layer.id, source: "network", fetchedAt, ...parsed } };
+  } catch (e) {
+    return { ok: false, reason: `network: ${describe(e)}` };
+  }
+};
+
+const fromCache: Source = async (layer, deps, parse) => {
+  try {
+    const cached = await deps.store.get(cacheKey(layer.id));
+    if (!cached) return { ok: false, reason: "cache: empty" };
+    const parsed = parse(cached.text);
+    return {
+      ok: true,
+      result: { layerId: layer.id, source: "cache", fetchedAt: new Date(cached.fetchedAt), ...parsed },
+    };
+  } catch (e) {
+    return { ok: false, reason: `cache: ${describe(e)}` };
+  }
+};
+
+const fromBundled: Source = async (layer, deps, parse) => {
+  try {
+    const url = (deps.bundledUrl ?? defaultBundledUrl)(layer.id);
+    const text = await fetchText(deps, url);
+    const parsed = parse(text);
+    return {
+      ok: true,
+      result: { layerId: layer.id, source: "bundled", fetchedAt: deps.bundledBuiltAt, ...parsed },
+    };
+  } catch (e) {
+    return { ok: false, reason: `bundled: ${describe(e)}` };
+  }
+};
+
+// ---- helpers ----
+
+function parserFor(layer: LayerConfig): (text: string) => ParseResult {
+  const neighborhoods = regionById(layer.region).neighborhoods;
+  return (text) => parseLayerCsv(text, layer, { neighborhoods });
+}
+
+function withReasons(result: LoadResult, reasons: string[]): LoadResult {
+  return reasons.length === 0 ? result : { ...result, error: reasons.join("; ") };
+}
+
+function none(layer: LayerConfig, reasons: string[]): LoadResult {
+  return { layerId: layer.id, source: "none", places: [], warnings: [], error: reasons.join("; ") };
 }
 
 const defaultBundledUrl = (layerId: LayerId) => `/data/${layerId}.csv`;

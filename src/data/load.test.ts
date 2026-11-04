@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { layers } from "../config/layers.ts";
-import { cacheKey, loadAllLayers, loadLayer, type FetchLike, type LoadDeps } from "./load.ts";
+import {
+  cacheKey,
+  loadAllLayers,
+  loadAllLayersStaged,
+  loadLayer,
+  loadLayerStaged,
+  type FetchLike,
+  type LoadDeps,
+} from "./load.ts";
 import { createMemoryStore, type CachedText } from "./store.ts";
 import type { LayerConfig, LayerId } from "./types.ts";
 
@@ -115,6 +123,73 @@ describe("loadLayer source chain", () => {
     const r = await loadLayer(coffee, d);
     expect(r.warnings).toHaveLength(1);
     expect(r.warnings[0]!.column).toBe("Neighborhood");
+  });
+});
+
+describe("loadLayerStaged", () => {
+  type Emitted = [source: string, names: string[], final: boolean, error?: string];
+  async function run(d: LoadDeps): Promise<{ emitted: Emitted[]; returned: string }> {
+    const emitted: Emitted[] = [];
+    const r = await loadLayerStaged(coffee, d, (res, final) =>
+      emitted.push([res.source, res.places.map((p) => p.name), final, res.error]),
+    );
+    return { emitted, returned: r.source };
+  }
+
+  it("cache then network: emits cached first, network second and final", async () => {
+    const { deps: d } = deps(scriptedFetch({ [coffee.csvUrl]: ok(GOOD) }), { [KEY]: cachedEntry });
+    const { emitted, returned } = await run(d);
+    expect(emitted).toEqual([
+      ["cache", ["Cached"], false, undefined],
+      ["network", ["Fresh"], true, undefined],
+    ]);
+    expect(returned).toBe("network");
+  });
+
+  it("no local copy: emits the network result once", async () => {
+    const { deps: d } = deps(scriptedFetch({ [coffee.csvUrl]: ok(GOOD) }));
+    expect((await run(d)).emitted).toEqual([["network", ["Fresh"], true, undefined]]);
+  });
+
+  it("cache then network failure: re-emits the cached data as final with the reason", async () => {
+    const { deps: d } = deps(scriptedFetch({ [coffee.csvUrl]: status(500) }), { [KEY]: cachedEntry });
+    expect((await run(d)).emitted).toEqual([
+      ["cache", ["Cached"], false, undefined],
+      ["cache", ["Cached"], true, "network: HTTP 500"],
+    ]);
+  });
+
+  it("bundled stands in when there is no cache", async () => {
+    const { deps: d } = deps(scriptedFetch({ "/data/tokyo-coffee.csv": ok(BUNDLED) }));
+    expect((await run(d)).emitted).toEqual([
+      ["bundled", ["Bundled"], false, undefined],
+      ["bundled", ["Bundled"], true, `network: Failed to fetch ${coffee.csvUrl}`],
+    ]);
+  });
+
+  it("nothing anywhere: one final none with every reason, network first", async () => {
+    const { deps: d } = deps(scriptedFetch({ "/data/tokyo-coffee.csv": status(404) }));
+    expect((await run(d)).emitted).toEqual([
+      ["none", [], true, `network: Failed to fetch ${coffee.csvUrl}; cache: empty; bundled: HTTP 404`],
+    ]);
+  });
+});
+
+describe("loadAllLayersStaged", () => {
+  it("reports after every emission and flags done only on the last", async () => {
+    const other: LayerConfig = { ...coffee, id: "stub-other" as LayerId, csvUrl: "https://example.invalid/other.csv" };
+    const { deps: d } = deps(scriptedFetch({ [coffee.csvUrl]: ok(GOOD), [other.csvUrl]: status(500) }), {
+      [KEY]: cachedEntry,
+      [cacheKey(other.id)]: cachedEntry,
+    });
+    const seen: [string[], boolean][] = [];
+    const finals = await loadAllLayersStaged([coffee, other], d, (results, done) =>
+      seen.push([results.map((r) => `${r.layerId}:${r.source}`), done]),
+    );
+    expect(finals.map((r) => r.source)).toEqual(["network", "cache"]);
+    expect(seen.at(-1)).toEqual([["tokyo-coffee:network", "stub-other:cache"], true]);
+    expect(seen.filter(([, done]) => done)).toHaveLength(1);
+    expect(seen.length).toBe(4);
   });
 });
 

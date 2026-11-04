@@ -121,6 +121,16 @@ button {
   display: none;
 }
 
+.status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.status.is-warning {
+  color: var(--bad);
+}
+
 .search {
   flex: 1;
   min-width: 0;

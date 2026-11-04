@@ -1,7 +1,7 @@
 import { layers } from "../config/layers.ts";
 import { regions } from "../config/regions.ts";
 import { browserDeps } from "../data/browser.ts";
-import { loadAllLayers } from "../data/load.ts";
+import { loadAllLayersStaged } from "../data/load.ts";
 import type { LoadResult, Place, RegionId } from "../data/types.ts";
 import { applyFilters } from "../filter/apply.ts";
 import {
@@ -48,6 +48,7 @@ export function mountApp(root: HTMLElement): void {
         <button type="button" class="icon-button info" aria-label="Diagnostics">i</button>
       </div>
       <div class="layer-chips" role="group" aria-label="Layers"></div>
+      <p class="status" role="status" hidden></p>
       <div class="topbar-row">
         <input type="search" class="search" placeholder="Search names, areas, notes" autocomplete="off" aria-label="Search" />
         <button type="button" class="filters-button">Filters</button>
@@ -67,6 +68,7 @@ export function mountApp(root: HTMLElement): void {
   const layerChips = $(".layer-chips");
   const search = $<HTMLInputElement>(".search");
   const filtersButton = $<HTMLButtonElement>(".filters-button");
+  const status = $(".status");
   const resultsCount = $(".results-count");
   const placeList = $<HTMLUListElement>(".place-list");
   const emptyState = $(".empty-state");
@@ -121,6 +123,7 @@ export function mountApp(root: HTMLElement): void {
 
     if (search.value !== state.text) search.value = state.text;
     filtersButton.classList.toggle("is-active", hasActiveFilters(state));
+    renderStatus(status, results, loading);
 
     const total = places.filter((p) => p.region === state.region && state.layers.has(p.layerId)).length;
     const shown = sortByName(applyFilters(places, state));
@@ -157,13 +160,19 @@ export function mountApp(root: HTMLElement): void {
     el.hidden = false;
   }
 
+  /** Staged: whatever is on the device renders first, the network result replaces it. */
   async function reload(): Promise<void> {
     loading = true;
     diagnostics.update(results, true);
     render();
     try {
-      results = await loadAllLayers(layers, browserDeps());
-      places = results.flatMap((r) => r.places);
+      await loadAllLayersStaged(layers, browserDeps(), (latest, done) => {
+        results = latest;
+        places = latest.flatMap((r) => r.places);
+        loading = !done;
+        diagnostics.update(results, loading);
+        render();
+      });
     } finally {
       loading = false;
       diagnostics.update(results, false);
@@ -210,6 +219,38 @@ function rememberRegion(region: RegionId): void {
   } catch {
     /* private mode or storage blocked; the URL still carries it */
   }
+}
+
+/**
+ * One line under the layer chips: nothing when everything is live,
+ * otherwise the one thing worth knowing (updating, offline, or no data).
+ */
+function renderStatus(el: HTMLElement, results: LoadResult[], loading: boolean): void {
+  let text = "";
+  const stale = results.filter((r) => r.source === "cache" || r.source === "bundled");
+  const missing = results.filter((r) => r.source === "none");
+  if (loading) {
+    text = results.length === 0 ? "Loading…" : "Updating…";
+  } else if (missing.length > 0) {
+    text = `No data for ${missing.map((r) => layers.find((l) => l.id === r.layerId)?.label ?? r.layerId).join(", ")}`;
+  } else if (stale.length > 0) {
+    const oldest = stale.reduce<Date | undefined>(
+      (min, r) => (r.fetchedAt && (!min || r.fetchedAt < min) ? r.fetchedAt : min),
+      undefined,
+    );
+    text = oldest ? `Offline · showing data from ${relativeTime(oldest)}` : "Offline · showing saved data";
+  }
+  el.textContent = text;
+  el.hidden = text === "";
+  el.classList.toggle("is-warning", missing.length > 0);
+}
+
+function relativeTime(d: Date): string {
+  const mins = Math.round((Date.now() - d.getTime()) / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  if (mins < 60 * 48) return `${Math.round(mins / 60)} h ago`;
+  return `${Math.round(mins / 1440)} d ago`;
 }
 
 function regionLabel(id: RegionId): string {
