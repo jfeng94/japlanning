@@ -25,7 +25,7 @@ describe("toSearchParams", () => {
 
   it("writes only what differs from the default", () => {
     expect(query(state({ type: "setText", text: "glitch" }))).toBe("q=glitch");
-    expect(query(state({ type: "toggleLayer", layer: TEA }))).toBe("l=tokyo-coffee");
+    expect(query(state({ type: "toggleLayer", layer: TEA }))).toBe("l=tokyo-tea");
     expect(query(state({ type: "setRegion", region: "kyoto" }))).toBe("r=kyoto");
     expect(query(state({ type: "setStarredOnly", value: true }))).toBe("star=1");
   });
@@ -59,11 +59,11 @@ describe("round trip", () => {
     expect(roundTrip(s)).toEqual(s);
   });
 
-  it("restores another region with its own layers", () => {
+  it("restores another region", () => {
     const s = state({ type: "setRegion", region: "kyoto" });
     const back = roundTrip(s);
     expect(back.region).toBe("kyoto");
-    expect([...back.layers]).toEqual(["kyoto-food"]);
+    expect(back.layers.size).toBe(0);
   });
 
   it("survives Japanese and separator-like characters in values", () => {
@@ -84,9 +84,9 @@ describe("fromSearchParams drops what it doesn't recognise", () => {
     expect(parse("r=osaka").region).toBe("tokyo");
   });
 
-  it("unknown or wrong-region layers are dropped; all-unknown falls back to default", () => {
+  it("unknown or wrong-region layers are dropped; all-unknown leaves none selected (= all)", () => {
     expect([...parse("l=tokyo-coffee,kyoto-food,bogus").layers]).toEqual(["tokyo-coffee"]);
-    expect([...parse("l=bogus").layers]).toEqual(["tokyo-coffee", "tokyo-tea"]);
+    expect(parse("l=bogus").layers.size).toBe(0);
   });
 
   it("unknown neighborhoods are dropped", () => {

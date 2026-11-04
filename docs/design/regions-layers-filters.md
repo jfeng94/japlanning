@@ -101,15 +101,18 @@ narrowing the next:
 
 1. **Region**: exactly one. Swaps the basemap, the neighborhood list and the
    available layers.
-2. **Layers**: one or more, as chips. Pins are coloured by layer.
+2. **Layers**: chips, any number. **None selected means every layer in
+   the region**, the same convention as the Neighborhood filter (decided
+   2026-11-04). Pins are coloured by layer.
 3. **Filters**:
    - **Shared filters** apply across all selected layers: text substring
      (name, neighborhood, notes), Neighborhood, ★ only, Open now (only
      affects layers with `hasHours`), and later distance sort.
-   - **Layer facets** appear only when exactly one layer is selected, because
-     "Roasting" means nothing to a restaurant. With two or more layers
-     selected, only shared filters are shown; facet selections are kept but
-     inactive, so toggling back to one layer restores them.
+   - **Layer facets** appear only when exactly one layer is in play (one
+     selected, or none selected in a region that has only one), because
+     "Roasting" means nothing to a restaurant. With two or more in play,
+     only shared filters are shown; facet selections are kept but inactive,
+     so narrowing back to one layer restores them.
 
 ### Semantics
 

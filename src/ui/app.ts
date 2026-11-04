@@ -7,6 +7,7 @@ import type { LoadResult, Place, RegionId } from "../data/types.ts";
 import { applyFilters } from "../filter/apply.ts";
 import {
   defaultState,
+  effectiveLayers,
   hasActiveFilters,
   layersInRegion,
   reduce,
@@ -194,7 +195,8 @@ export function mountApp(root: HTMLElement): void {
       filtersActive: hasActiveFilters(state),
     });
 
-    const total = places.filter((p) => p.region === state.region && state.layers.has(p.layerId)).length;
+    const layersOn = effectiveLayers(state, regionLayers.map((l) => l.id));
+    const total = places.filter((p) => p.region === state.region && layersOn.has(p.layerId)).length;
     const shown = sortByName(applyFilters(places, state));
     const selectedId = ui.get().selectedId;
     const selected = selectedId ? shown.find((p) => p.id === selectedId) : undefined;
@@ -209,7 +211,7 @@ export function mountApp(root: HTMLElement): void {
     renderStatus(status, results, loading);
     renderList(placeList, shown, {
       layers: regionLayers,
-      showLayer: state.layers.size > 1,
+      showLayer: layersOn.size > 1,
       selectedId,
       onSelect: select,
     });
@@ -237,8 +239,6 @@ export function mountApp(root: HTMLElement): void {
     if (busy && places.length === 0) return;
     if (layersInRegion(layers, state.region).length === 0) {
       target.append(note(`${regionLabel(state.region)} has no layers yet. Add a sheet to src/config/layers.ts.`));
-    } else if (state.layers.size === 0) {
-      target.append(note("Pick at least one layer."), chip("Choose layers", { onClick: filterSheet.open }));
     } else if (total === 0) {
       target.append(note("No data loaded for these layers. Check Diagnostics."));
     } else if (shown === 0) {

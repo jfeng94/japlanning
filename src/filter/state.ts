@@ -15,7 +15,7 @@ export interface FacetSelection {
 
 export interface FilterState {
   region: RegionId;
-  /** Selected layers; pins and rows come only from these. */
+  /** Selected layers; empty means every layer in the region, like an empty neighborhood selection means any. */
   layers: Set<LayerId>;
   text: string;
   /** Selected neighborhoods; empty means "any". */
@@ -43,11 +43,11 @@ export function layersInRegion(layers: LayerConfig[], region: RegionId): LayerCo
   return layers.filter((l) => l.region === region);
 }
 
-/** All of the region's layers selected, nothing else set. */
-export function defaultState(region: RegionId, layers: LayerConfig[]): FilterState {
+/** Nothing selected: every layer in the region shows. `layers` is unused but kept so callers needn't change when the rule does. */
+export function defaultState(region: RegionId, _layers: LayerConfig[]): FilterState {
   return {
     region,
-    layers: new Set(layersInRegion(layers, region).map((l) => l.id)),
+    layers: new Set(),
     text: "",
     neighborhoods: new Set(),
     starredOnly: false,
@@ -68,9 +68,15 @@ export function getSelection(state: FilterState, layer: LayerId, column: string)
   return state.facets[layer]?.[column] ?? defaultSelection();
 }
 
-/** The layer whose facets apply: exactly one selected, otherwise none. */
-export function activeFacetLayer(state: FilterState): LayerId | undefined {
-  return state.layers.size === 1 ? [...state.layers][0] : undefined;
+/** The layers in play: the selection, or every layer in the region when nothing is selected. */
+export function effectiveLayers(state: FilterState, regionLayerIds: Iterable<LayerId>): Set<LayerId> {
+  return state.layers.size > 0 ? state.layers : new Set(regionLayerIds);
+}
+
+/** The layer whose facets apply: exactly one in play, otherwise none. */
+export function activeFacetLayer(state: FilterState, regionLayerIds: Iterable<LayerId>): LayerId | undefined {
+  const on = effectiveLayers(state, regionLayerIds);
+  return on.size === 1 ? [...on][0] : undefined;
 }
 
 /** True when anything beyond region and layers is set. Drives the Clear button. */

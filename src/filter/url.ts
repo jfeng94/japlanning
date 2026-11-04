@@ -8,7 +8,7 @@ import { defaultSelection, defaultState, layersInRegion, type FacetSelection, ty
  * failing, so a stale shared link degrades to the nearest valid view.
  *
  *   ?r=kyoto                       region (omitted for the default region)
- *   &l=tokyo-coffee,tokyo-tea      layers (omitted when all of the region's)
+ *   &l=tokyo-coffee,tokyo-tea      layers (omitted when none selected, which means all)
  *   &q=glitch                      text
  *   &n=Central&n=East              neighborhoods, repeated
  *   &star=1 &open=1                flags
@@ -27,9 +27,7 @@ const VALUE_SEPARATOR = "|";
 export function toSearchParams(state: FilterState, ctx: UrlContext): URLSearchParams {
   const p = new URLSearchParams();
   if (state.region !== ctx.defaultRegion) p.set("r", state.region);
-  if (!sameSet(state.layers, defaultState(state.region, ctx.layers).layers)) {
-    p.set("l", [...state.layers].join(","));
-  }
+  if (state.layers.size > 0) p.set("l", [...state.layers].join(","));
   if (state.text) p.set("q", state.text);
   for (const n of state.neighborhoods) p.append("n", n);
   if (state.starredOnly) p.set("star", "1");
@@ -55,8 +53,8 @@ export function fromSearchParams(params: URLSearchParams, ctx: UrlContext): Filt
 
   const l = params.get("l");
   if (l !== null) {
-    const ids = l.split(",").filter((id) => regionLayers.has(id)) as LayerId[];
-    if (ids.length > 0) state.layers = new Set(ids);
+    // Unknown ids drop out; none left means "all", which is the default anyway.
+    state.layers = new Set(l.split(",").filter((id) => regionLayers.has(id)) as LayerId[]);
   }
 
   state.text = params.get("q") ?? "";
@@ -111,6 +109,3 @@ function safeDecode(s: string): string {
   }
 }
 
-function sameSet<T>(a: Set<T>, b: Set<T>): boolean {
-  return a.size === b.size && [...a].every((x) => b.has(x));
-}

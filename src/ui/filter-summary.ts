@@ -1,6 +1,6 @@
 import { iconAssetUrl, isIconId } from "../config/icons.ts";
 import type { LayerConfig } from "../data/types.ts";
-import { getSelection, isDefaultSelection, type FilterState } from "../filter/state.ts";
+import { activeFacetLayer, effectiveLayers, getSelection, isDefaultSelection, type FilterState } from "../filter/state.ts";
 import { tag } from "./chips.ts";
 
 /**
@@ -18,8 +18,9 @@ export function renderFilterSummary(
   countEl.replaceChildren(countLabel);
   const icons = document.createElement("span");
   icons.className = "layer-icons";
+  const on = effectiveLayers(state, regionLayers.map((l) => l.id));
   for (const layer of regionLayers) {
-    if (!state.layers.has(layer.id)) continue;
+    if (!on.has(layer.id)) continue;
     const img = document.createElement("img");
     img.alt = layer.label;
     img.title = layer.label;
@@ -40,7 +41,8 @@ function summaryTags(state: FilterState, regionLayers: LayerConfig[]): HTMLEleme
   if (state.starredOnly) tags.push(tag("★ key branches"));
   if (state.openNow) tags.push(tag("Open now"));
 
-  const activeLayer = state.layers.size === 1 ? regionLayers.find((l) => state.layers.has(l.id)) : undefined;
+  const activeId = activeFacetLayer(state, regionLayers.map((l) => l.id));
+  const activeLayer = regionLayers.find((l) => l.id === activeId);
   if (activeLayer) {
     for (const facet of activeLayer.facets) {
       const sel = getSelection(state, activeLayer.id, facet.column);

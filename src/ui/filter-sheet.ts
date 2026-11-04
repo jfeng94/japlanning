@@ -1,6 +1,13 @@
 import type { LayerConfig, Place, RegionConfig } from "../data/types.ts";
 import { facetCounts, neighborhoodCounts } from "../filter/apply.ts";
-import { activeFacetLayer, getSelection, hasActiveFilters, type FilterAction, type FilterState } from "../filter/state.ts";
+import {
+  activeFacetLayer,
+  effectiveLayers,
+  getSelection,
+  hasActiveFilters,
+  type FilterAction,
+  type FilterState,
+} from "../filter/state.ts";
 import { chip } from "./chips.ts";
 
 export interface FilterSheetContext {
@@ -21,20 +28,21 @@ export function renderFilterSheet(body: HTMLElement, state: FilterState, ctx: Fi
   const { region, places, dispatch } = ctx;
   body.replaceChildren();
 
+  const regionLayerIds = ctx.layers.map((l) => l.id);
   if (ctx.layers.length > 0) {
-    body.append(
-      section(
-        "Layers",
-        ctx.layers.map((l) =>
-          chip(l.label, {
-            pressed: state.layers.has(l.id),
-            color: l.color,
-            count: places.filter((p) => p.layerId === l.id).length,
-            onClick: () => dispatch({ type: "toggleLayer", layer: l.id }),
-          }),
-        ),
+    const sec = section(
+      "Layers",
+      ctx.layers.map((l) =>
+        chip(l.label, {
+          pressed: state.layers.has(l.id),
+          color: l.color,
+          count: places.filter((p) => p.layerId === l.id).length,
+          onClick: () => dispatch({ type: "toggleLayer", layer: l.id }),
+        }),
       ),
     );
+    if (state.layers.size === 0 && ctx.layers.length > 1) sec.append(note("None picked: all layers show."));
+    body.append(sec);
   }
 
   if (region.neighborhoods.length > 0) {
@@ -63,7 +71,7 @@ export function renderFilterSheet(body: HTMLElement, state: FilterState, ctx: Fi
     ]),
   );
 
-  const activeId = activeFacetLayer(state);
+  const activeId = activeFacetLayer(state, regionLayerIds);
   const layer = ctx.layers.find((l) => l.id === activeId);
   if (layer) {
     const counts = facetCounts(places, state, layer);
@@ -89,7 +97,7 @@ export function renderFilterSheet(body: HTMLElement, state: FilterState, ctx: Fi
       }
       body.append(sec);
     }
-  } else if (state.layers.size > 1) {
+  } else if (effectiveLayers(state, regionLayerIds).size > 1) {
     body.append(note("Pick a single layer to filter by its details."));
   }
 

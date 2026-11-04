@@ -1,5 +1,5 @@
 import type { LayerConfig, Place } from "../data/types.ts";
-import { activeFacetLayer, type FacetSelection, type FilterState } from "./state.ts";
+import { activeFacetLayer, effectiveLayers, type FacetSelection, type FilterState } from "./state.ts";
 
 /** Case-insensitive, width-insensitive comparison key (full-width "Ａ" == "a"). */
 export function normalise(s: string): string {
@@ -38,12 +38,15 @@ interface ApplyOptions {
  * layer is selected). Open-now is ignored until M5.
  */
 export function applyFilters(places: Place[], state: FilterState, opts: ApplyOptions = {}): Place[] {
-  const facetLayer = activeFacetLayer(state);
+  // "No layers selected" means every layer that has places in this region.
+  const regionLayerIds = new Set(places.filter((p) => p.region === state.region).map((p) => p.layerId));
+  const layersOn = effectiveLayers(state, regionLayerIds);
+  const facetLayer = activeFacetLayer(state, regionLayerIds);
   const facets = facetLayer ? state.facets[facetLayer] : undefined;
   const byNeighborhood = !opts.skipNeighborhoods && state.neighborhoods.size > 0;
 
   return places.filter((p) => {
-    if (p.region !== state.region || !state.layers.has(p.layerId)) return false;
+    if (p.region !== state.region || !layersOn.has(p.layerId)) return false;
     if (state.starredOnly && !p.starred) return false;
     if (byNeighborhood && !(p.neighborhood !== undefined && state.neighborhoods.has(p.neighborhood))) return false;
     if (!matchesText(p, state.text)) return false;

@@ -11,17 +11,17 @@ const names = (s: FilterState) => applyFilters(places, s).map((p) => p.name);
 function state(...actions: FilterAction[]): FilterState {
   return actions.reduce((s, a) => reduce(s, a, allLayers), defaultState("tokyo", allLayers));
 }
-const coffeeOnly: FilterAction = { type: "toggleLayer", layer: TEA };
+const coffeeOnly: FilterAction = { type: "setLayers", layers: ["tokyo-coffee"] };
 
 describe("applyFilters", () => {
-  it("default state shows every place in the region's layers, none from other regions", () => {
+  it("default state (no layers picked) shows every place in the region, none from other regions", () => {
     expect(names(state())).toEqual(["Glitch", "Fuglen", "Bear Pond", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo"]);
   });
 
-  it("layer membership", () => {
+  it("layer membership; clearing the selection is back to all", () => {
     expect(names(state(coffeeOnly))).not.toContain("Ippodo");
     expect(names(state({ type: "setLayers", layers: [TEA] }))).toEqual(["Ippodo"]);
-    expect(names(state({ type: "setLayers", layers: [] }))).toEqual([]);
+    expect(names(state({ type: "setLayers", layers: [TEA] }, { type: "setLayers", layers: [] }))).toHaveLength(6);
   });
 
   it("text search is case- and width-insensitive over name, neighborhood and notes", () => {
