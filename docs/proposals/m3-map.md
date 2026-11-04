@@ -12,13 +12,19 @@ where the bytes come from, not what they are.
 
 ## Done when
 
-- [ ] On the phone, the map fills the screen under the header with the
-      list as a panel at the bottom that can be peeked or expanded.
+- [ ] On the phone the header is one row and the map fills the rest,
+      with the list in a bottom panel that rests as a thin strip and
+      opens to half or full height. The map keeps roughly 85% of the
+      screen at rest.
+- [ ] Selecting a place (pin or row) shows it in the same panel with a
+      back arrow; back, the iOS back swipe, or a tap on empty map returns
+      to the list with its scroll position kept. The URL carries the
+      selection.
 - [ ] Pins reflect the filter state exactly: same count as the list,
       coloured by layer, ★ pins visibly different, names labelled when
       zoomed in.
-- [ ] Tap a pin: its row highlights and scrolls into view. Tap a row: the
-      map centres on its pin and it highlights.
+- [ ] Tap a pin or a row: the map centres on the pin, it restyles as
+      selected, and the panel shows the place.
 - [ ] Switching region moves the map to that region's bounds.
 - [ ] The basemap shows roads, rail, stations, water and parks, with no
       shop or restaurant POIs and no buildings. Station names render in
@@ -175,11 +181,19 @@ the choice is read once at startup.
 
 ### Interaction
 
-- Tap a pin (either renderer): dispatch `select` to the UI store. The
-  list highlights the row and scrolls it into view; if the list panel is
-  peeked, it stays peeked so the map is still visible.
-- Tap a row: dispatch `select`; the map eases to the pin at zoom ≥ 15.
-- Tap empty map: deselect.
+Selection and "detail open" are the same state: a selected id means the
+bottom panel shows that place instead of the list.
+
+- Tap a pin (either renderer) or a row: dispatch `select`. The map eases
+  to the pin at zoom ≥ 15, the pin restyles as selected, and the panel
+  switches to the detail view at half height (or stays at its current
+  height if already half or full).
+- Back arrow in the panel, the iOS back swipe (selection pushes a history
+  entry), or a tap on empty map: `deselect`. The panel shows the list
+  again at the height it had, scroll position intact.
+- The selected id is written to the URL as `s=<place id>` alongside the
+  filter state, so a link opens straight to a place with the map centred
+  and the panel at half. That's the "meet here" link for the group.
 - Region change: `fitBounds` to the region's bbox. First load: fit to the
   results' bounds. A "fit to results" button in the map corner does the
   same on demand; the map does **not** jump on every filter change,
@@ -190,17 +204,59 @@ the choice is read once at startup.
 
 ### Layout
 
-The M2 DOM already has the list and map as siblings. On phones the map
-pane becomes the full area under the header, and the list pane becomes a
-bottom panel with two states:
+The M2 header is three rows (region segments, layer chips, search plus
+Filters), about 155 pt on an iPhone, a fifth of the screen. That was fine
+for a list-only screen and is too much over a map. M3 rebuilds it and
+turns the list into a bottom panel.
 
-- **peek**: results count and the first rows, ~40% of the height.
-- **expanded**: the full list, ~85%.
+**Header, one row (~50 pt):**
 
-A handle bar toggles between them; a tap on the map while expanded goes
-back to peek. No drag gesture in M3 (iOS scroll-vs-drag conflicts are a
-rabbit hole); the two-state toggle covers the use. M9 puts the two panes
-side by side on wide screens with a media query, as planned.
+```
+[ Tokyo ▾ ] [ Coffee ▾ ]            [ 🔍 ] [ Filters ]
+```
+
+- Region and layers become compact menu buttons. Region opens a small
+  menu of the three regions. Layers opens the Filters sheet scrolled to
+  a new Layers section at its top, since that's where the chips with
+  counts belong now. The button label shows the selection ("Coffee",
+  "2 layers", "No layers").
+- Search is an icon; tapping it expands a search field across the row
+  with a Cancel, and collapses it back when empty and dismissed. While a
+  query is active the icon shows a dot so it's visible that a filter is
+  on.
+- Filters as before, marked active when anything is set.
+
+**Map:** fills everything under the header.
+
+**Bottom panel** (`src/ui/panel.ts`): a fixed element over the map with
+three heights, cycled by tapping its handle, plus programmatic moves:
+
+- **strip** (~56 pt): results count, the status line ("Updating…",
+  "Offline · …"), and the handle. With a place selected: that place's
+  name and a Directions button instead.
+- **half** (~45%): the list, or the selected place's card. The map stays
+  visible above.
+- **full** (~85%): the same, more of it.
+
+The panel has two contents, `list` and `detail`, switched by whether a
+place is selected (see Interaction). The container, its heights and the
+switching are built in M3; the detail **card** is M4's content and slots
+into it. No drag gesture in M3 (iOS scroll-vs-drag is a rabbit hole); the
+handle tap covers the use.
+
+**Detail view (container in M3, card in M4):** one card, three heights.
+At half: name with ★, layer and neighborhood, the row chips, hours text
+(open status from M5), address with the approximate marker, and two big
+actions, Directions and Copy. At full: notes, link, every facet as label
+and values, last verified with the unverified badge, and any extra
+sheet columns as plain label–value pairs, which is what keeps the card
+generic across layers whose schemas don't exist yet. A Share button
+(Web Share API with the `s=` link) sits beside Copy. Copy shows a brief
+"Copied" confirmation since clipboard writes are silent.
+
+**Wide screens (M9):** the panel becomes a side column with the same
+list-or-detail switch inside it, and the header stays one row. Nothing
+here needs redoing for that.
 
 ### Config
 
@@ -228,8 +284,10 @@ src/map/sdf.ts                    new: distance transform for SDF images
 src/map/sdf.test.ts               new
 src/map/map.ts                    new: MapLibre instance, basemap, events
 src/data/parse.ts, parse.test.ts  Icon column -> Place.icon, warning on unlisted
-src/ui/app.ts                     mount map, selection sync, panel states
-src/ui/list-panel.ts              new: peek/expanded panel around the list
+src/ui/app.ts                     mount map, selection sync, panel + URL s=
+src/ui/header.ts                  new: one-row header, menus, inline search
+src/ui/panel.ts                   new: strip/half/full container, list or detail
+src/ui/detail.ts                  new in M3 as a placeholder (name + Directions); M4 fills it
 src/style.css                     map pane, panel, pin controls
 .github/workflows/deploy.yml      npm run basemap
 .gitignore                        public/basemap/, .cache/
@@ -245,14 +303,18 @@ minified and 230 kB gzipped. M7's service worker caches it once.
 
 1. Basemap script, config, CI step. Deploy; confirm the file is served
    with range requests. No visible change yet.
-2. Style builder with tests; map mounted with the basemap only; the
-   phone layout with the peek/expanded list panel. Deploy.
+1b. One-row header and the bottom panel (strip/half/full) around the
+   existing list, with the map pane still empty. Deploy; judge the
+   layout on the phone before any map is in it.
+2. Style builder with tests; map mounted with the basemap in the pane.
+   Deploy.
 3. Icon column in the parser; `placesToPins`; the SDF renderer with the
    coffee silhouette, ★ glyph, labels, colours by layer. Deploy.
 3b. The DOM renderer with the coffee artwork, `?pins=dom`. Deploy; try
    both on the phone.
-4. Selection sync both ways, region fit, fit-to-results button, deselect
-   on map tap. Deploy.
+4. Selection sync both ways, panel switching to the placeholder detail
+   with back and history entry, `s=` in the URL, region fit,
+   fit-to-results button, deselect on map tap. Deploy.
 5. Dark flavour switch, attribution, controls, polish.
 
 Steps 2's style builder and 3's GeoJSON builder are the pure pieces if
@@ -260,8 +322,9 @@ Jerry wants to write one.
 
 ## Out of scope
 
-Offline basemap storage and self-hosted glyphs (M7), the detail card
-(M4; a tap only selects), the blue dot (M6), atlas colour tuning (M8), the
+Offline basemap storage and self-hosted glyphs (M7), the detail card's
+content (M4; M3 ships the container with a name-and-Directions
+placeholder), the blue dot (M6), atlas colour tuning (M8), the
 wide layout (M9), Kyoto and Hakone extracts (need pins first to choose a
 bbox).
 
@@ -273,8 +336,6 @@ bbox).
   They help orientation at high zoom; easy to re-enable in M8.
 - **Street labels kept** (proposed). Dropping them would be a purer atlas
   but worse for finding a side street.
-- **Peek/expanded panel** (proposed) vs a List/Map toggle in the header.
-  The toggle is simpler but hides the map while reading the list.
 - **Pin labels from zoom 14** (proposed). Could be always-on or never.
 - **Default renderer: SDF** (proposed) with `?pins=dom` to compare.
   Decide after trying both on the phone; the loser stays in the repo
@@ -285,8 +346,8 @@ bbox).
 
 ## Diff size
 
-About 16 new files, roughly 950 lines. `map.ts` and the two renderers
-are 100–200 lines each; the rest are small.
+About 19 new files, roughly 1,150 lines. `map.ts`, the two renderers,
+the header and the panel are 100–200 lines each; the rest are small.
 
 ## Results
 
