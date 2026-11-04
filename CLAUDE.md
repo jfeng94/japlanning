@@ -211,9 +211,10 @@ proposal in `docs/proposals/` before work starts.
   the list row, stored on the device (personal, not in the sheet; the
   group doesn't share them). A "Bookmarked only" shared filter shows just
   those on the map and in the list, with a marker on bookmarked pins.
-- **M5. Open now.** opening_hours in Asia/Tokyo time, "open now" filter,
-  "unknown hours" handling, and a badge when Last verified is blank.
-  Optional: an "open at…" time picker for planning ahead.
+- **M5. Open now.** The "open now" shared filter and "unknown hours"
+  handling, on top of M4's Tokyo-time evaluator (the card's Open/Closed
+  status and the unverified badge land in M4). Optional: an "open at…"
+  time picker for planning ahead.
 - **M6. Location.** Blue dot, recenter button, sort list by distance.
 - **M7. Offline.** PWA manifest, app-shell caching, per-region PMTiles
   download-and-store, self-hosted glyphs/sprites, storage-persist request,

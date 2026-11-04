@@ -14,7 +14,11 @@ pastry and the rest get a complete card the day their sheet exists.
 
 - [ ] At half height: ★ and name, layer and neighborhood, address with an
       "approximate" marker when the sheet had `~`, hours text (or "Hours
-      unknown"), the row chips, and the action buttons.
+      unknown"), an **Open / Closed** status when the sheet has OSM hours,
+      the row chips, and the action buttons.
+- [ ] The status is evaluated in Asia/Tokyo time wherever the phone is: a
+      test with a non-JST process time zone proves it, and the brief's
+      examples (hours past midnight, `We[3] off`) are covered.
 - [ ] At full height, below those: notes, every facet as label and values,
       last-verified date or an "unverified" badge, and any extra sheet
       columns as label and value.
@@ -44,7 +48,8 @@ detailFields(place, layer): { essentials: DetailRow[]; details: DetailSection[] 
 ```
 
 - **essentials** (half height): address (+ approximate flag), hours (or
-  "Hours unknown" flagged unknown), then the layer's `rowFacets` as chips.
+  "Hours unknown" flagged unknown) with the open/closed status beside it
+  when OSM hours exist, then the layer's `rowFacets` as chips.
 - **details** (full height): Notes; a "Details" section with every facet
   of the layer as label and joined values (blank ones say "Unknown"); an
   "Also in the sheet" section for `extra` columns; a "Verified" row with
@@ -52,6 +57,34 @@ detailFields(place, layer): { essentials: DetailRow[]; details: DetailSection[] 
 
 Blank core fields are omitted, not shown as empty rows, except hours and
 verification, which are worth saying "unknown" about.
+
+### Open / Closed (`src/hours/open.ts`, pure, tested)
+
+Pulled forward from M5, which keeps the filter and the "open at…" picker.
+The card shows one of:
+
+- **Open · until 19:00** / **Closed · opens 08:00** / **Closed today ·
+  opens Tue 08:00**, from the `Hours (OSM)` cell via the `opening_hours`
+  package (the reference parser for that syntax).
+- Nothing when the cell is blank; the hours text alone says "Hours
+  unknown" then.
+- **Hours unparsable** when the cell doesn't parse, so a bad row is
+  visible rather than silently closed.
+
+The brief's first gotcha applies: `opening_hours` reads wall-clock time
+from the JS Date's *local* getters, so on a phone in California it would
+evaluate California time. `tokyoNow(now = new Date())` builds a Date
+whose local fields equal Tokyo's wall clock (via `Intl.DateTimeFormat`
+with `timeZone: "Asia/Tokyo"`), and every evaluation goes through it. The
+same trick converts the "next change" Date back for display. Tests run
+the evaluator with a fixed instant and assert the same answer under
+`TZ=America/Los_Angeles`, and cover Fuglen's `We-Su 07:00-01:00` at
+00:30 and the `We[3] off` closure.
+
+The package pulls in i18next and suncalc (sunrise/sunset rules), a few
+hundred kB minified; that's the price of not writing an opening-hours
+parser. It's loaded lazily on first card open so the map isn't slower to
+start.
 
 ### Actions
 
@@ -89,13 +122,16 @@ src/ui/detail-fields.ts       new, pure
 src/ui/detail-fields.test.ts  new
 src/ui/links.ts               + copyText, shareUrl, linkLabel
 src/ui/links.test.ts          new
+src/hours/open.ts             new: tokyoNow, openStatus(place, now)
+src/hours/open.test.ts        new, run under a non-JST TZ too
+package.json                  + opening_hours
 src/ui/toast.ts               new
 src/ui/detail.ts              the card
 src/ui/app.ts                 handlers, startup region from a place id
 src/style.css                 card and toast
 ```
 
-No new dependencies.
+One new dependency: `opening_hours` 3.15 (ships its own types).
 
 ## Order of work
 
@@ -103,14 +139,17 @@ No new dependencies.
 2. Card layout from the model; actions wired (Directions, Link).
 3. Toast; Copy and Share with their fallbacks. Deploy; phone check of the
    clipboard and share sheet, which only a real device can do.
-4. Shared-link startup across regions; polish.
+4. Open/closed: Tokyo-time adapter, evaluator, tests under a non-JST TZ,
+   status on the card. Deploy.
+5. Shared-link startup across regions; polish.
 
 Step 1 is the pure piece if Jerry wants to write one.
 
 ## Out of scope
 
-Bookmarks (M4b, which adds a button to this card), open-now evaluation
-(M5; hours show as the sheet's text until then), editing anything.
+Bookmarks (M4b, which adds a button to this card), the "open now" filter
+and the "open at…" picker (M5, on top of M4's evaluator), editing
+anything.
 
 ## Open questions
 
@@ -122,7 +161,7 @@ Bookmarks (M4b, which adds a button to this card), open-now evaluation
 
 ## Diff size
 
-About 7 files, roughly 450 lines, a third of it tests.
+About 10 files, roughly 600 lines, a third of it tests.
 
 ## Results
 
