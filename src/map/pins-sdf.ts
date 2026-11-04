@@ -116,12 +116,14 @@ export function createSdfPinRenderer(view: MapView, colors: { label: string; hal
 
   const onIconClick = (e: MapLayerMouseEvent) => {
     const id = e.features?.[0]?.properties?.["id"];
-    if (typeof id === "string") {
-      e.originalEvent.stopPropagation();
-      selectCb(id);
-    }
+    if (typeof id === "string") selectCb(id);
   };
-  const onMapClick = () => selectCb(undefined);
+  // MapLibre fires the layer handler and the map handler for the same tap;
+  // only treat it as "empty map" when no pin is under the point.
+  const onMapClick = (e: MapLayerMouseEvent) => {
+    if (!map.getLayer(ICON_LAYER)) return selectCb(undefined);
+    if (map.queryRenderedFeatures(e.point, { layers: [ICON_LAYER] }).length === 0) selectCb(undefined);
+  };
   const onEnter = () => (map.getCanvas().style.cursor = "pointer");
   const onLeave = () => (map.getCanvas().style.cursor = "");
 

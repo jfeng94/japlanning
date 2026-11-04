@@ -51,7 +51,7 @@ export function mountPanel(root: HTMLElement, onHeightChange?: (h: PanelHeight) 
   el.querySelector(".panel-handle")!.addEventListener("click", () => panel.setHeight(NEXT[height]));
   strip.addEventListener("click", (e) => {
     // Tapping the summary row at strip height opens the panel; buttons inside it keep their own behaviour.
-    if (height === "strip" && !(e.target as HTMLElement).closest("button")) panel.setHeight("half");
+    if (height === "strip" && !(e.target as HTMLElement).closest("button, a")) panel.setHeight("half");
   });
   return panel;
 }

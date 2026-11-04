@@ -45,6 +45,10 @@ export interface MapView {
   setBottomPadding(px: number): void;
   /** Called after every style (re)load: overlays must be re-added then. */
   onStyleLoad(cb: (map: MapLibreMap) => void): void;
+  /** Centre on a point, zooming in to at least `minZoom` but never out. */
+  focus(lng: number, lat: number, minZoom?: number): void;
+  /** Fit the given points with a margin, honouring the bottom padding. */
+  fitPoints(points: [number, number][]): void;
   destroy(): void;
 }
 
@@ -96,6 +100,34 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
     onStyleLoad(cb) {
       styleLoadCallbacks.push(cb);
       if (map.isStyleLoaded()) cb(map);
+    },
+    focus(lng, lat, minZoom = 15) {
+      map.easeTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), minZoom), duration: 500 });
+    },
+    fitPoints(points) {
+      if (points.length === 0) return;
+      if (points.length === 1) {
+        const [lng, lat] = points[0]!;
+        map.easeTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 15), duration: 500 });
+        return;
+      }
+      let w = Infinity;
+      let s = Infinity;
+      let e = -Infinity;
+      let n = -Infinity;
+      for (const [lng, lat] of points) {
+        w = Math.min(w, lng);
+        e = Math.max(e, lng);
+        s = Math.min(s, lat);
+        n = Math.max(n, lat);
+      }
+      map.fitBounds(
+        [
+          [w, s],
+          [e, n],
+        ],
+        { padding: 48, maxZoom: 16, duration: 500 },
+      );
     },
     destroy() {
       map.remove();
