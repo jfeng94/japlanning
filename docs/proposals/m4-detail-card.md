@@ -1,8 +1,8 @@
 # M4: Detail card
 
-Status: **implemented, awaiting phone acceptance** (approved and built
-2026-11-04). Checked in a desktop browser at phone width except where only
-a phone can; see Results.
+Status: **done** (accepted on the phone 2026-11-04 after a polish round:
+Directions only in the strip, icon buttons, Share copies the bare link,
+link button always present and greyed without a link).
 
 ## Goal
 
@@ -26,7 +26,7 @@ pastry and the rest get a complete card the day their sheet exists.
       columns as label and value.
 - [x] Copy puts `Name` + newline + `Address` on the clipboard and shows a
       brief "Copied" toast; with no address it copies the name.
-- [ ] Share opens the iOS share sheet with the place's name and a link to
+- [x] Share (revised: copies the bare link; no OS sheet) opens the iOS share sheet with the place's name and a link to
       it, no filter state; where the share API is missing (desktop), it
       copies the link instead.
 - [x] Pasting such a link, or a bare place id, into the app's search
