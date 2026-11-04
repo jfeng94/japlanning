@@ -440,15 +440,17 @@ button {
   background: var(--rule);
 }
 
-/* Map data credit, always on screen in the panel's top-right corner. */
+/* Map data credit: floating text in the map's upper right, under the header. */
 .osm-credit {
   position: absolute;
-  top: 0.15rem;
-  right: 0.75rem;
-  font-size: 0.6rem;
-  color: var(--muted);
+  top: 0.35rem;
+  right: 0.5rem;
+  z-index: 5;
+  font-size: 0.65rem;
+  color: var(--fg);
   text-decoration: none;
-  opacity: 0.8;
+  opacity: 0.75;
+  text-shadow: 0 0 2px var(--bg), 0 0 3px var(--bg), 0 0 4px var(--bg);
 }
 
 .panel-strip {
