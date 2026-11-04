@@ -75,6 +75,15 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   essentials.className = "detail-rows detail-essentials";
   for (const row of fields.essentials) {
     const [dt, dd] = rowNodes(row);
+    if (row.label === "Address" && place.address) {
+      // Tapping the address copies it (the brief's "copy address" use, without a button).
+      const address = place.address;
+      dd.classList.add("copyable");
+      dd.setAttribute("role", "button");
+      dd.tabIndex = 0;
+      dd.title = "Tap to copy";
+      dd.addEventListener("click", () => copyToClipboard(address, "Address copied"));
+    }
     essentials.append(dt, dd);
     if (row.label === "Hours" && place.hoursOsm) {
       const status = document.createElement("span");

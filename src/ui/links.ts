@@ -40,7 +40,8 @@ export function parseSharedLink(text: string, host: string): string | undefined 
   for (const token of text.trim().split(/\s+/)) {
     if (token === "") continue;
     if (BARE_ID.test(token) && !/^https?:/i.test(token)) return token;
-    if (!/^(https?:\/\/)?[a-z0-9.-]+\.[a-z]{2,}(\/|$|\?)/i.test(token)) continue;
+    // Looks like a link: a scheme, or a host followed by a path or query. The hostname check below does the rest.
+    if (!/^https?:\/\//i.test(token) && !/^[^\s/?#:]+(:\d+)?[/?]/.test(token)) continue;
     let url: URL;
     try {
       url = new URL(/^https?:\/\//i.test(token) ? token : `https://${token}`);

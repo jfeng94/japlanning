@@ -56,6 +56,10 @@ export function mountApp(root: HTMLElement): void {
   let places: Place[] = [];
   let results: LoadResult[] = [];
   let loading = true;
+  /** The list's scroll position, kept while the card is open so Back returns to it. */
+  let listScrollTop = 0;
+  let shownMode: "list" | "detail" = "list";
+  let shownDetailId: string | undefined;
   /** A place id from the URL to select once its data has loaded. */
   let pendingSelection: string | undefined = startParams.get(SELECTED_PARAM) ?? undefined;
   let fittedOnce = false;
@@ -129,16 +133,31 @@ export function mountApp(root: HTMLElement): void {
 
   // ---- selection: one state for "selected" and "detail open" ----
 
-  /** A place by id from anywhere (pasted link, startup): switch region if it lives elsewhere, then select. */
+  /**
+   * A place by id from anywhere (pasted link, startup): switch region if it
+   * lives elsewhere, drop filters that would hide it, select it, and show the
+   * card at half height.
+   */
   function openPlaceById(id: string): boolean {
     const place = places.find((p) => p.id === id);
     if (!place) {
       showToast(places.length === 0 ? "Still loading…" : "Place not found");
       return false;
     }
-    if (place.region !== filters.get().region) filters.dispatch({ type: "setRegion", region: place.region });
+    revealPlace(place);
     select(id);
+    panel.setHeight("half");
     return true;
+  }
+
+  /** Make sure `place` is in the current results: right region, and no filter or layer selection excluding it. */
+  function revealPlace(place: Place): void {
+    if (place.region !== filters.get().region) filters.dispatch({ type: "setRegion", region: place.region });
+    const visible = applyFilters(places, filters.get(), { bookmarks: bookmarks.all() }).some((p) => p.id === place.id);
+    if (!visible) {
+      filters.dispatch({ type: "clearFilters" });
+      filters.dispatch({ type: "setLayers", layers: [] });
+    }
   }
 
   /** Opening the detail pushes one history entry; switching place while open replaces it, so back always means "to the list". */
@@ -244,7 +263,19 @@ export function mountApp(root: HTMLElement): void {
       });
       renderDetailStrip(detailStrip, selected);
     }
-    panel.el.dataset["mode"] = selected ? "detail" : "list";
+    // One scroll container holds both contents: save the list's position on the
+    // way into the card (before the list is hidden, or the browser clamps it to
+    // the card's height), open the card at its top, restore on the way back.
+    const mode = selected ? "detail" : "list";
+    if (mode !== shownMode && mode === "detail") listScrollTop = panel.content.scrollTop;
+    panel.el.dataset["mode"] = mode;
+    if (mode !== shownMode) {
+      panel.content.scrollTop = mode === "detail" ? 0 : listScrollTop;
+      shownMode = mode;
+    } else if (mode === "detail" && selected && selected.id !== shownDetailId) {
+      panel.content.scrollTop = 0; // switched to another place while open
+    }
+    shownDetailId = selected?.id;
 
     pins.update(placesToPins(shown, regionLayers, bookmarks.all()));
     pins.setSelected(selectedId);
@@ -303,8 +334,7 @@ export function mountApp(root: HTMLElement): void {
       const place = places.find((p) => p.id === id);
       if (place) {
         pendingSelection = undefined;
-        // A trimmed link may carry s= without r=: follow the place to its region.
-        if (place.region !== filters.get().region) filters.dispatch({ type: "setRegion", region: place.region });
+        revealPlace(place);
         // Not marked as pushed: this entry is the page itself, so back must leave the app, not the detail.
         ui.dispatch({ type: "select", id });
         history.replaceState(history.state, "", urlFor(filters.get(), id));
@@ -338,6 +368,11 @@ export function mountApp(root: HTMLElement): void {
   let lastRegion: RegionId = filters.get().region;
 
   bookmarks.subscribe(render);
+
+  // Debug handle beside the map's: inspect panel scroll bookkeeping from the console.
+  const dbg = (window as unknown as { __japlanning?: Record<string, unknown> }).__japlanning ?? {};
+  dbg["panel"] = { get listScrollTop() { return listScrollTop; }, get shownMode() { return shownMode; }, content: panel.content };
+  (window as unknown as { __japlanning: Record<string, unknown> }).__japlanning = dbg;
 
   render();
   void reload();

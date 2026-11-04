@@ -54,6 +54,17 @@ body.sheet-open {
   overflow: hidden;
 }
 
+/* Everything but the map: scroll and tap only, no pinch or double-tap zoom. */
+.topbar,
+.panel,
+.sheet,
+.sheet-backdrop,
+.toast,
+.fit-button,
+.osm-credit {
+  touch-action: pan-x pan-y;
+}
+
 #app {
   height: 100%;
   display: flex;
@@ -619,6 +630,12 @@ button {
 .detail-rows dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.detail-rows dd.copyable {
+  cursor: pointer;
+  text-decoration: underline dotted var(--muted);
+  text-underline-offset: 0.15em;
 }
 
 .detail-rows dd[data-flag="unknown"],
