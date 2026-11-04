@@ -60,6 +60,8 @@ export function mountApp(root: HTMLElement): void {
   let listScrollTop = 0;
   let shownMode: "list" | "detail" = "list";
   let shownDetailId: string | undefined;
+  /** Set for the one render that returns to the list, so the closed place's row can flash. */
+  let flashId: string | undefined;
   /** A place id from the URL to select once its data has loaded. */
   let pendingSelection: string | undefined = startParams.get(SELECTED_PARAM) ?? undefined;
   let fittedOnce = false;
@@ -236,6 +238,8 @@ export function mountApp(root: HTMLElement): void {
     const shown = sortByName(applyFilters(places, state, { bookmarks: bookmarks.all() }));
     const selectedId = ui.get().selectedId;
     const selected = selectedId ? shown.find((p) => p.id === selectedId) : undefined;
+    // Returning to the list: remember which place was open so its row can fade in from a highlight.
+    flashId = shownMode === "detail" && !selected ? shownDetailId : undefined;
 
     renderFilterSummary(
       resultsCount,
@@ -250,6 +254,7 @@ export function mountApp(root: HTMLElement): void {
       showLayer: layersOn.size > 1,
       selectedId,
       bookmarks: bookmarks.all(),
+      flashId,
       onSelect: select,
     });
     renderEmptyState(emptyState, state, shown.length, total, loading);

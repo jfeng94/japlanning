@@ -827,6 +827,20 @@ button {
   background: var(--chip);
 }
 
+/* The row of a place whose card was just closed: highlighted, fading out. */
+.place-row.is-flash .place-button {
+  animation: row-flash 0.6s ease-out both;
+}
+
+@keyframes row-flash {
+  from {
+    background: color-mix(in srgb, var(--accent) 28%, var(--bg-raised));
+  }
+  to {
+    background: transparent;
+  }
+}
+
 .place-title {
   font-weight: 600;
 }

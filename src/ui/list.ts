@@ -9,6 +9,8 @@ export interface ListOptions {
   selectedId?: string;
   /** Bookmarked place ids; rows get a mark. */
   bookmarks?: ReadonlySet<string>;
+  /** The place whose card was just closed: its row is highlighted and fades. */
+  flashId?: string;
   onSelect: (id: string) => void;
 }
 
@@ -20,6 +22,7 @@ export function renderList(ul: HTMLUListElement, places: Place[], opts: ListOpti
       const layer = byId.get(p.layerId);
       const li = document.createElement("li");
       li.className = "place-row";
+      if (p.id === opts.flashId) li.classList.add("is-flash");
       li.dataset["id"] = p.id;
 
       const button = document.createElement("button");
