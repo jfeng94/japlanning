@@ -103,7 +103,8 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
       id: STAR_LAYER,
       type: "symbol",
       source: SOURCE,
-      filter: ["==", ["get", "starred"], true],
+      // The seal takes the ★'s place when a key branch is also bookmarked.
+      filter: ["all", ["==", ["get", "starred"], true], ["!=", ["get", "bookmarked"], true]],
       layout: {
         "text-field": "★",
         "text-font": FONT,
@@ -125,8 +126,9 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
       filter: ["==", ["get", "bookmarked"], true],
       layout: {
         "icon-image": BOOKMARK_IMAGE,
-        "icon-size": 0.5,
-        "icon-offset": [-26, -26],
+        "icon-size": 0.42,
+        // Upper right, where the ★ goes; offset is in image pixels before icon-size.
+        "icon-offset": [40, -40],
         "icon-allow-overlap": true,
         "icon-ignore-placement": true,
       },

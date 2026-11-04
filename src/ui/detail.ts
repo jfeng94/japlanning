@@ -43,7 +43,13 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   title.className = "detail-title";
   if (place.starred) title.append(tag("★", "star"));
   title.append(place.name);
-  head.append(back, title);
+
+  // Bookmark: the seal in colour when set, greyscale when not. Only the card toggles it.
+  const bookmarked = h.isBookmarked(place.id);
+  const bookmark = iconButton(bookmarked ? "Remove bookmark" : "Bookmark this place", bookmarkIcon, () => h.onToggleBookmark(place.id));
+  bookmark.classList.add("bookmark-button");
+  bookmark.setAttribute("aria-pressed", String(bookmarked));
+  head.append(back, title, bookmark);
 
   const meta = document.createElement("p");
   meta.className = "detail-meta";
@@ -52,13 +58,6 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   // ---- actions (Directions lives in the strip above the card) ----
   const actions = document.createElement("div");
   actions.className = "detail-actions";
-  // Bookmark: the seal in colour when set, greyscale when not. Only the card toggles it.
-  const bookmarked = h.isBookmarked(place.id);
-  const bookmark = iconButton(bookmarked ? "Remove bookmark" : "Bookmark this place", bookmarkIcon, () => h.onToggleBookmark(place.id));
-  bookmark.classList.add("bookmark-button");
-  bookmark.setAttribute("aria-pressed", String(bookmarked));
-  actions.append(bookmark);
-
   // Share copies the place's link, nothing else: no OS share sheet, no name prefix.
   actions.append(iconButton("Copy link to this place", shareIcon, () => copyToClipboard(shareUrl(place, h.origin), "Link copied")));
   // Always present so the row keeps its shape; greyed and inert when the sheet has no link.
