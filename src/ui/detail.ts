@@ -2,10 +2,9 @@ import type { LayerConfig, Place } from "../data/types.ts";
 import { openStatus } from "../hours/open.ts";
 import { tag } from "./chips.ts";
 import { detailFields, type DetailRow } from "./detail-fields.ts";
-import copyIcon from "./icons/copy.webp";
 import linkIcon from "./icons/link.webp";
 import shareIcon from "./icons/share.webp";
-import { copyText, directionsUrl, linkLabel, shareText, shareUrl } from "./links.ts";
+import { directionsUrl, linkLabel, shareUrl } from "./links.ts";
 import { showToast } from "./toast.ts";
 
 export interface DetailHandlers {
@@ -50,10 +49,8 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   // ---- actions (Directions lives in the strip above the card) ----
   const actions = document.createElement("div");
   actions.className = "detail-actions";
-  actions.append(
-    iconButton("Copy name and address", copyIcon, () => copyToClipboard(copyText(place), "Copied")),
-    iconButton("Share", shareIcon, () => share(place, h.origin)),
-  );
+  // Share copies the place's link, nothing else: no OS share sheet, no name prefix.
+  actions.append(iconButton("Copy link to this place", shareIcon, () => copyToClipboard(shareUrl(place, h.origin), "Link copied")));
   if (place.link) actions.append(iconAnchor(linkLabel(place.link), linkIcon, place.link));
 
   // ---- essentials ----
@@ -184,13 +181,3 @@ function copyToClipboard(text: string, done: string): void {
   );
 }
 
-function share(place: Place, origin: string): void {
-  const url = shareUrl(place, origin);
-  if (typeof navigator.share === "function") {
-    navigator.share({ title: place.name, text: shareText(place, url), url }).catch(() => {
-      /* the user dismissed the sheet, or it failed; either way nothing to say */
-    });
-    return;
-  }
-  copyToClipboard(url, "Link copied");
-}
