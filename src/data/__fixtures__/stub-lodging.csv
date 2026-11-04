@@ -1,0 +1,7 @@
+Who,Address (JA),Name,Style,Floor,Longitude,Latitude,Link,Notes
+Jerry,東京都千代田区神田神保町1-1,Book Hotel Jimbocho,Hotel,7,139.7580,35.6960,https://example.com/jimbocho,Near Glitch.
+Sam,~東京都台東区浅草,Asakusa Ryokan,Ryokan; Onsen,,139.7966,35.7148,,Approximate address on purpose.
+Alex,東京都渋谷区神宮前6-1,Harajuku Hostel,Hostel,,139.7036,35.6697,,
+Jerry,東京都千代田区神田神保町1-1,Book Hotel Jimbocho,Hotel,,139.7580,35.6960,,Duplicate name on purpose.
+Kim,東京都新宿区西新宿2-2,Shinjuku Tower,,,1397.6,35.6896,,Bad longitude on purpose.
+,東京都目黒区上目黒1-1,Nakameguro Flat,Hotel,,139.6990,35.6440,,Blank Who is fine.

@@ -1,5 +1,6 @@
 import { execSync } from "node:child_process";
-import { defineConfig } from "vite";
+// vitest/config re-exports Vite's defineConfig with the `test` key typed.
+import { defineConfig } from "vitest/config";
 
 /**
  * Short git SHA of the commit being built, so the page can show which
@@ -22,5 +23,10 @@ export default defineConfig({
   define: {
     __BUILD_SHA__: JSON.stringify(buildSha()),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
+  test: {
+    // Parser and loader tests are pure; no DOM needed.
+    environment: "node",
+    include: ["src/**/*.test.ts"],
   },
 });

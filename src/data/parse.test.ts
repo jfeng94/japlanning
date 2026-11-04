@@ -1,0 +1,238 @@
+import { describe, expect, it } from "vitest";
+import coffeeCsv from "./__fixtures__/tokyo-coffee.csv?raw";
+import lodgingCsv from "./__fixtures__/stub-lodging.csv?raw";
+import { layers } from "../config/layers.ts";
+import { regionById } from "../config/regions.ts";
+import { ParseError, parseLayerCsv, slug, splitMulti } from "./parse.ts";
+import type { LayerConfig, LayerId } from "./types.ts";
+
+const coffee = layers.find((l) => l.id === "tokyo-coffee")!;
+const tokyo = regionById("tokyo");
+
+/** A second layer with a different schema. Not in LAYER_IDS on purpose. */
+const lodging: LayerConfig = {
+  id: "stub-lodging" as LayerId,
+  region: "tokyo",
+  label: "Lodging",
+  csvUrl: "https://example.invalid/lodging.csv",
+  color: "#333",
+  icon: "bed",
+  hasHours: false,
+  facets: [{ column: "Style", values: ["Hotel", "Ryokan", "Hostel"] }],
+};
+
+/** Minimal layer for inline CSV edge cases. */
+const minimal: LayerConfig = {
+  ...lodging,
+  id: "stub-minimal" as LayerId,
+  facets: [{ column: "Kind", values: ["A", "B"] }],
+};
+
+const csv = (lines: string[]) => lines.join("\n") + "\n";
+
+describe("coffee fixture (snapshot of the live sheet, 2026-11-04)", () => {
+  const { places, warnings } = parseLayerCsv(coffeeCsv, coffee, {
+    neighborhoods: tokyo.neighborhoods,
+  });
+
+  it("parses every row with no warnings", () => {
+    expect(places).toHaveLength(39);
+    expect(warnings).toEqual([]);
+  });
+
+  it("matches the profile of the sheet", () => {
+    expect(places.filter((p) => p.starred)).toHaveLength(7);
+    expect(places.filter((p) => p.addressApproximate)).toHaveLength(12);
+    expect(places.filter((p) => p.hoursOsm === undefined)).toHaveLength(18);
+    expect(places.filter((p) => p.lastVerified === undefined)).toHaveLength(24);
+    expect(places.filter((p) => p.facets["Format"]!.length === 0)).toHaveLength(4);
+    expect(places.filter((p) => p.facets["Reservation"]!.length === 0)).toHaveLength(13);
+  });
+
+  it("strips the star from the name and keeps the flag", () => {
+    const glitch = places.find((p) => p.name.startsWith("Glitch Coffee"))!;
+    expect(glitch.starred).toBe(true);
+    expect(glitch.name).not.toContain("★");
+    expect(glitch.id).toBe("tokyo-coffee:glitch-coffee-roasters-jimbocho");
+    expect(glitch.facets["Specialty"]).toEqual(["Light roast / Nordic"]);
+    expect(glitch.lastVerified).toBe("2026-11-04");
+  });
+
+  it("uses only known columns, so nothing lands in extra", () => {
+    expect(places.every((p) => Object.keys(p.extra).length === 0)).toBe(true);
+  });
+
+  it("gives every place a unique id", () => {
+    expect(new Set(places.map((p) => p.id)).size).toBe(places.length);
+  });
+});
+
+describe("lodging fixture (different schema, deliberate problems)", () => {
+  const { places, warnings } = parseLayerCsv(lodgingCsv, lodging);
+
+  it("keeps the good rows and skips the bad coordinate row", () => {
+    expect(places.map((p) => p.name)).toEqual([
+      "Book Hotel Jimbocho",
+      "Asakusa Ryokan",
+      "Harajuku Hostel",
+      "Book Hotel Jimbocho",
+      "Nakameguro Flat",
+    ]);
+    expect(warnings).toContainEqual({
+      row: 5,
+      column: "Longitude",
+      message: "Shinjuku Tower: bad or missing coordinates; row skipped",
+    });
+  });
+
+  it("finds columns by header regardless of order", () => {
+    const hotel = places[0]!;
+    expect(hotel.lat).toBeCloseTo(35.696, 3);
+    expect(hotel.lng).toBeCloseTo(139.758, 3);
+    expect(hotel.link).toBe("https://example.com/jimbocho");
+    expect(hotel.address).toBe("東京都千代田区神田神保町1-1");
+  });
+
+  it("puts unknown columns in extra, skipping blanks", () => {
+    expect(places[0]!.extra).toEqual({ Who: "Jerry", Floor: "7" });
+    expect(places[2]!.extra).toEqual({ Who: "Alex" });
+    expect(places[4]!.extra).toEqual({});
+  });
+
+  it("leaves missing optional columns undefined", () => {
+    expect(places[0]!.hours).toBeUndefined();
+    expect(places[0]!.hoursOsm).toBeUndefined();
+    expect(places[0]!.neighborhood).toBeUndefined();
+    expect(places[0]!.lastVerified).toBeUndefined();
+  });
+
+  it("splits multi-value cells and warns on unlisted values", () => {
+    const ryokan = places[1]!;
+    expect(ryokan.facets["Style"]).toEqual(["Ryokan", "Onsen"]);
+    expect(warnings).toContainEqual({
+      row: 2,
+      column: "Style",
+      message: 'Asakusa Ryokan: Style "Onsen" is not a configured value',
+    });
+  });
+
+  it("handles the approximate-address marker", () => {
+    const ryokan = places[1]!;
+    expect(ryokan.addressApproximate).toBe(true);
+    expect(ryokan.address).toBe("東京都台東区浅草");
+    expect(places[0]!.addressApproximate).toBe(false);
+  });
+
+  it("suffixes duplicate ids and warns", () => {
+    expect(places[0]!.id).toBe("stub-lodging:book-hotel-jimbocho");
+    expect(places[3]!.id).toBe("stub-lodging:book-hotel-jimbocho-2");
+    expect(warnings).toContainEqual({
+      row: 4,
+      column: "Name",
+      message: "Book Hotel Jimbocho: duplicate name; id suffixed",
+    });
+  });
+
+  it("blank facet cell means unknown, not a value", () => {
+    expect(places[4]!.facets["Style"]).toEqual(["Hotel"]);
+    const { places: p2 } = parseLayerCsv(
+      csv(["Name,Latitude,Longitude,Style", "X,35.6,139.7,"]),
+      lodging,
+    );
+    expect(p2[0]!.facets["Style"]).toEqual([]);
+  });
+});
+
+describe("edge cases", () => {
+  it("throws when a required column is missing", () => {
+    expect(() => parseLayerCsv(csv(["Name,Latitude", "X,35.6"]), minimal)).toThrow(ParseError);
+    expect(() => parseLayerCsv(csv(["Name,Latitude", "X,35.6"]), minimal)).toThrow(/Longitude/);
+  });
+
+  it("skips rows with a blank name", () => {
+    const { places, warnings } = parseLayerCsv(
+      csv(["Name,Latitude,Longitude", ",35.6,139.7", "Y,35.6,139.7"]),
+      minimal,
+    );
+    expect(places.map((p) => p.name)).toEqual(["Y"]);
+    expect(warnings[0]).toMatchObject({ row: 1, column: "Name" });
+  });
+
+  it("rejects coordinates outside Japan or non-numeric", () => {
+    const { places, warnings } = parseLayerCsv(
+      csv([
+        "Name,Latitude,Longitude",
+        "ok,35.6,139.7",
+        "swapped,139.7,35.6",
+        "text,abc,139.7",
+        "blank,,139.7",
+      ]),
+      minimal,
+    );
+    expect(places.map((p) => p.name)).toEqual(["ok"]);
+    expect(warnings).toHaveLength(3);
+  });
+
+  it("strips the full-width approximate marker", () => {
+    const { places } = parseLayerCsv(
+      csv(["Name,Latitude,Longitude,Address (JA)", "X,35.6,139.7,～東京都渋谷区"]),
+      minimal,
+    );
+    expect(places[0]!.addressApproximate).toBe(true);
+    expect(places[0]!.address).toBe("東京都渋谷区");
+  });
+
+  it("ignores a Last verified that is not a real YYYY-MM-DD date, with a warning", () => {
+    const { places, warnings } = parseLayerCsv(
+      csv([
+        "Name,Latitude,Longitude,Last verified",
+        "good,35.6,139.7,2026-02-28",
+        "slash,35.6,139.7,2026/02/28",
+        "impossible,35.6,139.7,2026-02-30",
+      ]),
+      minimal,
+    );
+    expect(places.map((p) => p.lastVerified)).toEqual(["2026-02-28", undefined, undefined]);
+    expect(warnings.map((w) => w.row)).toEqual([2, 3]);
+  });
+
+  it("warns when a neighborhood is not in the region's list", () => {
+    const { warnings } = parseLayerCsv(
+      csv(["Name,Latitude,Longitude,Neighborhood", "X,35.6,139.7,Atlantis"]),
+      minimal,
+      { neighborhoods: ["Central"] },
+    );
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatchObject({ row: 1, column: "Neighborhood" });
+  });
+
+  it("trims header whitespace and ignores a UTF-8 BOM", () => {
+    const { places } = parseLayerCsv(
+      "﻿ Name , Latitude,Longitude \nX,35.6,139.7\n",
+      minimal,
+    );
+    expect(places).toHaveLength(1);
+  });
+
+  it("treats a star-only name as blank", () => {
+    const { places, warnings } = parseLayerCsv(csv(["Name,Latitude,Longitude", "★,35.6,139.7"]), minimal);
+    expect(places).toHaveLength(0);
+    expect(warnings).toHaveLength(1);
+  });
+});
+
+describe("helpers", () => {
+  it("splitMulti", () => {
+    expect(splitMulti(undefined)).toEqual([]);
+    expect(splitMulti("")).toEqual([]);
+    expect(splitMulti("Pour-over")).toEqual(["Pour-over"]);
+    expect(splitMulti(" Pour-over ;Espresso; ;")).toEqual(["Pour-over", "Espresso"]);
+  });
+
+  it("slug keeps letters in any script and collapses the rest", () => {
+    expect(slug("Glitch Coffee & Roasters (Jimbocho)")).toBe("glitch-coffee-roasters-jimbocho");
+    expect(slug("Fuglen Tokyo")).toBe("fuglen-tokyo");
+    expect(slug("カフェ・ド・ランブル")).toBe("カフェ-ド-ランブル");
+    expect(slug("  -- Café --  ")).toBe("café");
+  });
+});
