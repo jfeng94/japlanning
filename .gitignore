@@ -6,3 +6,5 @@ dist/
 Thumbs.db
 # large basemap extracts are built, not committed, until M7 decides otherwise
 *.pmtiles
+# build-time CSV snapshots, written by npm run snapshot
+public/data/

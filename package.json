@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "typecheck": "tsc",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "snapshot": "node scripts/snapshot-data.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
