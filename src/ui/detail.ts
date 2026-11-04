@@ -44,11 +44,10 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   meta.className = "detail-meta";
   meta.textContent = [layer?.label, place.neighborhood].filter(Boolean).join(" · ");
 
-  // ---- actions ----
+  // ---- actions (Directions lives in the strip above the card) ----
   const actions = document.createElement("div");
   actions.className = "detail-actions";
   actions.append(
-    anchor("Directions", directionsUrl(place), "action-button"),
     button("Copy", () => copyToClipboard(copyText(place), "Copied")),
     button("Share", () => share(place, h.origin)),
   );
