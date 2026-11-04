@@ -20,6 +20,7 @@ import { renderFilterSheet } from "./filter-sheet.ts";
 import { pinRendererKind } from "../config/map.ts";
 import { mountMap, watchFlavor } from "../map/map.ts";
 import { placesToPins, type PinRenderer } from "../map/pins.ts";
+import { createDomPinRenderer } from "../map/pins-dom.ts";
 import { createSdfPinRenderer } from "../map/pins-sdf.ts";
 import { mountHeader } from "./header.ts";
 import { renderList, sortByName } from "./list.ts";
@@ -170,9 +171,7 @@ export function mountApp(root: HTMLElement): void {
   function createPinRenderer(): PinRenderer {
     const css = getComputedStyle(document.documentElement);
     const colors = { label: css.getPropertyValue("--fg").trim(), halo: css.getPropertyValue("--bg-raised").trim() };
-    const kind = pinRendererKind();
-    // The DOM renderer arrives in step 3b; until then every choice is the SDF one.
-    return kind === "dom" ? createSdfPinRenderer(view, colors) : createSdfPinRenderer(view, colors);
+    return pinRendererKind() === "dom" ? createDomPinRenderer(view) : createSdfPinRenderer(view, colors);
   }
 
   filters.subscribe((state) => {
