@@ -538,6 +538,19 @@ button {
   color: var(--fg);
 }
 
+.icon-button--action {
+  width: 2.6rem;
+  height: 2.6rem;
+  background: var(--chip);
+  border-color: transparent;
+  text-decoration: none;
+}
+
+.icon-button--action img {
+  width: 1.7rem;
+  height: 1.7rem;
+}
+
 .detail-rows {
   margin: 0;
   display: grid;

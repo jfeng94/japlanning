@@ -2,6 +2,9 @@ import type { LayerConfig, Place } from "../data/types.ts";
 import { openStatus } from "../hours/open.ts";
 import { tag } from "./chips.ts";
 import { detailFields, type DetailRow } from "./detail-fields.ts";
+import copyIcon from "./icons/copy.webp";
+import linkIcon from "./icons/link.webp";
+import shareIcon from "./icons/share.webp";
 import { copyText, directionsUrl, linkLabel, shareText, shareUrl } from "./links.ts";
 import { showToast } from "./toast.ts";
 
@@ -48,10 +51,10 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   const actions = document.createElement("div");
   actions.className = "detail-actions";
   actions.append(
-    button("Copy", () => copyToClipboard(copyText(place), "Copied")),
-    button("Share", () => share(place, h.origin)),
+    iconButton("Copy name and address", copyIcon, () => copyToClipboard(copyText(place), "Copied")),
+    iconButton("Share", shareIcon, () => share(place, h.origin)),
   );
-  if (place.link) actions.append(anchor(linkLabel(place.link), place.link, "action-button action-button--secondary"));
+  if (place.link) actions.append(iconAnchor(linkLabel(place.link), linkIcon, place.link));
 
   // ---- essentials ----
   const essentials = document.createElement("dl");
@@ -135,13 +138,35 @@ function anchor(label: string, href: string, className: string): HTMLAnchorEleme
   return a;
 }
 
-function button(label: string, onClick: () => void): HTMLButtonElement {
+function icon(src: string): HTMLImageElement {
+  const img = document.createElement("img");
+  img.src = src;
+  img.alt = "";
+  img.draggable = false;
+  return img;
+}
+
+function iconButton(label: string, src: string, onClick: () => void): HTMLButtonElement {
   const b = document.createElement("button");
   b.type = "button";
-  b.className = "action-button action-button--secondary";
-  b.textContent = label;
+  b.className = "icon-button icon-button--action";
+  b.setAttribute("aria-label", label);
+  b.title = label;
+  b.append(icon(src));
   b.addEventListener("click", onClick);
   return b;
+}
+
+function iconAnchor(label: string, src: string, href: string): HTMLAnchorElement {
+  const a = document.createElement("a");
+  a.className = "icon-button icon-button--action";
+  a.setAttribute("aria-label", label);
+  a.title = label;
+  a.href = href;
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.append(icon(src));
+  return a;
 }
 
 /**
