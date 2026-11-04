@@ -25,7 +25,9 @@ export function matchesFacet(values: string[], sel: FacetSelection): boolean {
   return values.some((v) => sel.values.has(v));
 }
 
-interface ApplyOptions {
+export interface ApplyOptions {
+  /** The device's bookmarked place ids; needed when `bookmarkedOnly` is on (none given = nothing matches). */
+  bookmarks?: ReadonlySet<string>;
   /** Ignore this facet column's selection (used to count "what if I picked this"). */
   skipFacet?: string;
   /** Ignore the neighborhood selection (same reason). */
@@ -48,6 +50,7 @@ export function applyFilters(places: Place[], state: FilterState, opts: ApplyOpt
   return places.filter((p) => {
     if (p.region !== state.region || !layersOn.has(p.layerId)) return false;
     if (state.starredOnly && !p.starred) return false;
+    if (state.bookmarkedOnly && !opts.bookmarks?.has(p.id)) return false;
     if (byNeighborhood && !(p.neighborhood !== undefined && state.neighborhoods.has(p.neighborhood))) return false;
     if (!matchesText(p, state.text)) return false;
     if (facets && p.layerId === facetLayer) {
@@ -72,10 +75,15 @@ export interface FacetCount {
  * were selected, given every other filter. Multi-value rows count once
  * under each value they hold.
  */
-export function facetCounts(places: Place[], state: FilterState, layer: LayerConfig): Map<string, FacetCount> {
+export function facetCounts(
+  places: Place[],
+  state: FilterState,
+  layer: LayerConfig,
+  opts: Pick<ApplyOptions, "bookmarks"> = {},
+): Map<string, FacetCount> {
   const out = new Map<string, FacetCount>();
   for (const facet of layer.facets) {
-    const base = applyFilters(places, state, { skipFacet: facet.column }).filter((p) => p.layerId === layer.id);
+    const base = applyFilters(places, state, { ...opts, skipFacet: facet.column }).filter((p) => p.layerId === layer.id);
     const values = new Map<string, number>(facet.values.map((v) => [v, 0]));
     let unknown = 0;
     for (const p of base) {
@@ -89,8 +97,13 @@ export function facetCounts(places: Place[], state: FilterState, layer: LayerCon
 }
 
 /** Same idea for the shared Neighborhood filter. */
-export function neighborhoodCounts(places: Place[], state: FilterState, neighborhoods: string[]): Map<string, number> {
-  const base = applyFilters(places, state, { skipNeighborhoods: true });
+export function neighborhoodCounts(
+  places: Place[],
+  state: FilterState,
+  neighborhoods: string[],
+  opts: Pick<ApplyOptions, "bookmarks"> = {},
+): Map<string, number> {
+  const base = applyFilters(places, state, { ...opts, skipNeighborhoods: true });
   const counts = new Map<string, number>(neighborhoods.map((n) => [n, 0]));
   for (const p of base) {
     if (p.neighborhood !== undefined) counts.set(p.neighborhood, (counts.get(p.neighborhood) ?? 0) + 1);

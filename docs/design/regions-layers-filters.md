@@ -106,8 +106,10 @@ narrowing the next:
    2026-11-04). Pins are coloured by layer.
 3. **Filters**:
    - **Shared filters** apply across all selected layers: text substring
-     (name, neighborhood, notes), Neighborhood, ★ only, Open now (only
-     affects layers with `hasHours`), and later distance sort.
+     (name, neighborhood, notes), Neighborhood, ★ only, Bookmarked only
+     (this device's bookmarks, kept outside the filter state and passed
+     in; added 2026-11-04), Open now (only affects layers with
+     `hasHours`), and later distance sort.
    - **Layer facets** appear only when exactly one layer is in play (one
      selected, or none selected in a region that has only one), because
      "Roasting" means nothing to a restaurant. With two or more in play,
@@ -132,6 +134,7 @@ interface FilterState {
   text: string;
   neighborhoods: Set<string>;
   starredOnly: boolean;
+  bookmarkedOnly: boolean;
   openNow: boolean;
   facets: Record<LayerId, Record<string /* column */, {
     values: Set<string>;

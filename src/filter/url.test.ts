@@ -28,6 +28,8 @@ describe("toSearchParams", () => {
     expect(query(state({ type: "toggleLayer", layer: TEA }))).toBe("l=tokyo-tea");
     expect(query(state({ type: "setRegion", region: "kyoto" }))).toBe("r=kyoto");
     expect(query(state({ type: "setStarredOnly", value: true }))).toBe("star=1");
+    expect(query(state({ type: "setBookmarkedOnly", value: true }))).toBe("b=1");
+    expect(fromSearchParams(new URLSearchParams("b=1"), ctx).bookmarkedOnly).toBe(true);
   });
 
   it("encodes facet selections and unknown toggles per facet", () => {
@@ -51,6 +53,7 @@ describe("round trip", () => {
       { type: "toggleNeighborhood", neighborhood: "Central" },
       { type: "toggleNeighborhood", neighborhood: "East" },
       { type: "setStarredOnly", value: true },
+      { type: "setBookmarkedOnly", value: true },
       { type: "setOpenNow", value: true },
       { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Café" },
       { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Specialty", value: "Pour-over" },

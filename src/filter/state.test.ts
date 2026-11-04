@@ -106,6 +106,8 @@ describe("reduce", () => {
     s = r(s, { type: "setText", text: "x" });
     s = r(s, { type: "toggleNeighborhood", neighborhood: "Central" });
     s = r(s, { type: "setStarredOnly", value: true });
+    s = r(s, { type: "setBookmarkedOnly", value: true });
+    expect(hasActiveFilters(s)).toBe(true);
     s = r(s, { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Stand" });
     s = r(s, { type: "clearFilters" });
     expect(s.region).toBe("tokyo");

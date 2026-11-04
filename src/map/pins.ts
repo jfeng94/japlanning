@@ -12,6 +12,7 @@ export interface Pin {
   /** The layer's colour. */
   color: string;
   starred: boolean;
+  bookmarked: boolean;
   layerId: string;
 }
 
@@ -25,7 +26,7 @@ export interface PinRenderer {
   destroy(): void;
 }
 
-export function placesToPins(places: Place[], layers: LayerConfig[]): Pin[] {
+export function placesToPins(places: Place[], layers: LayerConfig[], bookmarks?: ReadonlySet<string>): Pin[] {
   const byId = new Map(layers.map((l) => [l.id, l]));
   const pins: Pin[] = [];
   for (const p of places) {
@@ -39,6 +40,7 @@ export function placesToPins(places: Place[], layers: LayerConfig[]): Pin[] {
       icon: iconFor(p, layer),
       color: layer.color,
       starred: p.starred,
+      bookmarked: bookmarks?.has(p.id) ?? false,
       layerId: p.layerId,
     });
   }
@@ -51,6 +53,7 @@ export interface PinProperties {
   icon: IconId;
   color: string;
   starred: boolean;
+  bookmarked: boolean;
   selected: boolean;
 }
 
@@ -68,6 +71,7 @@ export function pinsToGeoJson(pins: Pin[], selectedId?: string): FeatureCollecti
         icon: p.icon,
         color: p.color,
         starred: p.starred,
+        bookmarked: p.bookmarked,
         selected: p.id === selectedId,
       },
     })),

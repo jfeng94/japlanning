@@ -21,6 +21,8 @@ export interface FilterState {
   /** Selected neighborhoods; empty means "any". */
   neighborhoods: Set<string>;
   starredOnly: boolean;
+  /** Only the device's bookmarked places (the set itself lives outside this state). */
+  bookmarkedOnly: boolean;
   /** Evaluated from M5 on; carried in state now so the URL codec is stable. */
   openNow: boolean;
   /** layer id -> facet column -> selection. Absent means the default selection. */
@@ -34,6 +36,7 @@ export type FilterAction =
   | { type: "setText"; text: string }
   | { type: "toggleNeighborhood"; neighborhood: string }
   | { type: "setStarredOnly"; value: boolean }
+  | { type: "setBookmarkedOnly"; value: boolean }
   | { type: "setOpenNow"; value: boolean }
   | { type: "toggleFacetValue"; layer: LayerId; column: string; value: string }
   | { type: "setIncludeUnknown"; layer: LayerId; column: string; value: boolean }
@@ -51,6 +54,7 @@ export function defaultState(region: RegionId, _layers: LayerConfig[]): FilterSt
     text: "",
     neighborhoods: new Set(),
     starredOnly: false,
+    bookmarkedOnly: false,
     openNow: false,
     facets: {},
   };
@@ -85,6 +89,7 @@ export function hasActiveFilters(state: FilterState): boolean {
     state.text !== "" ||
     state.neighborhoods.size > 0 ||
     state.starredOnly ||
+    state.bookmarkedOnly ||
     state.openNow ||
     Object.keys(state.facets).length > 0
   );
@@ -104,6 +109,8 @@ export function reduce(state: FilterState, action: FilterAction, layers: LayerCo
       return { ...state, neighborhoods: toggled(state.neighborhoods, action.neighborhood) };
     case "setStarredOnly":
       return { ...state, starredOnly: action.value };
+    case "setBookmarkedOnly":
+      return { ...state, bookmarkedOnly: action.value };
     case "setOpenNow":
       return { ...state, openNow: action.value };
     case "toggleFacetValue": {
@@ -126,6 +133,7 @@ export function reduce(state: FilterState, action: FilterAction, layers: LayerCo
         text: "",
         neighborhoods: new Set(),
         starredOnly: false,
+        bookmarkedOnly: false,
         openNow: false,
         facets: {},
       };

@@ -9,8 +9,15 @@ describe("placesToPins", () => {
   it("carries name, position, layer colour and star", () => {
     const pins = placesToPins([place({ name: "Glitch", starred: true, lat: 35.69, lng: 139.76 })], [coffeeLayer]);
     expect(pins).toEqual([
-      { id: expect.any(String), name: "Glitch", lat: 35.69, lng: 139.76, icon: "coffee", color: "#b5452b", starred: true, layerId: "tokyo-coffee" },
+      { id: expect.any(String), name: "Glitch", lat: 35.69, lng: 139.76, icon: "coffee", color: "#b5452b", starred: true, bookmarked: false, layerId: "tokyo-coffee" },
     ]);
+  });
+
+  it("marks bookmarked places", () => {
+    const [a, b] = [place({ name: "a" }), place({ name: "b" })];
+    const pins = placesToPins([a, b], [coffeeLayer], new Set([b.id]));
+    expect(pins.map((p) => p.bookmarked)).toEqual([false, true]);
+    expect(pinsToGeoJson(pins).features.map((f) => f.properties.bookmarked)).toEqual([false, true]);
   });
 
   it("uses the row's icon when known, else the layer's, else the first icon", () => {

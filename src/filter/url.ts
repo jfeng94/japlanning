@@ -11,7 +11,7 @@ import { defaultSelection, defaultState, layersInRegion, type FacetSelection, ty
  *   &l=tokyo-coffee,tokyo-tea      layers (omitted when none selected, which means all)
  *   &q=glitch                      text
  *   &n=Central&n=East              neighborhoods, repeated
- *   &star=1 &open=1                flags
+ *   &star=1 &b=1 &open=1           flags (b = this device's bookmarks only)
  *   &f=tokyo-coffee/Format=Stand|Caf%C3%A9   facet values, repeated per facet
  *   &u=tokyo-coffee/Format         include-unknown OFF, repeated per facet
  */
@@ -31,6 +31,7 @@ export function toSearchParams(state: FilterState, ctx: UrlContext): URLSearchPa
   if (state.text) p.set("q", state.text);
   for (const n of state.neighborhoods) p.append("n", n);
   if (state.starredOnly) p.set("star", "1");
+  if (state.bookmarkedOnly) p.set("b", "1");
   if (state.openNow) p.set("open", "1");
   for (const [layer, columns] of Object.entries(state.facets)) {
     for (const [column, sel] of Object.entries(columns)) {
@@ -60,6 +61,7 @@ export function fromSearchParams(params: URLSearchParams, ctx: UrlContext): Filt
   state.text = params.get("q") ?? "";
   state.neighborhoods = new Set(params.getAll("n").filter((n) => neighborhoods.has(n)));
   state.starredOnly = params.get("star") === "1";
+  state.bookmarkedOnly = params.get("b") === "1";
   state.openNow = params.get("open") === "1";
 
   const selection = (layer: string, column: string): FacetSelection | undefined => {

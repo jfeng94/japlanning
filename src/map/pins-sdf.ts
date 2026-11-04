@@ -1,6 +1,7 @@
 import type { GeoJSONSource, MapLayerMouseEvent, Map as MapLibreMap } from "maplibre-gl";
 import { ICON_IDS, iconAssetUrl, type IconId } from "../config/icons.ts";
 import { pinLabelMinZoom } from "../config/map.ts";
+import bookmarkIcon from "../ui/icons/bookmark.webp";
 import type { MapView } from "./map.ts";
 import { pinsToGeoJson, type Pin, type PinRenderer } from "./pins.ts";
 import { loadSdfImage, type SdfImage } from "./sdf.ts";
@@ -8,6 +9,8 @@ import { loadSdfImage, type SdfImage } from "./sdf.ts";
 const SOURCE = "pins";
 const ICON_LAYER = "pins-icon";
 const STAR_LAYER = "pins-star";
+const BOOKMARK_LAYER = "pins-bookmark";
+const BOOKMARK_IMAGE = "bookmark-badge";
 const LABEL_LAYER = "pins-label";
 const FONT = ["Noto Sans Medium"];
 
@@ -16,6 +19,24 @@ const IMAGE_SIZE = 64;
 const IMAGE_PIXEL_RATIO = 2;
 
 const imageCache = new Map<IconId, Promise<SdfImage>>();
+
+/** Decode an image file to pixels for map.addImage (64 px square, as drawn). */
+function loadRaster(url: string, size = 64): Promise<ImageData> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = size;
+      c.height = size;
+      const ctx = c.getContext("2d");
+      if (!ctx) return reject(new Error("2d canvas unavailable"));
+      ctx.drawImage(img, 0, 0, size, size);
+      resolve(ctx.getImageData(0, 0, size, size));
+    };
+    img.onerror = () => reject(new Error(`could not load ${url}`));
+    img.src = url;
+  });
+}
 
 function sdfImage(id: IconId): Promise<SdfImage> {
   let p = imageCache.get(id);
@@ -51,6 +72,10 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
       if (disposed || m !== map || !m.getStyle()) return;
       if (!m.hasImage(id)) m.addImage(id, img, { sdf: true, pixelRatio: IMAGE_PIXEL_RATIO });
     }
+    // The bookmark seal is multicolour, so it's a plain raster image, not an SDF.
+    const badge = await loadRaster(bookmarkIcon);
+    if (disposed || m !== map || !m.getStyle()) return;
+    if (!m.hasImage(BOOKMARK_IMAGE)) m.addImage(BOOKMARK_IMAGE, badge, { pixelRatio: 2 });
   };
 
   const addLayers = (m: MapLibreMap) => {
@@ -91,6 +116,19 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
         "text-color": ["get", "color"],
         "text-halo-color": colors.halo,
         "text-halo-width": 1.5,
+      },
+    });
+    m.addLayer({
+      id: BOOKMARK_LAYER,
+      type: "symbol",
+      source: SOURCE,
+      filter: ["==", ["get", "bookmarked"], true],
+      layout: {
+        "icon-image": BOOKMARK_IMAGE,
+        "icon-size": 0.5,
+        "icon-offset": [-26, -26],
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true,
       },
     });
     m.addLayer({
@@ -158,7 +196,7 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
       map.off("mouseenter", ICON_LAYER, onEnter);
       map.off("mouseleave", ICON_LAYER, onLeave);
       if (map.getStyle()) {
-        for (const id of [LABEL_LAYER, STAR_LAYER, ICON_LAYER]) if (map.getLayer(id)) map.removeLayer(id);
+        for (const id of [LABEL_LAYER, BOOKMARK_LAYER, STAR_LAYER, ICON_LAYER]) if (map.getLayer(id)) map.removeLayer(id);
         if (map.getSource(SOURCE)) map.removeSource(SOURCE);
       }
     },

@@ -15,6 +15,8 @@ export interface FilterSheetContext {
   /** The region's layers. */
   layers: LayerConfig[];
   places: Place[];
+  /** This device's bookmarked place ids. */
+  bookmarks: ReadonlySet<string>;
   dispatch: (action: FilterAction) => void;
 }
 
@@ -25,7 +27,8 @@ export interface FilterSheetContext {
  * rebuild on every change at this data size.
  */
 export function renderFilterSheet(body: HTMLElement, state: FilterState, ctx: FilterSheetContext): void {
-  const { region, places, dispatch } = ctx;
+  const { region, places, dispatch, bookmarks } = ctx;
+  const opts = { bookmarks };
   body.replaceChildren();
 
   const regionLayerIds = ctx.layers.map((l) => l.id);
@@ -46,7 +49,7 @@ export function renderFilterSheet(body: HTMLElement, state: FilterState, ctx: Fi
   }
 
   if (region.neighborhoods.length > 0) {
-    const counts = neighborhoodCounts(places, state, region.neighborhoods);
+    const counts = neighborhoodCounts(places, state, region.neighborhoods, opts);
     body.append(
       section(
         "Neighborhood",
@@ -62,11 +65,18 @@ export function renderFilterSheet(body: HTMLElement, state: FilterState, ctx: Fi
     );
   }
 
+  const bookmarkedInRegion = places.filter((p) => p.region === region.id && bookmarks.has(p.id)).length;
   body.append(
     section("Flags", [
       chip("★ Key branches only", {
         pressed: state.starredOnly,
         onClick: () => dispatch({ type: "setStarredOnly", value: !state.starredOnly }),
+      }),
+      chip(bookmarkedInRegion === 0 && !state.bookmarkedOnly ? "Bookmarked only · none yet" : "Bookmarked only", {
+        pressed: state.bookmarkedOnly,
+        count: bookmarkedInRegion,
+        disabled: bookmarkedInRegion === 0 && !state.bookmarkedOnly,
+        onClick: () => dispatch({ type: "setBookmarkedOnly", value: !state.bookmarkedOnly }),
       }),
     ]),
   );
@@ -74,7 +84,7 @@ export function renderFilterSheet(body: HTMLElement, state: FilterState, ctx: Fi
   const activeId = activeFacetLayer(state, regionLayerIds);
   const layer = ctx.layers.find((l) => l.id === activeId);
   if (layer) {
-    const counts = facetCounts(places, state, layer);
+    const counts = facetCounts(places, state, layer, opts);
     for (const facet of layer.facets) {
       const count = counts.get(facet.column);
       if (!count) continue;

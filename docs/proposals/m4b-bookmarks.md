@@ -1,6 +1,7 @@
 # M4b: Bookmarks
 
-Status: **proposed** (2026-11-04). Waiting for go-ahead.
+Status: **implemented, awaiting phone acceptance** (approved and built
+2026-11-04). Checked in a desktop browser at phone width; see Results.
 
 ## Goal
 
@@ -11,15 +12,15 @@ group. One toggle on the card, a mark on bookmarked rows and pins, and a
 
 ## Done when
 
-- [ ] A bookmark button on the card toggles the place; the state survives
+- [x] A bookmark button on the card toggles the place; the state survives
       a reload and a cold open of the installed app.
-- [ ] Bookmarked rows show a mark; bookmarked pins show a badge (both
+- [x] Bookmarked rows show a mark; bookmarked pins show a badge (both
       renderers).
-- [ ] "Bookmarked only" in the filter sheet's Flags section, with a count,
+- [x] "Bookmarked only" in the filter sheet's Flags section, with a count,
       narrows the list and the map to bookmarks across every layer; it
       appears in the strip summary and in the URL as `b=1`.
-- [ ] With no bookmarks, the filter chip is disabled and says so.
-- [ ] `npm test` covers the bookmark store and the filter.
+- [x] With no bookmarks, the filter chip is disabled and says so.
+- [x] `npm test` covers the bookmark store and the filter.
 
 ## Design
 
@@ -94,8 +95,8 @@ ordering the list by bookmark.
 
 ## Open questions
 
-- **Toggle from the list row too**, or card only (proposed: card only;
-  rows just show the mark, which keeps row taps meaning "open").
+- **Toggle from the card only** (decided 2026-11-04); rows just show the
+  mark, so a row tap always means "open".
 - **Bookmarks in the fit-to-results button**: it fits the filtered set,
   so with the filter on it frames the bookmarks; nothing extra needed.
 
@@ -105,4 +106,33 @@ About 12 files touched, roughly 350 lines, a third tests.
 
 ## Results
 
-(filled in after acceptance)
+Built 2026-11-04. 129 tests (7 new: the store, the filter and counts with
+a bookmark set, the URL flag, the pin flag).
+
+Verified in the browser pane at 375×812 against the production build:
+
+- Card: the seal is greyscale at 55% when not bookmarked and full colour
+  when it is; the label flips between "Bookmark this place" and "Remove
+  bookmark".
+- The bookmarked pin shows the seal as a corner badge (DOM renderer); the
+  row shows it before the name.
+- Filters: "Bookmarked only" with a count of 1; on, the strip reads
+  "1 place" with a "Bookmarked" tag and the URL is `?b=1`.
+- Reload: the bookmark is still set and the row still marked (IndexedDB).
+
+For the phone pass:
+
+- A cold open of the installed app keeps the bookmark.
+- The SDF renderer's badge (Settings → SDF symbols) sits top-left of the pin.
+- The greyscale seal reads as "not set" at a glance.
+
+Decisions made while building:
+
+- The filter sheet's chip counts bookmarks in the current region and is
+  disabled with "none yet" when that is zero, unless the filter is
+  already on (so it can always be turned off).
+- The SDF renderer adds the seal as a plain raster image at pixelRatio 2
+  in its own badge layer, offset up-left of the pin; multicolour art can't
+  be an SDF.
+- Saves are serialised and a failed save only logs; the in-memory set is
+  still right for the session.

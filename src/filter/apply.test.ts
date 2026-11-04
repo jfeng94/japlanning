@@ -36,6 +36,18 @@ describe("applyFilters", () => {
     expect(names(state({ type: "setStarredOnly", value: true }))).toEqual(["Glitch"]);
   });
 
+  it("bookmarked only uses the device's set; no set means nothing", () => {
+    const on: FilterAction = { type: "setBookmarkedOnly", value: true };
+    const ids = places.filter((p) => p.name === "Fuglen" || p.name === "Ippodo").map((p) => p.id);
+    expect(applyFilters(places, state(on), { bookmarks: new Set(ids) }).map((p) => p.name)).toEqual(["Fuglen", "Ippodo"]);
+    expect(applyFilters(places, state(on)).map((p) => p.name)).toEqual([]);
+    expect(applyFilters(places, state(on, { type: "setStarredOnly", value: true }), { bookmarks: new Set(ids) })).toEqual([]);
+    // counts respect it too
+    const counts = facetCounts(places, state(on, coffeeOnly), coffee, { bookmarks: new Set(ids) });
+    expect([...counts.get("Format")!.values]).toEqual([["Stand", 0], ["Café", 1], ["Kissaten", 0]]);
+    expect([...neighborhoodCounts(places, state(on), NEIGHBORHOODS, { bookmarks: new Set(ids) })]).toEqual([["Central", 1], ["Shibuya", 1], ["East", 0]]);
+  });
+
   it("neighborhoods OR together and apply across layers", () => {
     expect(names(state({ type: "toggleNeighborhood", neighborhood: "Central" }))).toEqual(["Glitch", "ＧＬＩＴＣＨ annex", "Ippodo"]);
     expect(

@@ -39,6 +39,7 @@ function summaryTags(state: FilterState, regionLayers: LayerConfig[]): HTMLEleme
   if (state.text) tags.push(tag(`“${state.text}”`));
   for (const n of state.neighborhoods) tags.push(tag(shortNeighborhood(n)));
   if (state.starredOnly) tags.push(tag("★ key branches"));
+  if (state.bookmarkedOnly) tags.push(tag("Bookmarked"));
   if (state.openNow) tags.push(tag("Open now"));
 
   const activeId = activeFacetLayer(state, regionLayers.map((l) => l.id));

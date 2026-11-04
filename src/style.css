@@ -556,6 +556,33 @@ button {
   filter: grayscale(1);
 }
 
+/* The seal: colour when bookmarked, greyscale when not. */
+.bookmark-button[aria-pressed="false"] img {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.row-bookmark {
+  width: 1rem;
+  height: 1rem;
+  vertical-align: -0.15rem;
+  margin-right: 0.3rem;
+}
+
+.dom-pin-badge {
+  display: none;
+  position: absolute;
+  top: -0.45rem;
+  left: -0.45rem;
+  width: 1rem;
+  height: 1rem;
+  pointer-events: none;
+}
+
+.dom-pin.is-bookmarked .dom-pin-badge {
+  display: block;
+}
+
 .detail-rows {
   margin: 0;
   display: grid;

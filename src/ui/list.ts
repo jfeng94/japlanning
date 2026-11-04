@@ -1,11 +1,14 @@
 import type { LayerConfig, Place } from "../data/types.ts";
 import { tag } from "./chips.ts";
+import bookmarkIcon from "./icons/bookmark.webp";
 
 export interface ListOptions {
   layers: LayerConfig[];
   /** Show the layer name on each row (when more than one layer is selected). */
   showLayer: boolean;
   selectedId?: string;
+  /** Bookmarked place ids; rows get a mark. */
+  bookmarks?: ReadonlySet<string>;
   onSelect: (id: string) => void;
 }
 
@@ -28,6 +31,14 @@ export function renderList(ul: HTMLUListElement, places: Place[], opts: ListOpti
       const title = document.createElement("div");
       title.className = "place-title";
       if (p.starred) title.append(tag("★", "star"));
+      if (opts.bookmarks?.has(p.id)) {
+        const mark = document.createElement("img");
+        mark.className = "row-bookmark";
+        mark.src = bookmarkIcon;
+        mark.alt = "Bookmarked";
+        mark.draggable = false;
+        title.append(mark);
+      }
       const name = document.createElement("span");
       name.className = "place-name";
       name.textContent = p.name;

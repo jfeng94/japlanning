@@ -2,6 +2,7 @@ import type { LayerConfig, Place } from "../data/types.ts";
 import { openStatus } from "../hours/open.ts";
 import { tag } from "./chips.ts";
 import { detailFields, type DetailRow } from "./detail-fields.ts";
+import bookmarkIcon from "./icons/bookmark.webp";
 import linkIcon from "./icons/link.webp";
 import shareIcon from "./icons/share.webp";
 import { directionsUrl, linkLabel, shareUrl } from "./links.ts";
@@ -11,6 +12,8 @@ export interface DetailHandlers {
   onBack: () => void;
   /** `location.origin`, for share links. */
   origin: string;
+  isBookmarked: (id: string) => boolean;
+  onToggleBookmark: (id: string) => void;
 }
 
 const FLAG_TEXT = { approximate: "approximate", unverified: "unverified", unknown: "" } as const;
@@ -49,6 +52,13 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   // ---- actions (Directions lives in the strip above the card) ----
   const actions = document.createElement("div");
   actions.className = "detail-actions";
+  // Bookmark: the seal in colour when set, greyscale when not. Only the card toggles it.
+  const bookmarked = h.isBookmarked(place.id);
+  const bookmark = iconButton(bookmarked ? "Remove bookmark" : "Bookmark this place", bookmarkIcon, () => h.onToggleBookmark(place.id));
+  bookmark.classList.add("bookmark-button");
+  bookmark.setAttribute("aria-pressed", String(bookmarked));
+  actions.append(bookmark);
+
   // Share copies the place's link, nothing else: no OS share sheet, no name prefix.
   actions.append(iconButton("Copy link to this place", shareIcon, () => copyToClipboard(shareUrl(place, h.origin), "Link copied")));
   // Always present so the row keeps its shape; greyed and inert when the sheet has no link.

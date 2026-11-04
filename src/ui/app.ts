@@ -1,6 +1,7 @@
 import { layers } from "../config/layers.ts";
 import { pinRendererKind } from "../config/map.ts";
 import { regions } from "../config/regions.ts";
+import { createBookmarks, createIdbBookmarkStorage } from "../data/bookmarks.ts";
 import { browserDeps } from "../data/browser.ts";
 import { loadAllLayersStaged } from "../data/load.ts";
 import type { LoadResult, Place, RegionId } from "../data/types.ts";
@@ -50,6 +51,7 @@ export function mountApp(root: HTMLElement): void {
   const startParams = new URLSearchParams(location.search);
   const filters = createStore(initialState(startParams, ctx), (s: FilterState, a: FilterAction) => reduce(s, a, layers));
   const ui = createStore<UiState, UiAction>({}, uiReduce);
+  const bookmarks = createBookmarks(createIdbBookmarkStorage());
 
   let places: Place[] = [];
   let results: LoadResult[] = [];
@@ -194,6 +196,7 @@ export function mountApp(root: HTMLElement): void {
       region: regions.find((r) => r.id === state.region)!,
       layers: layersInRegion(layers, state.region),
       places,
+      bookmarks: bookmarks.all(),
       dispatch: filters.dispatch,
     });
   }
@@ -211,7 +214,7 @@ export function mountApp(root: HTMLElement): void {
 
     const layersOn = effectiveLayers(state, regionLayers.map((l) => l.id));
     const total = places.filter((p) => p.region === state.region && layersOn.has(p.layerId)).length;
-    const shown = sortByName(applyFilters(places, state));
+    const shown = sortByName(applyFilters(places, state, { bookmarks: bookmarks.all() }));
     const selectedId = ui.get().selectedId;
     const selected = selectedId ? shown.find((p) => p.id === selectedId) : undefined;
 
@@ -227,6 +230,7 @@ export function mountApp(root: HTMLElement): void {
       layers: regionLayers,
       showLayer: layersOn.size > 1,
       selectedId,
+      bookmarks: bookmarks.all(),
       onSelect: select,
     });
     renderEmptyState(emptyState, state, shown.length, total, loading);
@@ -235,18 +239,20 @@ export function mountApp(root: HTMLElement): void {
       renderDetail(detailBody, selected, regionLayers.find((l) => l.id === selected.layerId), {
         onBack: deselect,
         origin: location.origin,
+        isBookmarked: (id) => bookmarks.has(id),
+        onToggleBookmark: (id) => bookmarks.toggle(id),
       });
       renderDetailStrip(detailStrip, selected);
     }
     panel.el.dataset["mode"] = selected ? "detail" : "list";
 
-    pins.update(placesToPins(shown, regionLayers));
+    pins.update(placesToPins(shown, regionLayers, bookmarks.all()));
     pins.setSelected(selectedId);
     panel.relayout(); // the strip's height depends on what the summary shows
   }
 
   function fitToResults(): void {
-    const shown = applyFilters(places, filters.get());
+    const shown = applyFilters(places, filters.get(), { bookmarks: bookmarks.all() });
     view.fitPoints(shown.map((p) => [p.lng, p.lat]));
   }
 
@@ -330,6 +336,8 @@ export function mountApp(root: HTMLElement): void {
     render();
   });
   let lastRegion: RegionId = filters.get().region;
+
+  bookmarks.subscribe(render);
 
   render();
   void reload();

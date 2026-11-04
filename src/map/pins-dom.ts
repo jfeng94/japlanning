@@ -1,5 +1,6 @@
 import { Marker } from "maplibre-gl";
 import { iconAssetUrl } from "../config/icons.ts";
+import bookmarkIcon from "../ui/icons/bookmark.webp";
 import { pinLabelMinZoom, pinStyle } from "../config/map.ts";
 import type { MapView } from "./map.ts";
 import type { Pin, PinRenderer } from "./pins.ts";
@@ -41,7 +42,7 @@ export function createDomPinRenderer(view: MapView): PinRenderer {
     el.type = "button";
     el.className = `dom-pin dom-pin--${style}`;
     el.setAttribute("aria-label", pin.name);
-    el.innerHTML = `<img alt="" draggable="false"><span class="dom-pin-label"></span>`;
+    el.innerHTML = `<img alt="" draggable="false"><img class="dom-pin-badge" alt="" draggable="false" src="${bookmarkIcon}"><span class="dom-pin-label"></span>`;
     el.addEventListener("click", (e) => {
       e.stopPropagation();
       selectCb(pin.id);
@@ -57,6 +58,7 @@ export function createDomPinRenderer(view: MapView): PinRenderer {
     entry.pin = pin;
     el.style.setProperty("--pin-color", pin.color);
     el.classList.toggle("is-starred", pin.starred);
+    el.classList.toggle("is-bookmarked", pin.bookmarked);
     el.classList.toggle("is-selected", pin.id === selectedId);
     el.querySelector("img")!.src = iconAssetUrl(pin.icon, "dom");
     el.querySelector(".dom-pin-label")!.textContent = pin.name;
