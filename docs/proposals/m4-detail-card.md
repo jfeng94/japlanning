@@ -24,8 +24,12 @@ pastry and the rest get a complete card the day their sheet exists.
       columns as label and value.
 - [ ] Copy puts `Name` + newline + `Address` on the clipboard and shows a
       brief "Copied" toast; with no address it copies the name.
-- [ ] Share opens the iOS share sheet with a link straight to the place;
-      where the share API is missing (desktop), it copies the link instead.
+- [ ] Share opens the iOS share sheet with the place's name and a link to
+      it, no filter state; where the share API is missing (desktop), it
+      copies the link instead.
+- [ ] Pasting such a link, or a bare place id, into the app's search
+      field selects that place (switching region if needed) and clears the
+      field.
 - [ ] Link opens the official site or Instagram in the browser, labelled by
       which it is.
 - [ ] Directions opens Google Maps in transit mode (already in M3).
@@ -92,8 +96,25 @@ start.
 | --- | --- | --- |
 | Directions | `directionsUrl(place)` in a new tab | From M3. Primary style. |
 | Copy | `navigator.clipboard.writeText(copyText(place))`, toast "Copied" | Must run synchronously inside the tap handler: iOS refuses clipboard writes after an `await`. The copied address has the `~` stripped; the UI shows the approximate marker instead. |
-| Share | `navigator.share({ title, text, url })` with `shareUrl(place)`; fallback copies the URL, toast "Link copied" | The URL is `/?r=<region>&s=<id>`, filters not included, so the recipient sees the place, not your filter state. |
+| Share | `navigator.share({ title, text, url })` with `shareUrl(place)`; fallback copies the URL, toast "Link copied" | The URL is `/?r=<region>&s=<id>`, never the filter state (decided). The text includes the name so it's searchable in the app. |
 | Website / Instagram | opens `place.link` in a new tab | Label from the hostname: Instagram for instagram.com, otherwise Website. Hidden when there's no link. |
+
+### Receiving a shared link
+
+iOS opens links in the browser, never in an installed web app, so a
+"meet here" link from Messages lands in Safari or Chrome with a fresh
+copy of the site: it works, but it's not the app with the cached data
+and the group's settings. Two ways in:
+
+- **Paste into search.** The search field recognises a pasted link to
+  this site with an `s=` parameter, or a bare place id
+  (`tokyo-coffee:bear-pond-espresso`), and selects that place, switching
+  region if needed, then clears itself. Recognition is a pure, tested
+  function (`parseSharedLink(text)`), applied on paste and on input.
+- **Search by name.** The share text carries the place name as well as
+  the link, so the recipient can also just type the name.
+
+The share text is: `<name>` newline `<link>`, nothing about filters.
 
 ### Startup from a shared link
 
@@ -120,8 +141,9 @@ The strip at strip height keeps name plus Directions as now.
 ```
 src/ui/detail-fields.ts       new, pure
 src/ui/detail-fields.test.ts  new
-src/ui/links.ts               + copyText, shareUrl, linkLabel
+src/ui/links.ts               + copyText, shareUrl, linkLabel, parseSharedLink
 src/ui/links.test.ts          new
+src/ui/header.ts              search ingests a shared link
 src/hours/open.ts             new: tokyoNow, openStatus(place, now)
 src/hours/open.test.ts        new, run under a non-JST TZ too
 package.json                  + opening_hours
@@ -141,7 +163,7 @@ One new dependency: `opening_hours` 3.15 (ships its own types).
    clipboard and share sheet, which only a real device can do.
 4. Open/closed: Tokyo-time adapter, evaluator, tests under a non-JST TZ,
    status on the card. Deploy.
-5. Shared-link startup across regions; polish.
+5. Shared-link startup across regions; link ingest in search; polish.
 
 Step 1 is the pure piece if Jerry wants to write one.
 
@@ -155,7 +177,6 @@ anything.
 
 - **Facets at half height**: chips for `rowFacets` only (proposed), with
   the full labelled list at full height.
-- **Share includes filters?** Proposed no: a shared place is a place.
 - **Link label**: Instagram vs Website by hostname (proposed); or always
   "Link".
 
