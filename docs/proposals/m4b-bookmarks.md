@@ -51,12 +51,15 @@ bookmarks, which is the only thing it can mean.
 ### UI
 
 - **Card**: a bookmark icon button in the action row (next to Share and
-  the link), filled when bookmarked. Jerry may supply an icon; until then
-  an inline SVG bookmark glyph in the accent colour.
-- **List rows**: a small bookmark glyph before the name, after the ★.
-- **Pins**: DOM renderer gets an `is-bookmarked` class with a corner badge
-  via CSS; the SDF renderer gets a second text overlay like the ★ one,
-  using a glyph from the hosted font range.
+  the link). The icon is Jerry's seal (`src/ui/icons/bookmark.webp`): full
+  colour when bookmarked, the same image under a CSS greyscale filter at
+  reduced opacity when not, so one asset serves both states.
+- **List rows**: the seal, small, before the name (after the ★) on
+  bookmarked rows only.
+- **Pins**: DOM renderer gets an `is-bookmarked` class that shows the
+  seal as a corner badge; the SDF renderer draws the seal as a second
+  SDF-free raster image (added with `map.addImage` without `sdf`) in a
+  badge layer offset from the pin, since the seal is multicolour.
 - **Filter sheet**: "Bookmarked only (n)" chip in Flags; disabled with
   "none yet" when the set is empty.
 - **Strip summary**: a "Bookmarked" tag when the filter is on.
@@ -91,8 +94,6 @@ ordering the list by bookmark.
 
 ## Open questions
 
-- **Icon**: Jerry's artwork or the inline glyph (proposed: glyph now,
-  swap when there's artwork).
 - **Toggle from the list row too**, or card only (proposed: card only;
   rows just show the mark, which keeps row taps meaning "open").
 - **Bookmarks in the fit-to-results button**: it fits the filtered set,
