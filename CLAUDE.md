@@ -235,6 +235,12 @@ proposal in `docs/proposals/` before work starts.
 
 ## Wishlist (not scheduled)
 
+- **Page through the card.** Left/right arrows at the bottom of the card
+  (half and full heights) step to the previous/next place in the current
+  filtered list, in list order; the map follows; the history entry is
+  replaced, not pushed, so Back still means "to the list". Open question:
+  wrap at the ends or stop. Small; a polish item once M5 lands.
+
 - **Images in the card.** A sheet column of Drive image references; a
   build step that downloads, resizes to ~800 px and converts to WebP under
   the site with a manifest per place; a thumbnail row on the card with an
