@@ -1,6 +1,8 @@
 # M2: List and filters
 
-Status: **proposed** (2026-11-04). Waiting for go-ahead.
+Status: **implemented, awaiting phone acceptance** (approved and built
+2026-11-04, commits 335af47..c5b12ef). Every box below except the first
+was checked in a desktop browser at phone width; the phone pass is Jerry's.
 
 ## Goal
 
@@ -16,19 +18,19 @@ Implements the filter model in `docs/design/regions-layers-filters.md`.
 
 - [ ] Region switch, layer chips, search, neighborhood, ★ only, and facet
       filters work on the phone, with counts next to every facet value.
-- [ ] Every facet has an "include unknown" toggle, default on; turning it
+- [x] Every facet has an "include unknown" toggle, default on; turning it
       off drops rows whose cell is blank, and the counts say how many.
-- [ ] Selecting two layers hides facet sections; coming back to one layer
+- [x] Selecting two layers hides facet sections; coming back to one layer
       restores its facet selections.
-- [ ] The URL reflects the filter state; reload and share restore it.
-- [ ] List rows show the ★ flag, name, neighborhood and the layer's
+- [x] The URL reflects the filter state; reload and share restore it.
+- [x] List rows show the ★ flag, name, neighborhood and the layer's
       configured row facets.
-- [ ] Kyoto shows an empty state, not a blank page.
-- [ ] Opening the installed app shows cached data at once, then updates
+- [x] Kyoto shows an empty state, not a blank page.
+- [x] Opening the installed app shows cached data at once, then updates
       from the network without a blank gap.
-- [ ] The M1 data status and M0 capability panel are still reachable, from
+- [x] The M1 data status and M0 capability panel are still reachable, from
       an info button, not on the main screen.
-- [ ] `npm test` covers the filter module: apply, counts, URL round trip.
+- [x] `npm test` covers the filter module: apply, counts, URL round trip.
 
 ## Design
 
@@ -222,4 +224,48 @@ are the big ones; each is still under 300 lines of UI code.
 
 ## Results
 
-(filled in after acceptance)
+Built 2026-11-04 in six commits. 82 tests (53 new: 29 state/apply, 14
+URL/store, 6 staged loader, plus the M1 ones). Bundle 45 kB, 16 kB gzipped.
+
+Verified in the browser pane at 375×812, light and dark:
+
+- Search `glitch` narrows to 3 of 39 and writes `?q=glitch`; the Filters
+  button marks itself active.
+- Facet counts match the sheet profile (Format: Stand 7, Café 24, Tasting
+  bar 1, Bean shop 3, Kissaten 0 disabled, unknown 4). Selecting Stand
+  gives 11 (7 + 4 unknown); Format's own counts hold while Linger's shrink.
+  Unchecking include-unknown gives 7 and writes `&u=tokyo-coffee/Format`.
+  Clear returns to 39 with a bare URL.
+- A pasted URL with a facet value containing `é`, `star=1` and a
+  neighborhood with slashes restores to exactly one place.
+- Kyoto shows the empty state; `?r=kyoto` is written and the region is
+  remembered in localStorage; the search box clears on region change.
+- With fetch disabled and Refresh pressed, the list stays populated at
+  once and the header reads "Offline · showing data from just now";
+  Diagnostics shows the cached badge and the reason.
+- Row tap highlights the row; the Diagnostics sheet holds the M1 data rows
+  and the M0 capability panel.
+
+Not verified here, for the phone pass:
+
+- The sheet's slide-up, backdrop and scroll-lock feel on iOS.
+- Two-layer behaviour (facet sections hidden, selections kept) has unit
+  tests but no second layer in config to try by hand.
+- Cold open of the installed app showing cached data before the network
+  answers (the staged path; the desktop check used Refresh).
+
+Decisions made while building, beyond the proposal:
+
+- The parser's `Place.region` is checked in `applyFilters` as well as
+  layer membership, so a stray layer id can't leak another region's rows.
+- Facet values with a zero count are rendered disabled unless selected;
+  the include-unknown checkbox only appears for facets that have blanks
+  (or when it's already off).
+- Any filter change clears the row selection, so a highlighted row never
+  refers to something that just scrolled out of the result set.
+- `browserDeps()` moved to `src/data/browser.ts`; the data status module
+  is now a pure renderer and the app owns loading.
+- A bare URL uses the remembered region; a URL with any parameter is
+  taken as-is with Tokyo as its default region, so shared links don't
+  depend on the recipient's localStorage.
+- Escape closes an open sheet (desktop nicety; M9 territory otherwise).
