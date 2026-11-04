@@ -1,6 +1,9 @@
 # M0: Skeleton and deploy
 
-Status: **proposed** (2026-11-04). Waiting for go-ahead.
+Status: **in progress** (approved 2026-11-04). Code side done: scaffold,
+manifest, capability panel, Actions deploy, Pages enabled with the custom
+domain. Waiting on Jerry's side: Node upgrade, DNS record, HTTPS
+enforcement once the certificate issues, phone verification.
 
 ## Goal
 
@@ -12,10 +15,10 @@ through the pipeline this one sets up.
 ## Done when
 
 - [ ] `npm run dev` serves the page locally on Node 26.
-- [ ] A push to `main` builds and deploys via GitHub Actions with no manual
+- [x] A push to `main` builds and deploys via GitHub Actions with no manual
       step.
 - [ ] https://japan.garbage.house loads with a valid certificate.
-- [ ] The page shows the git commit it was built from, so we can confirm a
+- [x] The page shows the git commit it was built from, so we can confirm a
       deploy landed.
 - [ ] Chrome on the iPhone offers "Add to Home Screen", and the installed
       app opens standalone (no browser chrome).
