@@ -1,7 +1,7 @@
 # Regions, layers and filters
 
-Status: **draft for review** (2026-11-04). Decisions here are inputs to M1
-(data layer) and M2 (list and filters).
+Status: **reviewed** (2026-11-04). Decisions here are inputs to M1 (data
+layer) and M2 (list and filters). Open points at the bottom are closed.
 
 The app covers a whole trip, not just Tokyo coffee. Several travellers
 install it. One deployment serves everyone at https://japan.garbage.house.
@@ -152,13 +152,14 @@ interface FilterState {
   breakpoint around 768px they sit side by side. This is M9, but the DOM
   structure is decided now so M9 is CSS, not a rewrite.
 
-## Open questions
+## Decisions (2026-11-04)
 
-- Should facet value order come from config (as above) or from first
-  appearance in the sheet? Config is recommended so the UI is stable as rows
-  are added.
-- Does "Open now" with multiple layers selected hide rows from `hasHours:
-  false` layers, or leave them untouched? Recommended: leave them untouched
-  and show a small "no hours" marker.
-- Whether to store the facet config in the repo (recommended, typed and
-  tested) or in a registry sheet (no deploy needed to add a layer).
+- **Facet value order comes from config**, not from first appearance in the
+  sheet, so the UI is stable as rows are added. Values present in the sheet
+  but missing from config still render, after the configured ones.
+- **"Open now" leaves `hasHours: false` layers untouched.** With several
+  layers selected, rows from layers without hours stay visible and show a
+  small "no hours" marker.
+- **Layer and facet config lives in the repo**, typed and tested, not in a
+  registry sheet. Schemas are not changed mid-trip; adding a layer is a config
+  edit and a deploy.
