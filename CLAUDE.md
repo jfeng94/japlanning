@@ -32,6 +32,8 @@ Jerry wants to be hands-on with this project. He's an experienced engineer
 1. Browse pinned locations as a **list**.
 2. **Filter** by criteria. The same filter state drives both list and map.
    See `docs/design/regions-layers-filters.md`.
+2b. **Bookmark** places of interest on the device, and filter to just
+   those.
 3. Show **current location** (blue dot).
 4. **Deep link into Google Maps** for directions.
 5. **Copy name + address** to clipboard.
@@ -205,6 +207,10 @@ proposal in `docs/proposals/` before work starts.
   ★ pins styled distinctly.
 - **M4. Detail card.** All fields, link, Copy name + address, Directions
   button.
+- **M4b. Bookmarks.** Mark places you're interested in, from the card and
+  the list row, stored on the device (personal, not in the sheet; the
+  group doesn't share them). A "Bookmarked only" shared filter shows just
+  those on the map and in the list, with a marker on bookmarked pins.
 - **M5. Open now.** opening_hours in Asia/Tokyo time, "open now" filter,
   "unknown hours" handling, and a badge when Last verified is blank.
   Optional: an "open at…" time picker for planning ahead.

@@ -1,8 +1,7 @@
 # M3: Map
 
-Status: **implemented, awaiting phone acceptance** (approved and built
-2026-11-04, commits 2618de7..). Every box below was checked in a desktop
-browser at phone width except the ones that need a phone; see Results.
+Status: **done** (accepted on the phone 2026-11-04 after a polish round;
+see Results).
 
 ## Goal
 
@@ -382,7 +381,20 @@ Verified in the browser pane at 375×812 against the production build:
 - Dark scheme: background and sprite switch; pins source and SDF image are
   re-added after the style reload.
 
-For the phone pass:
+Phone pass (Jerry, 2026-11-04) and the polish it led to:
+
+- DOM markers chosen; bare artwork at 80% size; SDF kept in Settings.
+- Panel drag with snap points replaced tap-cycling; strip shrunk.
+- Settings sheet (gear) with dropdowns for the experiments, saved on the
+  device, plus Diagnostics and a Reload app button that fetches the page
+  past the HTTP cache.
+- Header: Filters and Settings as icons; the layers button removed; the
+  strip shows count, layer icons and the active selections, and opens the
+  filter sheet. Count is matches only.
+- OpenStreetMap credit as floating text in the map's upper right.
+- No layers selected now means all layers (design doc updated).
+
+Originally listed for the phone pass:
 
 - The one-row header and the panel heights with real thumbs.
 - Pin tap targets with both renderers; which renderer looks right.
