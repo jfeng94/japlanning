@@ -12,6 +12,11 @@ export interface Sheet {
 
 const openSheets = new Set<Sheet>();
 
+// Escape closes whatever is open; registered once for all sheets.
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") for (const s of openSheets) s.close();
+});
+
 export function createSheet(root: HTMLElement, title: string, onOpen?: () => void): Sheet {
   const backdrop = document.createElement("div");
   backdrop.className = "sheet-backdrop";
