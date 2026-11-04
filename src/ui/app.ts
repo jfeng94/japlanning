@@ -17,7 +17,9 @@ import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url
 import { chip } from "./chips.ts";
 import { mountDiagnostics } from "./diagnostics.ts";
 import { renderFilterSheet } from "./filter-sheet.ts";
+import { mountHeader } from "./header.ts";
 import { renderList, sortByName } from "./list.ts";
+import { mountPanel } from "./panel.ts";
 import { createSheet } from "./sheet.ts";
 
 const REGION_KEY = "japlanning.region";
@@ -41,45 +43,27 @@ export function mountApp(root: HTMLElement): void {
   let results: LoadResult[] = [];
   let loading = true;
 
-  root.innerHTML = `
-    <header class="topbar">
-      <div class="topbar-row">
-        <div class="region-switch" role="group" aria-label="Region"></div>
-        <button type="button" class="icon-button info" aria-label="Diagnostics">i</button>
-      </div>
-      <div class="layer-chips" role="group" aria-label="Layers"></div>
-      <p class="status" role="status" hidden></p>
-      <div class="topbar-row">
-        <input type="search" class="search" placeholder="Search names, areas, notes" autocomplete="off" aria-label="Search" />
-        <button type="button" class="filters-button">Filters</button>
-      </div>
-    </header>
-    <main class="panes">
-      <section class="list-pane" aria-label="Places">
-        <p class="results-count"></p>
-        <ul class="place-list"></ul>
-        <div class="empty-state" hidden></div>
-      </section>
-      <section class="map-pane" aria-label="Map"></section>
-    </main>
-  `;
-  const $ = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
-  const regionSwitch = $(".region-switch");
-  const layerChips = $(".layer-chips");
-  const search = $<HTMLInputElement>(".search");
-  const filtersButton = $<HTMLButtonElement>(".filters-button");
-  const status = $(".status");
-  const resultsCount = $(".results-count");
-  const placeList = $<HTMLUListElement>(".place-list");
-  const emptyState = $(".empty-state");
-
+  // Layout: header row, the map pane filling the rest, the panel over it, sheets over everything.
+  root.innerHTML = `<main class="panes"><section class="map-pane" aria-label="Map"></section></main>`;
   const filterSheet = createSheet(root, "Filters", () => renderSheet());
   const diagSheet = createSheet(root, "Diagnostics");
   const diagnostics = mountDiagnostics(diagSheet.body, () => void reload());
 
-  search.addEventListener("input", () => filters.dispatch({ type: "setText", text: search.value }));
-  filtersButton.addEventListener("click", filterSheet.open);
-  $(".info").addEventListener("click", diagSheet.open);
+  const header = mountHeader(root, regions, {
+    onRegion: (region) => filters.dispatch({ type: "setRegion", region }),
+    onLayers: filterSheet.open,
+    onSearch: (text) => filters.dispatch({ type: "setText", text }),
+    onFilters: filterSheet.open,
+    onDiagnostics: diagSheet.open,
+  });
+
+  const panel = mountPanel(root);
+  panel.strip.innerHTML = `<p class="results-count"></p><p class="status" role="status" hidden></p>`;
+  panel.content.innerHTML = `<ul class="place-list"></ul><div class="empty-state" hidden></div>`;
+  const resultsCount = panel.strip.querySelector<HTMLElement>(".results-count")!;
+  const status = panel.strip.querySelector<HTMLElement>(".status")!;
+  const placeList = panel.content.querySelector<HTMLUListElement>(".place-list")!;
+  const emptyState = panel.content.querySelector<HTMLElement>(".empty-state")!;
 
   function renderSheet(): void {
     const state = filters.get();
@@ -96,38 +80,17 @@ export function mountApp(root: HTMLElement): void {
     const regionLayers = layersInRegion(layers, state.region);
     if (filterSheet.isOpen()) renderSheet();
 
-    regionSwitch.replaceChildren(
-      ...regions.map((r) =>
-        chip(r.label, {
-          pressed: r.id === state.region,
-          className: "segment",
-          onClick: () => filters.dispatch({ type: "setRegion", region: r.id }),
-        }),
-      ),
-    );
-
-    if (regionLayers.length === 0) {
-      layerChips.replaceChildren(note(`No layers for ${regionLabel(state.region)} yet.`));
-    } else {
-      layerChips.replaceChildren(
-        ...regionLayers.map((l) =>
-          chip(l.label, {
-            pressed: state.layers.has(l.id),
-            color: l.color,
-            count: places.filter((p) => p.layerId === l.id).length,
-            onClick: () => filters.dispatch({ type: "toggleLayer", layer: l.id }),
-          }),
-        ),
-      );
-    }
-
-    if (search.value !== state.text) search.value = state.text;
-    filtersButton.classList.toggle("is-active", hasActiveFilters(state));
-    renderStatus(status, results, loading);
+    header.update({
+      region: regions.find((r) => r.id === state.region)!,
+      layersLabel: layersLabel(state, regionLayers.length),
+      text: state.text,
+      filtersActive: hasActiveFilters(state),
+    });
 
     const total = places.filter((p) => p.region === state.region && state.layers.has(p.layerId)).length;
     const shown = sortByName(applyFilters(places, state));
     resultsCount.textContent = loading && places.length === 0 ? "Loading…" : countLabel(shown.length, total);
+    renderStatus(status, results, loading);
 
     renderList(placeList, shown, {
       layers: regionLayers,
@@ -139,6 +102,15 @@ export function mountApp(root: HTMLElement): void {
     renderEmptyState(emptyState, state, shown.length, total, loading);
   }
 
+  function layersLabel(state: FilterState, available: number): string {
+    if (available === 0) return "No layers";
+    const selected = [...state.layers].map((id) => layers.find((l) => l.id === id)?.label ?? id);
+    if (selected.length === 0) return "No layers";
+    if (selected.length === 1) return selected[0]!;
+    if (selected.length === available) return "All layers";
+    return `${selected.length} layers`;
+  }
+
   function renderEmptyState(el: HTMLElement, state: FilterState, shown: number, total: number, busy: boolean): void {
     el.replaceChildren();
     el.hidden = true;
@@ -146,7 +118,7 @@ export function mountApp(root: HTMLElement): void {
     if (layersInRegion(layers, state.region).length === 0) {
       el.append(note(`${regionLabel(state.region)} has no layers yet. Add a sheet to src/config/layers.ts.`));
     } else if (state.layers.size === 0) {
-      el.append(note("Pick at least one layer above."));
+      el.append(note("Pick at least one layer."), chip("Choose layers", { onClick: filterSheet.open }));
     } else if (total === 0) {
       el.append(note("No data loaded for these layers. Check Diagnostics."));
     } else if (shown === 0) {
@@ -222,7 +194,7 @@ function rememberRegion(region: RegionId): void {
 }
 
 /**
- * One line under the layer chips: nothing when everything is live,
+ * One line in the panel strip: nothing when everything is live,
  * otherwise the one thing worth knowing (updating, offline, or no data).
  */
 function renderStatus(el: HTMLElement, results: LoadResult[], loading: boolean): void {

@@ -21,6 +21,22 @@ export function renderFilterSheet(body: HTMLElement, state: FilterState, ctx: Fi
   const { region, places, dispatch } = ctx;
   body.replaceChildren();
 
+  if (ctx.layers.length > 0) {
+    body.append(
+      section(
+        "Layers",
+        ctx.layers.map((l) =>
+          chip(l.label, {
+            pressed: state.layers.has(l.id),
+            color: l.color,
+            count: places.filter((p) => p.layerId === l.id).length,
+            onClick: () => dispatch({ type: "toggleLayer", layer: l.id }),
+          }),
+        ),
+      ),
+    );
+  }
+
   if (region.neighborhoods.length > 0) {
     const counts = neighborhoodCounts(places, state, region.neighborhoods);
     body.append(
