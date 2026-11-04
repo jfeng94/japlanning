@@ -61,8 +61,10 @@ export interface SettingsSheetHandlers {
 
 /**
  * Reload the app from scratch: drop any service-worker-cached shell
- * (none until M7) and Cache Storage, then reload. The IndexedDB data
- * cache is data, not app, and is left alone.
+ * (none until M7) and Cache Storage, fetch the page itself straight from
+ * the network (GitHub Pages serves it with a 10-minute cache lifetime
+ * that a plain reload in an installed app can honour), then reload. The
+ * IndexedDB data cache is data, not app, and is left alone.
  */
 async function reloadFromScratch(): Promise<void> {
   try {
@@ -72,6 +74,10 @@ async function reloadFromScratch(): Promise<void> {
     if ("caches" in window) {
       for (const key of await caches.keys()) await caches.delete(key);
     }
+    // "reload" bypasses the HTTP cache and replaces the cached copy with what comes back.
+    await fetch(location.pathname, { cache: "reload" });
+  } catch {
+    /* offline or blocked: a plain reload is still better than nothing */
   } finally {
     location.reload();
   }
