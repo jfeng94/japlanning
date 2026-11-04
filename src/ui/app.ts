@@ -379,9 +379,10 @@ function regionLabel(id: RegionId): string {
   return regions.find((r) => r.id === id)?.label ?? id;
 }
 
+/** Just the matching count; the total stops meaning much once every layer has pins. */
 function countLabel(shown: number, total: number): string {
   if (total === 0) return "";
-  return shown === total ? `${total} place${total === 1 ? "" : "s"}` : `${shown} of ${total} places`;
+  return `${shown} place${shown === 1 ? "" : "s"}`;
 }
 
 function note(text: string): HTMLParagraphElement {
