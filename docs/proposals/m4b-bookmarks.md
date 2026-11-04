@@ -1,7 +1,10 @@
 # M4b: Bookmarks
 
-Status: **implemented, awaiting phone acceptance** (approved and built
-2026-11-04). Checked in a desktop browser at phone width; see Results.
+Status: **done** (accepted on the phone 2026-11-04 after a polish round:
+seal beside the title and replacing the ★ on pins; card opens at top and
+the list keeps or recentres its position; pasted links clear excluding
+filters; no page zoom outside the map; tap-to-copy address; closed row
+flashes).
 
 ## Goal
 
