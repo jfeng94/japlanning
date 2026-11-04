@@ -1,8 +1,6 @@
 # M2: List and filters
 
-Status: **implemented, awaiting phone acceptance** (approved and built
-2026-11-04, commits 335af47..c5b12ef). Every box below except the first
-was checked in a desktop browser at phone width; the phone pass is Jerry's.
+Status: **done** (accepted on the phone 2026-11-04). See Results.
 
 ## Goal
 
@@ -16,7 +14,7 @@ Implements the filter model in `docs/design/regions-layers-filters.md`.
 
 ## Done when
 
-- [ ] Region switch, layer chips, search, neighborhood, ★ only, and facet
+- [x] Region switch, layer chips, search, neighborhood, ★ only, and facet
       filters work on the phone, with counts next to every facet value.
 - [x] Every facet has an "include unknown" toggle, default on; turning it
       off drops rows whose cell is blank, and the counts say how many.
@@ -246,7 +244,7 @@ Verified in the browser pane at 375×812, light and dark:
 - Row tap highlights the row; the Diagnostics sheet holds the M1 data rows
   and the M0 capability panel.
 
-Not verified here, for the phone pass:
+Verified on the phone by Jerry at acceptance (not re-checked here):
 
 - The sheet's slide-up, backdrop and scroll-lock feel on iOS.
 - Two-layer behaviour (facet sections hidden, selections kept) has unit
