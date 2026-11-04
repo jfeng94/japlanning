@@ -223,6 +223,15 @@ proposal in `docs/proposals/` before work starts.
 - **M8. Atlas styling polish.** Tune the basemap until only roads, rail and
   stations, water and parks remain, and make sure our pins pop.
 - **M9. Wide layout.** List beside map on iPad and desktop.
+- **M10. Trip planner** (after the main milestones; icon in
+  `src/ui/icons/trip.webp`). Each card gets "Add to trip" / "Remove from
+  trip". A trip button in the header swaps the list for the trip's places
+  in a re-orderable list (remove from there too); the map shows only those
+  places with arrows along the route; a Directions button opens Google Maps
+  with the stops in order. Maybe several named trips, saved on the device
+  like bookmarks. Known limit: Google's directions URL takes waypoints for
+  walking, cycling and driving but not transit, so a transit trip opens as
+  a sequence of legs or as walking directions; to be decided then.
 
 ## Wishlist (not scheduled)
 
