@@ -98,28 +98,86 @@ listener so switching at runtime restyles the map. Pure function, unit
 tested: no layer reads from `buildings`, the pois filter admits only the
 listed kinds, flavour switch changes the background colour.
 
-### Pins (`src/map/pins.ts`, `src/map/map.ts`)
+### Icons: assignment (sheet) and rendering (two renderers)
 
-A GeoJSON source rebuilt from `applyFilters` on every state change. Each
-feature carries `id`, `name`, `color` (its layer's), `starred`, and
-`selected`. Three layers on top of the basemap:
+Jerry wants pins that are easy to restyle with custom icons, and wants to
+try two rendering approaches. These are two separate concerns.
 
-- `pins`: circle, radius 7, `circle-color` from the feature, white stroke.
-- `pins_star`: symbol with text `★` in the pin colour, only where
-  `starred`; the glyph is in Protomaps' Noto Sans range 9728–9983.
-- `pins_label`: symbol with the name beside the pin from zoom 14, hidden
-  when it would collide (MapLibre default).
+**Assignment.** A new core column, `Icon`, on every sheet. Its values are
+a **global enum** shared by all layers, defined once in
+`src/config/icons.ts`. Blank means "use the layer's default icon"
+(`LayerConfig.icon`); an unlisted value warns in the parser and falls
+back the same way. The parser gains `Place.icon?: string`; the column is
+optional like every other core column, so nothing breaks until Jerry adds
+it.
 
-The selected pin gets a larger radius and an accent stroke via a
-data-driven expression on `selected`; no separate layer needed.
+```ts
+// src/config/icons.ts
+export const ICONS = {
+  coffee: { sdf: "coffee.webp", dom: "coffee.svg" },
+  // tea, pastry, restaurant, lodging, sight ... as they're drawn
+} as const;
+export type IconId = keyof typeof ICONS;
+```
 
-Pure, tested: `placesToGeoJson(places, layers, selectedId)`.
+Assets live in `src/map/icons/sdf/` (monochrome shapes) and
+`src/map/icons/dom/` (full-colour artwork). The two sets will differ in
+practice: a tintable silhouette and a detailed illustration are different
+drawings. The first pair is in the repo: a 256×256 lossless WebP
+silhouette for SDF and a traced 77 kB SVG for DOM.
+
+**Rendering.** One interface, two implementations, chosen by config with
+a URL override so both can be tried on the phone without a redeploy:
+
+```ts
+// src/config/map.ts
+export const PIN_RENDERER: "sdf" | "dom" = "sdf";   // ?pins=dom overrides
+
+// src/map/pins.ts
+interface PinRenderer {
+  update(pins: Pin[]): void;        // the filtered places, with icon, color, starred
+  setSelected(id?: string): void;
+  onSelect(cb: (id?: string) => void): void;
+  destroy(): void;
+}
+```
+
+`Pin` is built by a pure, tested `placesToPins(places, layers)` that
+resolves each place's icon (row value, else layer default) and colour.
+Both renderers consume the same array; `map.ts` only knows the interface.
+
+*SDF renderer* (`src/map/pins-sdf.ts`): a MapLibre symbol layer.
+MapLibre can draw an icon as a **signed distance field**: instead of
+colours, the image stores how far each pixel is from the shape's edge,
+and the GPU draws a crisp edge at any size and tints it with
+`icon-color` per feature. That's what makes one monochrome shape serve
+every layer in its own colour, with the selected pin bigger via
+`icon-size`. The catch is that a plain bitmap is not an SDF; MapLibre
+expects the field already computed. So `src/map/sdf.ts` rasterises the
+silhouette to a canvas and runs a distance transform (the standard
+Felzenszwalb algorithm, about 60 lines, unit tested on a square) before
+`map.addImage(name, data, { sdf: true })`. Labels and collision work
+because it's a symbol layer; ★ is a text overlay as before.
+
+*DOM renderer* (`src/map/pins-dom.ts`): one `maplibregl.Marker` per
+pin, each an HTML element positioned by the map. Styling is plain CSS
+with the layer colour as a custom property, so hover, selected and
+starred states are CSS classes, and the artwork can be anything,
+multicolour included. The 77 kB traced SVG with 188 paths must not be
+inlined 40 times; it's referenced as an `<img>` so the browser decodes it
+once. The costs: no label collision (labels, if any, are CSS and may
+overlap), and each pin is a DOM node, so hundreds are fine and thousands
+are not.
+
+*Shared*: selection and taps go through the UI store either way;
+`setSelected` just restyles. Switching renderer at runtime isn't needed;
+the choice is read once at startup.
 
 ### Interaction
 
-- Tap a pin: dispatch `select` to the UI store. The list highlights the
-  row and scrolls it into view; if the list panel is peeked, it stays
-  peeked so the map is still visible.
+- Tap a pin (either renderer): dispatch `select` to the UI store. The
+  list highlights the row and scrolls it into view; if the list panel is
+  peeked, it stays peeked so the map is still visible.
 - Tap a row: dispatch `select`; the map eases to the pin at zoom ≥ 15.
 - Tap empty map: deselect.
 - Region change: `fitBounds` to the region's bbox. First load: fit to the
@@ -159,9 +217,17 @@ scripts/build-basemap.ts          new: download CLI, extract per region
 src/config/basemap.ts             new: pinned build, maxzoom
 src/map/style.ts                  new: atlas style from @protomaps/basemaps
 src/map/style.test.ts             new
-src/map/pins.ts                   new: places -> GeoJSON
+src/config/icons.ts               new: global icon enum -> asset files
+src/config/map.ts                 new: pin renderer choice
+src/map/icons/sdf/*, dom/*        icon assets (coffee pair already added)
+src/map/pins.ts                   new: PinRenderer interface, placesToPins
 src/map/pins.test.ts              new
-src/map/map.ts                    new: MapLibre instance, layers, events
+src/map/pins-sdf.ts               new: symbol-layer renderer
+src/map/pins-dom.ts               new: Marker renderer
+src/map/sdf.ts                    new: distance transform for SDF images
+src/map/sdf.test.ts               new
+src/map/map.ts                    new: MapLibre instance, basemap, events
+src/data/parse.ts, parse.test.ts  Icon column -> Place.icon, warning on unlisted
 src/ui/app.ts                     mount map, selection sync, panel states
 src/ui/list-panel.ts              new: peek/expanded panel around the list
 src/style.css                     map pane, panel, pin controls
@@ -181,7 +247,10 @@ minified and 230 kB gzipped. M7's service worker caches it once.
    with range requests. No visible change yet.
 2. Style builder with tests; map mounted with the basemap only; the
    phone layout with the peek/expanded list panel. Deploy.
-3. Pins from filter state, ★ glyph, labels, colours by layer. Deploy.
+3. Icon column in the parser; `placesToPins`; the SDF renderer with the
+   coffee silhouette, ★ glyph, labels, colours by layer. Deploy.
+3b. The DOM renderer with the coffee artwork, `?pins=dom`. Deploy; try
+   both on the phone.
 4. Selection sync both ways, region fit, fit-to-results button, deselect
    on map tap. Deploy.
 5. Dark flavour switch, attribution, controls, polish.
@@ -207,11 +276,17 @@ bbox).
 - **Peek/expanded panel** (proposed) vs a List/Map toggle in the header.
   The toggle is simpler but hides the map while reading the list.
 - **Pin labels from zoom 14** (proposed). Could be always-on or never.
+- **Default renderer: SDF** (proposed) with `?pins=dom` to compare.
+  Decide after trying both on the phone; the loser stays in the repo
+  behind the config switch unless it's clearly dead weight.
+- **Icon enum values**: `coffee` for now. Jerry names the rest as the
+  other sheets take shape; each needs a silhouette and, optionally, a
+  full-colour drawing.
 
 ## Diff size
 
-About 11 new files, roughly 700 lines. `map.ts` is the largest at
-~200 lines; the rest are small.
+About 16 new files, roughly 950 lines. `map.ts` and the two renderers
+are 100–200 lines each; the rest are small.
 
 ## Results
 
