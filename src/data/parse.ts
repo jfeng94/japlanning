@@ -9,6 +9,8 @@ export class ParseError extends Error {
 export interface ParseOptions {
   /** The region's shared neighborhood list; values outside it warn. */
   neighborhoods?: string[];
+  /** Known icon ids; an Icon cell outside them warns and is dropped. */
+  icons?: string[];
 }
 
 const REQUIRED_COLUMNS = ["Name", "Latitude", "Longitude"] as const;
@@ -22,6 +24,7 @@ const COL = {
   address: "Address (JA)",
   notes: "Notes",
   lastVerified: "Last verified",
+  icon: "Icon",
 } as const;
 
 /** Rough bounds of Japan; anything outside is a mis-pasted coordinate. */
@@ -71,6 +74,7 @@ export function parseLayerCsv(
   ]);
   const extraColumns = headers.filter((h) => h !== "" && !knownColumns.has(h));
   const neighborhoods = options.neighborhoods ? new Set(options.neighborhoods) : undefined;
+  const icons = options.icons ? new Set(options.icons) : undefined;
 
   const places: Place[] = [];
   const seenIds = new Map<string, number>();
@@ -118,6 +122,12 @@ export function parseLayerCsv(
       warn(`${name}: Neighborhood "${neighborhood}" is not in the region's list`, COL.neighborhood);
     }
 
+    let icon = cell(COL.icon);
+    if (icon && icons && !icons.has(icon)) {
+      warn(`${name}: Icon "${icon}" is not a known icon; using the layer default`, COL.icon);
+      icon = undefined;
+    }
+
     const facets: Record<string, string[]> = {};
     for (const facet of layer.facets) {
       const values = splitMulti(cell(facet.column));
@@ -159,6 +169,7 @@ export function parseLayerCsv(
       addressApproximate: approxPrefix !== undefined,
       notes: cell(COL.notes),
       lastVerified,
+      icon,
       facets,
       extra,
     });

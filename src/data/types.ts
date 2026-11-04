@@ -68,6 +68,8 @@ export interface Place {
   notes?: string;
   /** YYYY-MM-DD, only when the cell parsed as one. */
   lastVerified?: string;
+  /** Icon id from the sheet's Icon column, when set and known; else the layer's default applies. */
+  icon?: string;
   /** Facet column -> values. Always an array; [] means unknown. */
   facets: Record<string, string[]>;
   /** Non-blank cells in columns the layer config doesn't know about. */

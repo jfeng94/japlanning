@@ -17,7 +17,10 @@ import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url
 import { chip } from "./chips.ts";
 import { mountDiagnostics } from "./diagnostics.ts";
 import { renderFilterSheet } from "./filter-sheet.ts";
+import { pinRendererKind } from "../config/map.ts";
 import { mountMap, watchFlavor } from "../map/map.ts";
+import { placesToPins, type PinRenderer } from "../map/pins.ts";
+import { createSdfPinRenderer } from "../map/pins-sdf.ts";
 import { mountHeader } from "./header.ts";
 import { renderList, sortByName } from "./list.ts";
 import { mountPanel, type PanelHeight } from "./panel.ts";
@@ -65,6 +68,8 @@ export function mountApp(root: HTMLElement): void {
     watchFlavor((flavor) => view.setFlavor(flavor)),
   );
   view.setBottomPadding(panelPadding(panel.getHeight()));
+  const pins: PinRenderer = createPinRenderer();
+  pins.onSelect((id) => ui.dispatch(id === undefined ? { type: "deselect" } : { type: "select", id }));
 
   panel.strip.innerHTML = `<p class="results-count"></p><p class="status" role="status" hidden></p>`;
   panel.content.innerHTML = `<ul class="place-list"></ul><div class="empty-state" hidden></div>`;
@@ -106,6 +111,8 @@ export function mountApp(root: HTMLElement): void {
       selectedId: ui.get().selectedId,
       onSelect: (id) => ui.dispatch({ type: "select", id }),
     });
+    pins.update(placesToPins(shown, regionLayers));
+    pins.setSelected(ui.get().selectedId);
 
     renderEmptyState(emptyState, state, shown.length, total, loading);
   }
@@ -158,6 +165,14 @@ export function mountApp(root: HTMLElement): void {
       diagnostics.update(results, false);
       render();
     }
+  }
+
+  function createPinRenderer(): PinRenderer {
+    const css = getComputedStyle(document.documentElement);
+    const colors = { label: css.getPropertyValue("--fg").trim(), halo: css.getPropertyValue("--bg-raised").trim() };
+    const kind = pinRendererKind();
+    // The DOM renderer arrives in step 3b; until then every choice is the SDF one.
+    return kind === "dom" ? createSdfPinRenderer(view, colors) : createSdfPinRenderer(view, colors);
   }
 
   filters.subscribe((state) => {

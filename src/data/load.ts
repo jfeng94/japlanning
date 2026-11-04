@@ -1,3 +1,4 @@
+import { ICON_IDS } from "../config/icons.ts";
 import { regionById } from "../config/regions.ts";
 import { parseLayerCsv } from "./parse.ts";
 import type { TextStore } from "./store.ts";
@@ -148,7 +149,7 @@ const fromBundled: Source = async (layer, deps, parse) => {
 
 function parserFor(layer: LayerConfig): (text: string) => ParseResult {
   const neighborhoods = regionById(layer.region).neighborhoods;
-  return (text) => parseLayerCsv(text, layer, { neighborhoods });
+  return (text) => parseLayerCsv(text, layer, { neighborhoods, icons: ICON_IDS });
 }
 
 function withReasons(result: LoadResult, reasons: string[]): LoadResult {

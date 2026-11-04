@@ -214,6 +214,22 @@ describe("edge cases", () => {
     expect(places).toHaveLength(1);
   });
 
+  it("reads the Icon column and drops unknown icons with a warning", () => {
+    const { places, warnings } = parseLayerCsv(
+      csv(["Name,Latitude,Longitude,Icon", "a,35.6,139.7,coffee", "b,35.6,139.7,", "c,35.6,139.7,teapot"]),
+      minimal,
+      { icons: ["coffee", "tea"] },
+    );
+    expect(places.map((p) => p.icon)).toEqual(["coffee", undefined, undefined]);
+    expect(warnings).toEqual([{ row: 3, column: "Icon", message: 'c: Icon "teapot" is not a known icon; using the layer default' }]);
+  });
+
+  it("keeps any Icon value when no icon list is given", () => {
+    const { places, warnings } = parseLayerCsv(csv(["Name,Latitude,Longitude,Icon", "a,35.6,139.7,anything"]), minimal);
+    expect(places[0]!.icon).toBe("anything");
+    expect(warnings).toEqual([]);
+  });
+
   it("treats a star-only name as blank", () => {
     const { places, warnings } = parseLayerCsv(csv(["Name,Latitude,Longitude", "★,35.6,139.7"]), minimal);
     expect(places).toHaveLength(0);
