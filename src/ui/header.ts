@@ -1,11 +1,14 @@
 import type { RegionConfig, RegionId } from "../data/types.ts";
 import filtersIcon from "./icons/filters.webp";
 import settingsIcon from "./icons/settings.webp";
+import { parseSharedLink } from "./links.ts";
 import { createMenu } from "./menu.ts";
 
 export interface HeaderHandlers {
   onRegion: (region: RegionId) => void;
   onSearch: (text: string) => void;
+  /** A shared link or bare place id was pasted into search. */
+  onSharedLink: (placeId: string) => void;
   onFilters: () => void;
   onSettings: () => void;
 }
@@ -86,7 +89,17 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
     h.onSearch("");
     showSearch(false);
   });
-  input.addEventListener("input", () => h.onSearch(input.value));
+  input.addEventListener("input", () => {
+    // iOS opens links in the browser, not the installed app, so a pasted link is the way in.
+    const placeId = parseSharedLink(input.value, location.hostname);
+    if (placeId) {
+      input.value = "";
+      showSearch(false);
+      h.onSharedLink(placeId);
+      return;
+    }
+    h.onSearch(input.value);
+  });
   input.addEventListener("keydown", (e) => {
     // Return/Done on the phone keyboard just dismisses the keyboard; keep the query.
     if (e.key === "Enter") input.blur();

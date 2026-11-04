@@ -30,6 +30,7 @@ import { renderList, sortByName } from "./list.ts";
 import { mountPanel } from "./panel.ts";
 import { renderSettingsSheet } from "./settings-sheet.ts";
 import { createSheet } from "./sheet.ts";
+import { showToast } from "./toast.ts";
 
 const REGION_KEY = "japlanning.region";
 const SELECTED_PARAM = "s";
@@ -80,6 +81,7 @@ export function mountApp(root: HTMLElement): void {
   const header = mountHeader(root, regions, {
     onRegion: (region) => filters.dispatch({ type: "setRegion", region }),
     onSearch: (text) => filters.dispatch({ type: "setText", text }),
+    onSharedLink: (id) => openPlaceById(id),
     onFilters: filterSheet.open,
     onSettings: settingsSheet.open,
   });
@@ -124,6 +126,18 @@ export function mountApp(root: HTMLElement): void {
   const emptyState = listBody.querySelector<HTMLElement>(".empty-state")!;
 
   // ---- selection: one state for "selected" and "detail open" ----
+
+  /** A place by id from anywhere (pasted link, startup): switch region if it lives elsewhere, then select. */
+  function openPlaceById(id: string): boolean {
+    const place = places.find((p) => p.id === id);
+    if (!place) {
+      showToast(places.length === 0 ? "Still loading…" : "Place not found");
+      return false;
+    }
+    if (place.region !== filters.get().region) filters.dispatch({ type: "setRegion", region: place.region });
+    select(id);
+    return true;
+  }
 
   /** Opening the detail pushes one history entry; switching place while open replaces it, so back always means "to the list". */
   function select(id: string): void {
@@ -218,7 +232,10 @@ export function mountApp(root: HTMLElement): void {
     renderEmptyState(emptyState, state, shown.length, total, loading);
 
     if (selected) {
-      renderDetail(detailBody, selected, regionLayers.find((l) => l.id === selected.layerId), deselect);
+      renderDetail(detailBody, selected, regionLayers.find((l) => l.id === selected.layerId), {
+        onBack: deselect,
+        origin: location.origin,
+      });
       renderDetailStrip(detailStrip, selected);
     }
     panel.el.dataset["mode"] = selected ? "detail" : "list";
@@ -277,10 +294,14 @@ export function mountApp(root: HTMLElement): void {
   function onDataArrived(): void {
     if (pendingSelection) {
       const id = pendingSelection;
-      if (places.some((p) => p.id === id)) {
+      const place = places.find((p) => p.id === id);
+      if (place) {
         pendingSelection = undefined;
+        // A trimmed link may carry s= without r=: follow the place to its region.
+        if (place.region !== filters.get().region) filters.dispatch({ type: "setRegion", region: place.region });
         // Not marked as pushed: this entry is the page itself, so back must leave the app, not the detail.
         ui.dispatch({ type: "select", id });
+        history.replaceState(history.state, "", urlFor(filters.get(), id));
         fittedOnce = true;
       }
     }

@@ -1,6 +1,8 @@
 # M4: Detail card
 
-Status: **proposed** (2026-11-04). Waiting for go-ahead.
+Status: **implemented, awaiting phone acceptance** (approved and built
+2026-11-04). Checked in a desktop browser at phone width except where only
+a phone can; see Results.
 
 ## Goal
 
@@ -12,30 +14,30 @@ pastry and the rest get a complete card the day their sheet exists.
 
 ## Done when
 
-- [ ] At half height: ★ and name, layer and neighborhood, address with an
+- [x] At half height: ★ and name, layer and neighborhood, address with an
       "approximate" marker when the sheet had `~`, hours text (or "Hours
       unknown"), an **Open / Closed** status when the sheet has OSM hours,
       the row chips, and the action buttons.
-- [ ] The status is evaluated in Asia/Tokyo time wherever the phone is: a
+- [x] The status is evaluated in Asia/Tokyo time wherever the phone is: a
       test with a non-JST process time zone proves it, and the brief's
       examples (hours past midnight, `We[3] off`) are covered.
-- [ ] At full height, below those: notes, every facet as label and values,
+- [x] At full height, below those: notes, every facet as label and values,
       last-verified date or an "unverified" badge, and any extra sheet
       columns as label and value.
-- [ ] Copy puts `Name` + newline + `Address` on the clipboard and shows a
+- [x] Copy puts `Name` + newline + `Address` on the clipboard and shows a
       brief "Copied" toast; with no address it copies the name.
 - [ ] Share opens the iOS share sheet with the place's name and a link to
       it, no filter state; where the share API is missing (desktop), it
       copies the link instead.
-- [ ] Pasting such a link, or a bare place id, into the app's search
+- [x] Pasting such a link, or a bare place id, into the app's search
       field selects that place (switching region if needed) and clears the
       field.
-- [ ] Link opens the official site or Instagram in the browser, labelled by
+- [x] Link opens the official site or Instagram in the browser, labelled by
       which it is.
-- [ ] Directions opens Google Maps in transit mode (already in M3).
-- [ ] A shared link to a Kyoto place opens in Kyoto, not the remembered
+- [x] Directions opens Google Maps in transit mode (already in M3).
+- [x] A shared link to a Kyoto place opens in Kyoto, not the remembered
       region.
-- [ ] `npm test` covers the field model and the link builders.
+- [x] `npm test` covers the field model and the link builders.
 
 ## Design
 
@@ -186,4 +188,40 @@ About 10 files, roughly 600 lines, a third of it tests.
 
 ## Results
 
-(filled in after acceptance)
+Built 2026-11-04. 122 tests (23 new: links, field model, open status).
+The hours parser is a lazily loaded 714 kB chunk (116 kB gzipped); the
+main bundle grew 40 kB.
+
+Verified in the browser pane at 375×812 against the production build:
+
+- Glitch Jimbocho at Thursday 06:45 Tokyo time: "Closed · opens 08:00";
+  Fuglen Tokyo: "Closed · opens 07:00"; both from the sheet's OSM hours.
+- Card: head with ★ and name, layer · neighborhood, Directions / Copy /
+  Share (+ Website for Fuglen, labelled from the hostname), address,
+  hours text with the status beside it, the row chips, then Notes,
+  Details (all six facets), Verified.
+- Pasting `https://japan.garbage.house/?r=tokyo&s=…` or the bare id
+  `tokyo-coffee:onibus-coffee-jiyugaoka` into search opens that place and
+  clears the field.
+- Copy: a real click in the pane writes the clipboard and toasts
+  "Copied"; a script-driven click is not a user gesture, is refused, and
+  toasts "Couldn't copy", so both paths are exercised. Share has no API
+  in the desktop pane and falls back to copying the link.
+
+For the phone pass:
+
+- Copy puts name + address on the clipboard (paste into Notes to check).
+- Share opens the iOS sheet with the name and the link.
+- A link pasted into search inside the installed app opens the place.
+- The card at half height fits the street-corner set without scrolling.
+
+Decisions made while building:
+
+- `openStatus` loads the parser on first use; the status fills in a beat
+  after the card appears, guarded by a render token so a slow lookup never
+  overwrites a newer card.
+- A sheet's unparsable hours show "Hours unparsable" in muted text rather
+  than reading as closed.
+- `parseSharedLink` only accepts links to this site's host, so a pasted
+  link to anything else is treated as search text.
+- A `?s=` link without `r=` follows the place to its region on load.

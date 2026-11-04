@@ -1,14 +1,31 @@
 import type { LayerConfig, Place } from "../data/types.ts";
+import { openStatus } from "../hours/open.ts";
 import { tag } from "./chips.ts";
-import { directionsUrl } from "./links.ts";
+import { detailFields, type DetailRow } from "./detail-fields.ts";
+import { copyText, directionsUrl, linkLabel, shareText, shareUrl } from "./links.ts";
+import { showToast } from "./toast.ts";
+
+export interface DetailHandlers {
+  onBack: () => void;
+  /** `location.origin`, for share links. */
+  origin: string;
+}
+
+const FLAG_TEXT = { approximate: "approximate", unverified: "unverified", unknown: "" } as const;
+
+/** Monotonic token so a slow open-status lookup can't overwrite a newer card. */
+let renderToken = 0;
 
 /**
- * The selected place in the panel. M3 ships the container and this
- * placeholder (name, where it is, Directions); M4 fills in the full card.
+ * The selected place in the panel: head, actions, the street-corner
+ * essentials (visible at half height), then everything else.
  */
-export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig | undefined, onBack: () => void): void {
+export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig | undefined, h: DetailHandlers): void {
+  const token = ++renderToken;
+  const fields = detailFields(place, layer);
   body.replaceChildren();
 
+  // ---- head ----
   const head = document.createElement("div");
   head.className = "detail-head";
   const back = document.createElement("button");
@@ -16,7 +33,7 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   back.className = "back-button";
   back.setAttribute("aria-label", "Back to the list");
   back.textContent = "‹";
-  back.addEventListener("click", onBack);
+  back.addEventListener("click", h.onBack);
   const title = document.createElement("h2");
   title.className = "detail-title";
   if (place.starred) title.append(tag("★", "star"));
@@ -27,15 +44,64 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   meta.className = "detail-meta";
   meta.textContent = [layer?.label, place.neighborhood].filter(Boolean).join(" · ");
 
+  // ---- actions ----
   const actions = document.createElement("div");
   actions.className = "detail-actions";
-  actions.append(directionsLink(place));
+  actions.append(
+    anchor("Directions", directionsUrl(place), "action-button"),
+    button("Copy", () => copyToClipboard(copyText(place), "Copied")),
+    button("Share", () => share(place, h.origin)),
+  );
+  if (place.link) actions.append(anchor(linkLabel(place.link), place.link, "action-button action-button--secondary"));
 
-  const todo = document.createElement("p");
-  todo.className = "note";
-  todo.textContent = "Hours, address, notes and Copy arrive in M4.";
+  // ---- essentials ----
+  const essentials = document.createElement("dl");
+  essentials.className = "detail-rows detail-essentials";
+  for (const row of fields.essentials) {
+    const [dt, dd] = rowNodes(row);
+    essentials.append(dt, dd);
+    if (row.label === "Hours" && place.hoursOsm) {
+      const status = document.createElement("span");
+      status.className = "open-status";
+      dd.append(" ", status);
+      void openStatus(place.hoursOsm).then((s) => {
+        if (token !== renderToken) return;
+        status.textContent = s.label;
+        status.dataset["state"] = s.state;
+      });
+    }
+  }
 
-  body.append(head, meta, actions, todo);
+  const chips = document.createElement("div");
+  chips.className = "place-chips";
+  for (const c of fields.chips) chips.append(tag(c));
+
+  body.append(head, meta, actions, essentials);
+  if (fields.chips.length > 0) body.append(chips);
+
+  // ---- details (full height) ----
+  for (const section of fields.details) {
+    const sec = document.createElement("section");
+    sec.className = "detail-section";
+    if (section.title) {
+      const heading = document.createElement("h3");
+      heading.textContent = section.title;
+      sec.append(heading);
+    }
+    const notes = section.rows.length === 1 && section.rows[0]!.label === "";
+    if (notes) {
+      const p = document.createElement("p");
+      p.className = "detail-notes";
+      p.textContent = section.rows[0]!.value;
+      sec.append(p);
+    } else {
+      const dl = document.createElement("dl");
+      dl.className = "detail-rows";
+      for (const row of section.rows) dl.append(...rowNodes(row));
+      sec.append(dl);
+    }
+    body.append(sec);
+  }
 }
 
 /** The strip's content while a place is selected: name and Directions. */
@@ -44,15 +110,63 @@ export function renderDetailStrip(strip: HTMLElement, place: Place): void {
   const name = document.createElement("p");
   name.className = "results-count";
   name.textContent = place.name;
-  strip.append(name, directionsLink(place, "small"));
+  strip.append(name, anchor("Directions", directionsUrl(place), "action-button action-button--small"));
 }
 
-function directionsLink(place: Place, size: "normal" | "small" = "normal"): HTMLAnchorElement {
+function rowNodes(row: DetailRow): [HTMLElement, HTMLElement] {
+  const dt = document.createElement("dt");
+  dt.textContent = row.label;
+  const dd = document.createElement("dd");
+  dd.textContent = row.value;
+  if (row.flag) {
+    dd.dataset["flag"] = row.flag;
+    const text = FLAG_TEXT[row.flag];
+    if (text) dd.append(" ", tag(text, "tag tag--flag"));
+  }
+  return [dt, dd];
+}
+
+function anchor(label: string, href: string, className: string): HTMLAnchorElement {
   const a = document.createElement("a");
-  a.className = `action-button${size === "small" ? " action-button--small" : ""}`;
-  a.href = directionsUrl(place);
+  a.className = className;
+  a.href = href;
   a.target = "_blank";
   a.rel = "noopener";
-  a.textContent = "Directions";
+  a.textContent = label;
   return a;
+}
+
+function button(label: string, onClick: () => void): HTMLButtonElement {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "action-button action-button--secondary";
+  b.textContent = label;
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+/**
+ * Clipboard writes need HTTPS and must start inside the tap handler;
+ * iOS refuses them after an await, so nothing is awaited before this call.
+ */
+function copyToClipboard(text: string, done: string): void {
+  if (!navigator.clipboard?.writeText) {
+    showToast("Clipboard unavailable");
+    return;
+  }
+  navigator.clipboard.writeText(text).then(
+    () => showToast(done),
+    () => showToast("Couldn't copy"),
+  );
+}
+
+function share(place: Place, origin: string): void {
+  const url = shareUrl(place, origin);
+  if (typeof navigator.share === "function") {
+    navigator.share({ title: place.name, text: shareText(place, url), url }).catch(() => {
+      /* the user dismissed the sheet, or it failed; either way nothing to say */
+    });
+    return;
+  }
+  copyToClipboard(url, "Link copied");
 }
