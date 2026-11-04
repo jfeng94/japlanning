@@ -11,6 +11,8 @@ export interface ListOptions {
   bookmarks?: ReadonlySet<string>;
   /** The place whose card was just closed: its row is highlighted and fades. */
   flashId?: string;
+  /** With the open-now filter on: why a row is there when it isn't simply open ("no hours", "hours unknown"). */
+  hoursMarks?: ReadonlyMap<string, string>;
   onSelect: (id: string) => void;
 }
 
@@ -56,6 +58,8 @@ export function renderList(ul: HTMLUListElement, places: Place[], opts: ListOpti
         meta.append(dot, `${layer.label} · `);
       }
       meta.append(p.neighborhood ?? "");
+      const mark = opts.hoursMarks?.get(p.id);
+      if (mark) meta.append(" ", tag(mark, "tag tag--flag"));
 
       const chips = document.createElement("div");
       chips.className = "place-chips";

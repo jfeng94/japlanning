@@ -968,6 +968,29 @@ button {
   font-size: 0.85rem;
 }
 
+.open-now-details {
+  margin: 0.4rem 0 0 0.25rem;
+}
+
+.open-at {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.open-at-input {
+  font: inherit;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--rule);
+  border-radius: 0.5rem;
+  background: var(--bg);
+  color: var(--fg);
+}
+
 .sheet-actions {
   margin-top: 1.25rem;
   display: flex;

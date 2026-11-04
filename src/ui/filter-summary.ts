@@ -1,5 +1,6 @@
 import { iconAssetUrl, isIconId } from "../config/icons.ts";
 import type { LayerConfig } from "../data/types.ts";
+import { clock, DAY, tokyoWallClock } from "../hours/open.ts";
 import { activeFacetLayer, effectiveLayers, getSelection, isDefaultSelection, type FilterState } from "../filter/state.ts";
 import { tag } from "./chips.ts";
 
@@ -40,7 +41,10 @@ function summaryTags(state: FilterState, regionLayers: LayerConfig[]): HTMLEleme
   for (const n of state.neighborhoods) tags.push(tag(shortNeighborhood(n)));
   if (state.starredOnly) tags.push(tag("★ key branches"));
   if (state.bookmarkedOnly) tags.push(tag("Bookmarked"));
-  if (state.openNow) tags.push(tag("Open now"));
+  if (state.openNow) {
+    const at = tokyoWallClock(state.openAt);
+    tags.push(tag(at ? `Open ${DAY[at.getDay()]} ${clock(at)}` : "Open now"));
+  }
 
   const activeId = activeFacetLayer(state, regionLayers.map((l) => l.id));
   const activeLayer = regionLayers.find((l) => l.id === activeId);

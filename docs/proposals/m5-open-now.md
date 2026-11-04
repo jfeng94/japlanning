@@ -1,6 +1,7 @@
 # M5: Open now
 
-Status: **proposed** (2026-11-04). Waiting for go-ahead.
+Status: **implemented, awaiting phone acceptance** (approved and built
+2026-11-04). Checked in a desktop browser at phone width; see Results.
 
 ## Goal
 
@@ -11,24 +12,24 @@ M4's evaluator; no new parsing.
 
 ## Done when
 
-- [ ] "Open now" in the filter sheet's Flags section narrows list and map
+- [x] "Open now" in the filter sheet's Flags section narrows list and map
       to places whose OSM hours say open at the current Tokyo time, with a
       count. It appears in the strip summary and the URL (`open=1`).
-- [ ] Places with no OSM hours are not silently dropped: an "include
+- [x] Places with no OSM hours are not silently dropped: an "include
       unknown hours (n)" checkbox under the chip, default on, like the
       facets' include-unknown. Off, they're hidden. Unparsable hours count
       as unknown.
-- [ ] Layers without hours (`hasHours: false`, e.g. lodging) are untouched
+- [x] Layers without hours (`hasHours: false`, e.g. lodging) are untouched
       by the filter and their rows show a small "no hours" mark while it's
       on.
-- [ ] The status refreshes on its own: once a minute while the filter is on
+- [x] The status refreshes on its own: once a minute while the filter is on
       and when the app comes back to the foreground, so a list left open
       across 19:00 updates.
-- [ ] "Open at…": a day-and-time picker in the sheet evaluates at that
+- [x] "Open at…": a day-and-time picker in the sheet evaluates at that
       Tokyo time instead of now; the card's status, the strip tag ("Open
       Tue 10:00") and the URL (`at=2026-11-10T10:00`) follow it. Clear
       returns to now.
-- [ ] `npm test` covers the evaluation over a set of places, the filter
+- [x] `npm test` covers the evaluation over a set of places, the filter
       with the three outcomes (open, closed, unknown), the unknown toggle,
       and the URL round trip including `at=`.
 
@@ -136,4 +137,32 @@ About 10 files, roughly 450 lines, a third tests.
 
 ## Results
 
-(filled in after acceptance)
+Built 2026-11-04 in two commits. 134 tests (5 new: evaluateAll at now and
+at a picked time, wall-clock round trip, the filter's three outcomes with
+the unknown toggle and hour-less layers, counts, URL round trip).
+
+Verified in the browser pane at 375×812, Tokyo time Thursday 08:46:
+
+- Open now on: chip "Open now · 7", 25 places (7 open + 18 unknown), every
+  unknown row marked "hours unknown", URL `?open=1`.
+- Include unknown hours off: 7 places, URL `&hu=0`.
+- Open at Tue 10:00 via the pickers: chip "Open Tue 10:00 · 18", strip
+  tag "Open Tue 10:00", URL `&at=2026-11-10T10:00`; Glitch's card reads
+  "Open at Tue 10:00 · until 19:00".
+
+For the phone pass:
+
+- The native date and time pickers inside the sheet.
+- Leave the list open past a change of hours and see it update within a
+  minute; background the app and return.
+- No "no hours" layer exists yet (coffee has hours), so that mark is
+  untested by hand; the unit test covers the rule.
+
+Decisions made while building:
+
+- Turning the filter on before the parser has loaded shows "Checking
+  hours…" under the chip and passes everything until it arrives.
+- A picked date without a time (or the reverse) is completed from
+  Tokyo's current clock, so one tap on either picker is enough.
+- `openAt` without `openNow` is kept in state and the URL but has no
+  effect until the filter is on; Clear drops both.

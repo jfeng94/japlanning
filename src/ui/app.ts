@@ -5,7 +5,9 @@ import { createBookmarks, createIdbBookmarkStorage } from "../data/bookmarks.ts"
 import { browserDeps } from "../data/browser.ts";
 import { loadAllLayersStaged } from "../data/load.ts";
 import type { LoadResult, Place, RegionId } from "../data/types.ts";
-import { applyFilters } from "../filter/apply.ts";
+import { applyFilters, type HoursInput } from "../filter/apply.ts";
+import { evaluateAll, type HoursState } from "../hours/evaluate-all.ts";
+import { loadParser, tokyoNow, tokyoWallClock, type OpeningHoursCtor } from "../hours/open.ts";
 import {
   defaultState,
   effectiveLayers,
@@ -64,6 +66,46 @@ export function mountApp(root: HTMLElement): void {
   let flashId: string | undefined;
   /** Where the open card came from: a list row keeps the list's position on return; anything else scrolls to the row. */
   let openedFrom: "list" | "elsewhere" = "list";
+
+  // ---- hours (open now) ----
+  const layersWithHours = new Set<string>(layers.filter((l) => l.hasHours).map((l) => l.id));
+  let parser: OpeningHoursCtor | undefined;
+  let hoursStates: Map<string, HoursState> | undefined;
+  let hoursTimer: ReturnType<typeof setInterval> | undefined;
+
+  /** The Tokyo wall-clock moment the filter and the card evaluate at. */
+  const hoursAt = (state: FilterState): Date | undefined => tokyoWallClock(state.openAt);
+  const hoursInput = (): HoursInput | undefined => (hoursStates ? { states: hoursStates, layersWithHours } : undefined);
+
+  /** Recompute every place's open state; load the parser first if needed; keep a minute timer while the filter is on. */
+  function refreshHours(): void {
+    const state = filters.get();
+    if (!state.openNow) {
+      hoursStates = undefined;
+      if (hoursTimer) clearInterval(hoursTimer);
+      hoursTimer = undefined;
+      return;
+    }
+    if (!parser) {
+      void loadParser().then((p) => {
+        parser = p;
+        refreshHours();
+        render();
+      });
+      return;
+    }
+    hoursStates = evaluateAll(parser, places, hoursAt(state) ?? tokyoNow());
+    hoursTimer ??= setInterval(() => {
+      refreshHours();
+      render();
+    }, 60_000);
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && filters.get().openNow) {
+      refreshHours();
+      render();
+    }
+  });
   /** A place id from the URL to select once its data has loaded. */
   let pendingSelection: string | undefined = startParams.get(SELECTED_PARAM) ?? undefined;
   let fittedOnce = false;
@@ -167,7 +209,7 @@ export function mountApp(root: HTMLElement): void {
   /** Make sure `place` is in the current results: right region, and no filter or layer selection excluding it. */
   function revealPlace(place: Place): void {
     if (place.region !== filters.get().region) filters.dispatch({ type: "setRegion", region: place.region });
-    const visible = applyFilters(places, filters.get(), { bookmarks: bookmarks.all() }).some((p) => p.id === place.id);
+    const visible = applyFilters(places, filters.get(), { bookmarks: bookmarks.all(), hours: hoursInput() }).some((p) => p.id === place.id);
     if (!visible) {
       filters.dispatch({ type: "clearFilters" });
       filters.dispatch({ type: "setLayers", layers: [] });
@@ -230,6 +272,7 @@ export function mountApp(root: HTMLElement): void {
       layers: layersInRegion(layers, state.region),
       places,
       bookmarks: bookmarks.all(),
+      hours: hoursInput(),
       dispatch: filters.dispatch,
     });
   }
@@ -247,7 +290,7 @@ export function mountApp(root: HTMLElement): void {
 
     const layersOn = effectiveLayers(state, regionLayers.map((l) => l.id));
     const total = places.filter((p) => p.region === state.region && layersOn.has(p.layerId)).length;
-    const shown = sortByName(applyFilters(places, state, { bookmarks: bookmarks.all() }));
+    const shown = sortByName(applyFilters(places, state, { bookmarks: bookmarks.all(), hours: hoursInput() }));
     const selectedId = ui.get().selectedId;
     const selected = selectedId ? shown.find((p) => p.id === selectedId) : undefined;
     // Returning to the list: remember which place was open so its row can fade in from a highlight.
@@ -267,6 +310,7 @@ export function mountApp(root: HTMLElement): void {
       selectedId,
       bookmarks: bookmarks.all(),
       flashId,
+      hoursMarks: state.openNow ? hoursMarks(shown) : undefined,
       onSelect: (id) => {
         openedFrom = "list";
         select(id);
@@ -280,6 +324,7 @@ export function mountApp(root: HTMLElement): void {
         origin: location.origin,
         isBookmarked: (id) => bookmarks.has(id),
         onToggleBookmark: (id) => bookmarks.toggle(id),
+        at: hoursAt(state),
       });
       renderDetailStrip(detailStrip, selected);
     }
@@ -311,8 +356,18 @@ export function mountApp(root: HTMLElement): void {
     panel.relayout(); // the strip's height depends on what the summary shows
   }
 
+  /** Why a row is in an open-now list when it isn't simply "open". */
+  function hoursMarks(shown: Place[]): Map<string, string> {
+    const marks = new Map<string, string>();
+    for (const p of shown) {
+      if (!layersWithHours.has(p.layerId)) marks.set(p.id, "no hours");
+      else if ((hoursStates?.get(p.id) ?? "unknown") === "unknown") marks.set(p.id, "hours unknown");
+    }
+    return marks;
+  }
+
   function fitToResults(): void {
-    const shown = applyFilters(places, filters.get(), { bookmarks: bookmarks.all() });
+    const shown = applyFilters(places, filters.get(), { bookmarks: bookmarks.all(), hours: hoursInput() });
     view.fitPoints(shown.map((p) => [p.lng, p.lat]));
   }
 
@@ -346,6 +401,7 @@ export function mountApp(root: HTMLElement): void {
         places = latest.flatMap((r) => r.places);
         loading = !done;
         diagnostics.update(results, loading);
+        refreshHours();
         render();
         onDataArrived();
       });
@@ -393,11 +449,13 @@ export function mountApp(root: HTMLElement): void {
     history.replaceState(history.state, "", urlFor(state, ui.get().selectedId));
     view.setRegion(regions.find((r) => r.id === state.region)!);
     if (regionChanged) fittedOnce = true; // setRegion fitted the bbox; don't refit to results
+    refreshHours();
     render();
   });
   let lastRegion: RegionId = filters.get().region;
 
   bookmarks.subscribe(render);
+  refreshHours(); // a URL with open=1 starts the parser load straight away
 
   // Debug handle beside the map's: inspect panel scroll bookkeeping from the console.
   const dbg = (window as unknown as { __japlanning?: Record<string, unknown> }).__japlanning ?? {};

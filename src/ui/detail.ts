@@ -14,6 +14,8 @@ export interface DetailHandlers {
   origin: string;
   isBookmarked: (id: string) => boolean;
   onToggleBookmark: (id: string) => void;
+  /** Tokyo wall-clock moment to evaluate hours at; undefined means now. */
+  at?: Date;
 }
 
 const FLAG_TEXT = { approximate: "approximate", unverified: "unverified", unknown: "" } as const;
@@ -89,7 +91,7 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
       const status = document.createElement("span");
       status.className = "open-status";
       dd.append(" ", status);
-      void openStatus(place.hoursOsm).then((s) => {
+      void openStatus(place.hoursOsm, h.at, h.at === undefined).then((s) => {
         if (token !== renderToken) return;
         status.textContent = s.label;
         status.dataset["state"] = s.state;

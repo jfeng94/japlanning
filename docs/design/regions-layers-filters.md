@@ -143,6 +143,26 @@ interface FilterState {
 }
 ```
 
+## Open now (M5, 2026-11-04)
+
+A shared filter evaluated in Asia/Tokyo wall-clock time from the
+`Hours (OSM)` column, at "now" or at a picked moment (`openAt`,
+`YYYY-MM-DDTHH:MM`). Rules, per place:
+
+- Layer has `hasHours: false` (lodging and the like): untouched; rows
+  show a "no hours" mark while the filter is on.
+- Open: passes. Closed: hidden.
+- Unknown (blank or unparsable hours): passes iff `includeUnknownHours`
+  (default on, like the facets' include-unknown); rows show "hours
+  unknown".
+- Before the parser has loaded, everything passes so the list never
+  blanks.
+
+The evaluation lives outside the filter state (like bookmarks) and is
+passed in. It refreshes once a minute while the filter is on and when
+the app returns to the foreground. The card's Open/Closed line reads the
+same moment, so the filter and the card never disagree.
+
 ## Devices and layout
 
 - **Primary target: iPhone, installed to the Home Screen from Chrome.** Every
