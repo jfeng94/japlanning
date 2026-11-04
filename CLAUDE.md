@@ -224,6 +224,15 @@ proposal in `docs/proposals/` before work starts.
   stations, water and parks remain, and make sure our pins pop.
 - **M9. Wide layout.** List beside map on iPad and desktop.
 
+## Wishlist (not scheduled)
+
+- **Images in the card.** A sheet column of Drive image references; a
+  build step that downloads, resizes to ~800 px and converts to WebP under
+  the site with a manifest per place; a thumbnail row on the card with an
+  in-app lightbox (pinch, swipe, close) so nobody leaves the app to see a
+  menu; in M7, viewed images cached as you go plus a "download all images"
+  with a size estimate. Deferred 2026-11-04; roughly two to three days.
+
 ## Open questions
 
 - Framework: vanilla TS (recommended to start), or something like
