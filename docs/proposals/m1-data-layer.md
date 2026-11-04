@@ -1,6 +1,6 @@
 # M1: Data layer
 
-Status: **proposed** (2026-11-04). Waiting for go-ahead.
+Status: **done** (approved and accepted 2026-11-04). See Results.
 
 ## Goal
 
@@ -12,15 +12,15 @@ the config shapes from `docs/design/regions-layers-filters.md`.
 
 ## Done when
 
-- [ ] `npm test` runs the parser and loader tests green, locally and in CI.
-- [ ] The deployed page lists each configured layer with place count,
+- [x] `npm test` runs the parser and loader tests green, locally and in CI.
+- [x] The deployed page lists each configured layer with place count,
       source (network / cache / bundled), fetch time and warnings.
-- [ ] In the installed app: load once online, enable airplane mode, cold
+- [x] In the installed app: load once online, enable airplane mode, cold
       launch. The page still shows the coffee layer from cache. (The app
       shell itself isn't offline until M7, so this test is "reload while the
       page is open" or run from the dev server with network throttled; the
       full cold-launch test is M7's.)
-- [ ] Reordering two columns in the sheet and adding a junk column changes
+- [x] Reordering two columns in the sheet and adding a junk column changes
       nothing except the junk column appearing under "extra" fields.
 
 ## What the live sheet looks like (2026-11-04)
@@ -239,4 +239,39 @@ and 4 are the only ones over 100 lines.
 
 ## Results
 
-(filled in after acceptance)
+Accepted 2026-11-04, six commits e16fbe6..6b57229.
+
+- 33 tests (23 parser, 10 loader), run locally and in CI before every
+  build.
+- Installed app on the iPhone, airplane mode, Refresh: `39 places · cached`
+  with the reason `network: Load failed` (WebKit's wording for no
+  connectivity). Dark mode renders.
+- Column reordering and junk columns are covered by the stub lodging
+  fixture rather than by editing the live sheet.
+- Snapshot step in CI: `tokyo-coffee: 39 places, 0 warnings`; the site
+  serves `/data/tokyo-coffee.csv`.
+
+Decisions made while building, beyond the proposal:
+
+- The parser takes the layer and an optional neighborhood list, not the
+  region; the layer already knows its region id.
+- Coordinates are validated against Japan's bounding box, which catches
+  swapped latitude/longitude.
+- Ids keep letters from any script, so Japanese-only names get readable
+  ids.
+- A cached copy that no longer parses is skipped with a reason, not fatal.
+- The snapshot script retries three times and fails the build on a sheet
+  that can't be fetched or lacks a required column. Parse warnings print
+  but don't fail.
+- The loader passes `cache: "no-store"` so the browser's HTTP cache never
+  masks ours; Google marks the CSV `private, max-age=300`.
+
+Learned:
+
+- Google serves the published CSV with CRLF line endings. PapaParse
+  doesn't care; the committed fixture is normalised to LF by
+  `.gitattributes`.
+- Node 26 runs the TypeScript snapshot script directly, including the
+  CommonJS PapaParse import, with no build step.
+- Safari's `storage.estimate()` reports 0 B used even with the CSV in
+  IndexedDB; its usage figure is coarse and not to be relied on.
