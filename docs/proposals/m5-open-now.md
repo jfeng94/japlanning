@@ -1,7 +1,6 @@
 # M5: Open now
 
-Status: **implemented, awaiting phone acceptance** (approved and built
-2026-11-04). Checked in a desktop browser at phone width; see Results.
+Status: **done** (accepted on the phone 2026-11-04).
 
 ## Goal
 
