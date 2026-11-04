@@ -578,8 +578,9 @@ button {
   margin-right: 0.3rem;
 }
 
-/* The seal sits where the ★ goes (upper right) and replaces it when both apply. */
-.dom-pin-badge {
+/* The seal sits where the ★ goes (upper right) and replaces it when both apply.
+   Selectors carry `img` so they beat the generic `.dom-pin img` sizing rule. */
+.dom-pin img.dom-pin-badge {
   display: none;
   position: absolute;
   top: -0.5rem;
@@ -590,7 +591,7 @@ button {
   filter: drop-shadow(0 0 1px var(--bg-raised));
 }
 
-.dom-pin.is-bookmarked .dom-pin-badge {
+.dom-pin.is-bookmarked img.dom-pin-badge {
   display: block;
 }
 
@@ -598,7 +599,7 @@ button {
   content: none;
 }
 
-.dom-pin--bare .dom-pin-badge {
+.dom-pin--bare img.dom-pin-badge {
   top: -0.3rem;
   right: -0.3rem;
 }
