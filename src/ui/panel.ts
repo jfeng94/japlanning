@@ -20,6 +20,8 @@ export interface Panel {
   setHeight(height: PanelHeight): void;
   /** Current height in CSS pixels (the snap target while settling). */
   heightPx(): number;
+  /** Re-measure after the strip's content changed (its height depends on it). */
+  relayout(): void;
 }
 
 const NEXT: Record<PanelHeight, PanelHeight> = { strip: "half", half: "full", full: "strip" };
@@ -73,6 +75,11 @@ export function mountPanel(root: HTMLElement, onHeightChange?: (h: PanelHeight, 
       if (h !== height) apply(h);
     },
     heightPx: () => px[height](),
+    relayout() {
+      if (pointerId !== undefined) return; // mid-drag: the finger owns the height
+      const target = `${px[height]()}px`;
+      if (el.style.height !== target) apply(height);
+    },
   };
 
   // ---- drag ----

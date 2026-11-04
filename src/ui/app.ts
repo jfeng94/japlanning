@@ -23,6 +23,7 @@ import { chip } from "./chips.ts";
 import { renderDetail, renderDetailStrip } from "./detail.ts";
 import { mountDiagnostics } from "./diagnostics.ts";
 import { renderFilterSheet } from "./filter-sheet.ts";
+import { renderFilterSummary } from "./filter-summary.ts";
 import { mountHeader } from "./header.ts";
 import { renderList, sortByName } from "./list.ts";
 import { mountPanel } from "./panel.ts";
@@ -77,7 +78,6 @@ export function mountApp(root: HTMLElement): void {
 
   const header = mountHeader(root, regions, {
     onRegion: (region) => filters.dispatch({ type: "setRegion", region }),
-    onLayers: filterSheet.open,
     onSearch: (text) => filters.dispatch({ type: "setText", text }),
     onFilters: filterSheet.open,
     onSettings: settingsSheet.open,
@@ -103,13 +103,21 @@ export function mountApp(root: HTMLElement): void {
   root.querySelector(".fit-button")!.addEventListener("click", () => fitToResults());
 
   // The panel's two contents. The strip is always visible; the body shows at half and full.
-  const listStrip = el("div", "strip-list", `<p class="results-count"></p><p class="status" role="status" hidden></p>`);
+  const listStrip = el(
+    "button",
+    "strip-list",
+    `<p class="results-count"></p><p class="filter-summary" hidden></p><p class="status" role="status" hidden></p>`,
+  );
+  (listStrip as HTMLButtonElement).type = "button";
+  listStrip.setAttribute("aria-label", "Open filters");
+  listStrip.addEventListener("click", filterSheet.open);
   const detailStrip = el("div", "strip-detail");
   const listBody = el("div", "body-list", `<ul class="place-list"></ul><div class="empty-state" hidden></div>`);
   const detailBody = el("div", "body-detail");
   panel.strip.append(listStrip, detailStrip);
   panel.content.append(listBody, detailBody);
   const resultsCount = listStrip.querySelector<HTMLElement>(".results-count")!;
+  const filterSummary = listStrip.querySelector<HTMLElement>(".filter-summary")!;
   const status = listStrip.querySelector<HTMLElement>(".status")!;
   const placeList = listBody.querySelector<HTMLUListElement>(".place-list")!;
   const emptyState = listBody.querySelector<HTMLElement>(".empty-state")!;
@@ -182,7 +190,6 @@ export function mountApp(root: HTMLElement): void {
 
     header.update({
       region: regions.find((r) => r.id === state.region)!,
-      layersLabel: layersLabel(state, regionLayers.length),
       text: state.text,
       filtersActive: hasActiveFilters(state),
     });
@@ -192,7 +199,13 @@ export function mountApp(root: HTMLElement): void {
     const selectedId = ui.get().selectedId;
     const selected = selectedId ? shown.find((p) => p.id === selectedId) : undefined;
 
-    resultsCount.textContent = loading && places.length === 0 ? "Loading…" : countLabel(shown.length, total);
+    renderFilterSummary(
+      resultsCount,
+      filterSummary,
+      state,
+      regionLayers,
+      loading && places.length === 0 ? "Loading…" : countLabel(shown.length, total),
+    );
     renderStatus(status, results, loading);
     renderList(placeList, shown, {
       layers: regionLayers,
@@ -210,20 +223,12 @@ export function mountApp(root: HTMLElement): void {
 
     pins.update(placesToPins(shown, regionLayers));
     pins.setSelected(selectedId);
+    panel.relayout(); // the strip's height depends on what the summary shows
   }
 
   function fitToResults(): void {
     const shown = applyFilters(places, filters.get());
     view.fitPoints(shown.map((p) => [p.lng, p.lat]));
-  }
-
-  function layersLabel(state: FilterState, available: number): string {
-    if (available === 0) return "No layers";
-    const selected = [...state.layers].map((id) => layers.find((l) => l.id === id)?.label ?? id);
-    if (selected.length === 0) return "No layers";
-    if (selected.length === 1) return selected[0]!;
-    if (selected.length === available) return "All layers";
-    return `${selected.length} layers`;
   }
 
   function renderEmptyState(target: HTMLElement, state: FilterState, shown: number, total: number, busy: boolean): void {

@@ -5,7 +5,6 @@ import { createMenu } from "./menu.ts";
 
 export interface HeaderHandlers {
   onRegion: (region: RegionId) => void;
-  onLayers: () => void;
   onSearch: (text: string) => void;
   onFilters: () => void;
   onSettings: () => void;
@@ -13,8 +12,6 @@ export interface HeaderHandlers {
 
 export interface HeaderState {
   region: RegionConfig;
-  /** "Coffee", "2 layers", "No layers". */
-  layersLabel: string;
   text: string;
   filtersActive: boolean;
 }
@@ -27,9 +24,10 @@ export interface Header {
 const SEARCH_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
 
 /**
- * One row: region menu, layers button, then search, Filters and
- * Settings as icon buttons. Search expands into a field across the row
- * and collapses on Cancel. Diagnostics lives in the Settings sheet.
+ * One row: region menu, then search, Filters and Settings as icon
+ * buttons. Search expands into a field across the row and collapses on
+ * Cancel. Layers are chosen in the filter sheet; the panel strip shows
+ * what's selected.
  */
 export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: HeaderHandlers): Header {
   const el = document.createElement("header");
@@ -37,7 +35,6 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
   el.innerHTML = `
     <div class="topbar-main">
       <button type="button" class="menu-button region-button"><span class="label"></span><span class="caret">▾</span></button>
-      <button type="button" class="menu-button layers-button"><span class="label"></span><span class="caret">▾</span></button>
       <span class="spacer"></span>
       <button type="button" class="icon-button search-toggle" aria-label="Search">${SEARCH_ICON}<span class="dot" hidden></span></button>
       <button type="button" class="icon-button filters-button" aria-label="Filters"><img alt="" draggable="false"><span class="dot" hidden></span></button>
@@ -53,8 +50,6 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
   const $ = <T extends HTMLElement>(sel: string) => el.querySelector<T>(sel)!;
   const regionButton = $(".region-button");
   const regionLabel = $(".region-button .label");
-  const layersButton = $(".layers-button");
-  const layersLabel = $(".layers-button .label");
   const searchToggle = $(".search-toggle");
   const searchDot = $(".search-toggle .dot");
   const filtersButton = $(".filters-button");
@@ -77,7 +72,6 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
     })),
   );
 
-  layersButton.addEventListener("click", h.onLayers);
   filtersButton.addEventListener("click", h.onFilters);
   settingsButton.addEventListener("click", h.onSettings);
 
@@ -103,7 +97,6 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
     update(state) {
       current = state;
       regionLabel.textContent = state.region.label;
-      layersLabel.textContent = state.layersLabel;
       if (input.value !== state.text) input.value = state.text;
       searchDot.hidden = state.text === "";
       filtersDot.hidden = !state.filtersActive;
