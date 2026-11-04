@@ -21,8 +21,10 @@ the permission prompt is yours to trigger.
       "1.2 km") after the neighborhood, and the card shows it in the meta
       line.
 - [ ] A sort control (Name / Distance) in the filter sheet; Distance is
-      offered once a position exists and becomes the default the first
-      time one arrives. The choice is remembered on the device.
+      offered once a position exists. A Settings toggle, "Sort by distance
+      when located", off by default, makes the list switch to distance
+      order on the first fix; on the trip it goes on, while planning it
+      stays off. Both are remembered on the device.
 - [ ] The dot and distances update as the phone moves, without re-sorting
       the list under your thumb more than once every few seconds.
 - [ ] `npm test` covers the distance maths, formatting and the sort.
@@ -57,12 +59,18 @@ last fix; the card's meta line gets "· 1.2 km away".
 
 ### Sort
 
-A `sort: "name" | "distance"` preference, stored with the other settings
-(`src/config/settings.ts`), shown as a Name / Distance pair in the filter
-sheet above the Flags section. Distance is disabled until a fix exists.
-The first fix flips the sort to distance once, unless the user had set
-Name themselves after that (the setting records "user chose"). The strip
-summary shows "by distance" so it's visible why the list order changed.
+Two settings in `src/config/settings.ts`:
+
+- `sort: "name" | "distance"`: the current order, shown as a Name /
+  Distance pair in the filter sheet above the Flags section (Distance
+  disabled until a fix exists) and in the Settings sheet.
+- `autoDistanceSort: boolean`, **off by default**: when on, the first fix
+  of a session switches `sort` to distance. Off while planning from home,
+  where distance to Tokyo means nothing; on during the trip. It lives in
+  the Settings sheet as "Sort by distance when located".
+
+The strip summary shows "by distance" so it's visible why the list order
+changed.
 
 ### Offline and the installed app
 
@@ -77,7 +85,7 @@ regardless.
 src/geo/distance.ts, .test.ts         new
 src/map/map.ts                        geolocate control, events, follow
 src/config/settings.ts                sort preference
-src/ui/settings-sheet.ts              (no change; sort lives in the filter sheet)
+src/ui/settings-sheet.ts              sort and the auto-switch toggle
 src/ui/filter-sheet.ts                Name / Distance
 src/ui/filter-summary.ts              "by distance" tag
 src/ui/list.ts                        distance on rows
@@ -104,9 +112,6 @@ that).
 
 ## Open questions
 
-- **Distance sort becomes the default on first fix** (proposed) vs stays on
-  Name until chosen. Default-on matches "what's close" being the reason
-  to locate at all.
 - **Distance text on rows always, or only when sorted by distance**
   (proposed: always, once known; it's one short number).
 
