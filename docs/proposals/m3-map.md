@@ -339,9 +339,9 @@ bbox).
 - **Street labels kept** (proposed). Dropping them would be a purer atlas
   but worse for finding a side street.
 - **Pin labels from zoom 14** (proposed). Could be always-on or never.
-- **Default renderer: SDF** (proposed) with `?pins=dom` to compare.
-  Decide after trying both on the phone; the loser stays in the repo
-  behind the config switch unless it's clearly dead weight.
+- **Default renderer: DOM** (decided on the phone 2026-11-04; SDF stays
+  behind `?pins=sdf` in case hundreds of markers prove heavy once every
+  layer has pins).
 - **Icon enum values**: `coffee` for now. Jerry names the rest as the
   other sheets take shape; each needs a silhouette and, optionally, a
   full-colour drawing.

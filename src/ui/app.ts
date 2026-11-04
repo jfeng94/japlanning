@@ -25,7 +25,7 @@ import { mountDiagnostics } from "./diagnostics.ts";
 import { renderFilterSheet } from "./filter-sheet.ts";
 import { mountHeader } from "./header.ts";
 import { renderList, sortByName } from "./list.ts";
-import { mountPanel, type PanelHeight } from "./panel.ts";
+import { mountPanel } from "./panel.ts";
 import { createSheet } from "./sheet.ts";
 
 const REGION_KEY = "japlanning.region";
@@ -78,13 +78,13 @@ export function mountApp(root: HTMLElement): void {
     onDiagnostics: diagSheet.open,
   });
 
-  const panel = mountPanel(root, (h) => view.setBottomPadding(panelPadding(h)));
+  const panel = mountPanel(root, (_h, px) => view.setBottomPadding(px));
   const view = mountMap(
     root.querySelector<HTMLElement>(".map-pane")!,
     regions.find((r) => r.id === filters.get().region)!,
     watchFlavor((flavor) => view.setFlavor(flavor)),
   );
-  view.setBottomPadding(panelPadding(panel.getHeight()));
+  view.setBottomPadding(panel.heightPx());
   const pins: PinRenderer = createPinRenderer();
   pins.onSelect((id) => (id === undefined ? deselect() : select(id)));
   root.querySelector(".fit-button")!.addEventListener("click", () => fitToResults());
@@ -355,14 +355,6 @@ function relativeTime(d: Date): string {
   if (mins < 60) return `${mins} min ago`;
   if (mins < 60 * 48) return `${Math.round(mins / 60)} h ago`;
   return `${Math.round(mins / 1440)} d ago`;
-}
-
-/** How much of the viewport the panel covers at each height; mirrors the CSS. */
-function panelPadding(h: PanelHeight): number {
-  const vh = window.innerHeight;
-  if (h === "strip") return 90;
-  if (h === "half") return vh * 0.46;
-  return vh * 0.85;
 }
 
 function regionLabel(id: RegionId): string {

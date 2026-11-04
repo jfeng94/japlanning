@@ -11,7 +11,6 @@
   --chip: #efe9e1;
   --shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
   --header-h: 3.25rem;
-  --strip-h: 3.5rem;
   color-scheme: light dark;
 }
 
@@ -384,28 +383,31 @@ button {
   background: var(--bg-raised);
   border-radius: 1rem 1rem 0 0;
   box-shadow: var(--shadow);
+  /* Height is set in px by panel.ts; this only animates the snaps. */
   transition: height 0.25s ease-out;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-.panel[data-height="strip"] {
-  height: calc(var(--strip-h) + 1.4rem + env(safe-area-inset-bottom));
+.panel.is-dragging {
+  transition: none;
 }
 
-.panel[data-height="half"] {
-  height: 46vh;
-  height: 46dvh;
+/* Handle plus strip is the drag surface; the browser must not scroll or zoom it. */
+.panel-drag {
+  flex: none;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.panel[data-height="full"] {
-  height: calc(100vh - var(--header-h) - 0.5rem);
-  height: calc(100dvh - var(--header-h) - 0.5rem);
+.panel.is-dragging .panel-drag {
+  cursor: grabbing;
 }
 
 .panel-handle {
-  flex: none;
   width: 100%;
-  height: 1.4rem;
+  height: 1rem;
   border: 0;
   background: transparent;
   display: flex;
@@ -414,16 +416,15 @@ button {
 }
 
 .grabber {
-  width: 2.5rem;
-  height: 0.3rem;
+  width: 2.25rem;
+  height: 0.28rem;
   border-radius: 999px;
   background: var(--rule);
 }
 
 .panel-strip {
-  flex: none;
-  min-height: var(--strip-h);
-  padding: 0 1rem 0.4rem;
+  min-height: 2.1rem;
+  padding: 0 1rem 0.35rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -538,6 +539,7 @@ button {
 .results-count {
   margin: 0;
   font-weight: 600;
+  font-size: 0.95rem;
 }
 
 .status {
