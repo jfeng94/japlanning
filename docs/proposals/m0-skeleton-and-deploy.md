@@ -1,9 +1,6 @@
 # M0: Skeleton and deploy
 
-Status: **in progress** (approved 2026-11-04). Code side done: scaffold,
-manifest, capability panel, Actions deploy, Pages enabled with the custom
-domain. Node upgraded, DNS live, certificate issued, HTTPS enforced. Waiting on
-phone verification.
+Status: **done** (accepted 2026-11-04). See Results.
 
 ## Goal
 
@@ -20,9 +17,9 @@ through the pipeline this one sets up.
 - [x] https://japan.garbage.house loads with a valid certificate.
 - [x] The page shows the git commit it was built from, so we can confirm a
       deploy landed.
-- [ ] Chrome on the iPhone offers "Add to Home Screen", and the installed
+- [x] Chrome on the iPhone offers "Add to Home Screen", and the installed
       app opens standalone (no browser chrome).
-- [ ] The page's capability panel, viewed inside the installed app, reports
+- [x] The page's capability panel, viewed inside the installed app, reports
       standalone mode, service worker support, geolocation API present,
       clipboard API present, and a storage estimate. This verifies the
       Chrome-install path we're betting on in `CLAUDE.md`.
@@ -158,4 +155,46 @@ show the stripped result rather than the raw template output.
 
 ## Results
 
-(filled in after acceptance)
+Accepted 2026-11-04. Capability panel inside the app installed from Chrome
+on the iPhone (iOS 18.7, build `7e36c1f`):
+
+| Check | Result |
+| --- | --- |
+| Standalone (installed app) | yes |
+| Service worker API | present |
+| Geolocation API | present |
+| Clipboard writeText | present |
+| IndexedDB | present |
+| Cache Storage | present |
+| storage.persist() | present (not requested) |
+| Storage estimate | 0 B used of 41.2 GB |
+| Secure context (HTTPS) | yes |
+| User agent | iPhone WebKit 605.1.15, Safari-style UA |
+
+Conclusions:
+
+- The Chrome-installed Home Screen app runs in Apple's standalone web-app
+  container with every API M7 needs. The install path in `CLAUDE.md` holds.
+- The user agent inside the installed app is Safari's, not Chrome's, which
+  confirms the installing browser is irrelevant once the app is on the Home
+  Screen.
+- The 41 GB quota is far above what three regional basemaps need. Eviction,
+  not quota, remains the offline risk.
+
+Things learned along the way:
+
+- nvm-windows 2.x installs to `%LOCALAPPDATA%
+vm` with the symlink at
+  `C:
+vm4w
+odejs`, removes the old Node from PATH but leaves it
+  installed. Terminals opened before the install don't see `NVM_HOME` and
+  fail with `open \settings.txt`.
+- Squarespace's "domain forwarding" produces a CNAME to
+  `ext-sq.squarespace.com` plus a redirect, which is not a CNAME to GitHub.
+  The record has to be added under custom records.
+- After fixing DNS, re-saving the custom domain in the Pages settings makes
+  GitHub re-verify and issue the certificate within a minute, instead of
+  waiting for its periodic check.
+- GitHub's API and push endpoint returned transient 5xx errors several times
+  in one session; retries succeeded.
