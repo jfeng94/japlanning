@@ -13,7 +13,8 @@
     "typecheck": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "snapshot": "node scripts/snapshot-data.ts"
+    "snapshot": "node scripts/snapshot-data.ts",
+    "basemap": "node scripts/build-basemap.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
