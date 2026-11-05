@@ -1,8 +1,10 @@
 import {
   addProtocol,
+  GeolocateControl,
   Map as MapLibreMap,
   ScaleControl,
   setWorkerUrl,
+  type IControl,
   type LngLatBoundsLike,
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -51,11 +53,35 @@ export interface MapView {
   destroy(): void;
 }
 
+/** A fix from the device, as the app keeps it. */
+export interface Position {
+  lat: number;
+  lng: number;
+  /** Radius in metres the device is confident about. */
+  accuracy: number;
+  /** When the fix was taken, epoch ms. */
+  at: number;
+}
+
+/** Why no fix arrived: the Geolocation API's three error codes, named. */
+export type LocateError = "denied" | "unavailable" | "timeout";
+
+export interface MapCallbacks {
+  /** The fit-to-results button. */
+  onFit(): void;
+  /** A new fix from the locate control. */
+  onPosition(position: Position): void;
+  /** The control asked and got no fix (first attempt only after a success). */
+  onLocateError(kind: LocateError): void;
+  /** Watching stopped: the button was tapped off, so the dot is gone and the last fix is stale. */
+  onLocateOff(): void;
+}
+
 export function basemapUrl(region: RegionConfig): string {
   return `${location.origin}/basemap/${region.id}.pmtiles`;
 }
 
-export function mountMap(container: HTMLElement, region: RegionConfig, flavor: Flavor): MapView {
+export function mountMap(container: HTMLElement, region: RegionConfig, flavor: Flavor, callbacks: MapCallbacks): MapView {
   ensureProtocol();
   let currentRegion = region;
   let currentFlavor = flavor;
@@ -74,12 +100,16 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
   // OpenStreetMap credit the licence requires lives in the panel strip
   // (always on screen) instead of MapLibre's attribution control.
   map.addControl(new ScaleControl({ maxWidth: 90, unit: "metric" }), "top-left");
+  // Our own buttons join MapLibre's top-left stack so the spacing is one rule, not three.
+  map.addControl(fitControl(callbacks.onFit), "top-left");
+  const locate = locateControl(callbacks);
+  map.addControl(locate, "top-left");
 
   map.on("style.load", () => {
     for (const cb of styleLoadCallbacks) cb(map);
   });
   // Debug handle for the browser console; harmless in production.
-  (window as unknown as { __japlanning?: unknown }).__japlanning = { map };
+  (window as unknown as { __japlanning?: unknown }).__japlanning = { map, locate };
 
   return {
     map,
@@ -133,6 +163,52 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
       map.remove();
     },
   };
+}
+
+/** The fit-to-results button as a MapLibre control, so it stacks with the others. */
+function fitControl(onFit: () => void): IControl {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "maplibregl-ctrl fit-button";
+  button.setAttribute("aria-label", "Fit map to results");
+  button.title = "Fit to results";
+  button.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/>
+      <circle cx="12" cy="12" r="2.5"/>
+    </svg>`;
+  button.addEventListener("click", onFit);
+  return { onAdd: () => button, onRemove: () => button.remove() };
+}
+
+/**
+ * MapLibre's locate control: it owns the permission prompt, the
+ * `watchPosition` loop, the dot with its accuracy ring and the button's
+ * states. With `trackUserLocation` the button cycles: off → tap → follow
+ * the dot; a pan drops to "watching, not following"; a tap there follows
+ * again; a tap while following turns it off and removes the dot. We only
+ * listen, and translate its events for the app.
+ */
+function locateControl(callbacks: MapCallbacks): GeolocateControl {
+  const control = new GeolocateControl({
+    positionOptions: { enableHighAccuracy: true, timeout: 10_000 },
+    trackUserLocation: true,
+    showUserLocation: true,
+    showAccuracyCircle: true,
+    fitBoundsOptions: { maxZoom: 16 },
+  });
+  control.on("geolocate", (e) => {
+    const { latitude: lat, longitude: lng, accuracy } = e.coords;
+    callbacks.onPosition({ lat, lng, accuracy, at: e.timestamp });
+  });
+  control.on("error", (e) => {
+    const kinds: Record<number, LocateError> = { 1: "denied", 2: "unavailable", 3: "timeout" };
+    callbacks.onLocateError(kinds[e.code] ?? "unavailable");
+  });
+  // Fired both when a pan drops follow mode and when a tap turns the control off; only the latter loses the dot.
+  control.on("trackuserlocationend", () => {
+    if (control._watchState === "OFF") callbacks.onLocateOff();
+  });
+  return control;
 }
 
 function styleFor(region: RegionConfig, flavor: Flavor) {

@@ -19,7 +19,7 @@ import {
 } from "../filter/state.ts";
 import { createStore } from "../filter/store.ts";
 import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url.ts";
-import { mountMap, watchFlavor } from "../map/map.ts";
+import { mountMap, watchFlavor, type LocateError, type Position } from "../map/map.ts";
 import { placesToPins, type PinRenderer } from "../map/pins.ts";
 import { createDomPinRenderer } from "../map/pins-dom.ts";
 import { createSdfPinRenderer } from "../map/pins-sdf.ts";
@@ -115,12 +115,6 @@ export function mountApp(root: HTMLElement): void {
     <main class="panes">
       <section class="map-pane" aria-label="Map"></section>
       <a class="osm-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
-      <button type="button" class="fit-button" aria-label="Fit map to results" title="Fit to results">
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/>
-          <circle cx="12" cy="12" r="2.5"/>
-        </svg>
-      </button>
     </main>
   `;
   const filterSheet = createSheet(root, "Filters", () => renderSheet());
@@ -143,6 +137,7 @@ export function mountApp(root: HTMLElement): void {
     root.querySelector<HTMLElement>(".map-pane")!,
     regions.find((r) => r.id === filters.get().region)!,
     watchFlavor((flavor) => view.setFlavor(flavor)),
+    { onFit: fitToResults, onPosition, onLocateError, onLocateOff },
   );
   view.setBottomPadding(panel.heightPx());
   let pins: PinRenderer = createPinRenderer();
@@ -164,7 +159,28 @@ export function mountApp(root: HTMLElement): void {
     pins.onSelect(onPinSelect);
     render();
   }
-  root.querySelector(".fit-button")!.addEventListener("click", () => fitToResults());
+
+  // ---- location ----
+  /** The device's last fix, while the locate control is watching. */
+  let position: Position | undefined;
+
+  function onPosition(next: Position): void {
+    position = next;
+  }
+
+  function onLocateError(kind: LocateError): void {
+    if (kind === "denied") position = undefined;
+    const text: Record<LocateError, string> = {
+      denied: "Location is off for this app. Allow it in the phone's Settings.",
+      unavailable: "Couldn't get your location.",
+      timeout: "No location fix yet. Try again, ideally outdoors.",
+    };
+    showToast(text[kind], 3000);
+  }
+
+  function onLocateOff(): void {
+    position = undefined;
+  }
 
   // The panel's two contents. The strip is always visible; the body shows at half and full.
   const listStrip = el(
@@ -460,6 +476,7 @@ export function mountApp(root: HTMLElement): void {
   // Debug handle beside the map's: inspect panel scroll bookkeeping from the console.
   const dbg = (window as unknown as { __japlanning?: Record<string, unknown> }).__japlanning ?? {};
   dbg["panel"] = { get listScrollTop() { return listScrollTop; }, get shownMode() { return shownMode; }, content: panel.content };
+  dbg["location"] = { get position() { return position; } };
   (window as unknown as { __japlanning: Record<string, unknown> }).__japlanning = dbg;
 
   render();
