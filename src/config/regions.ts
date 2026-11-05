@@ -28,3 +28,11 @@ export function regionById(id: RegionId): RegionConfig {
   if (!r) throw new Error(`unknown region: ${id}`);
   return r;
 }
+
+/** Parse options that validate Region and Neighborhood cells against this config. */
+export function regionOptions(): { regions: RegionId[]; neighborhoodsFor: (region: RegionId) => readonly string[] | undefined } {
+  return {
+    regions: regions.map((r) => r.id),
+    neighborhoodsFor: (region) => regions.find((r) => r.id === region)?.neighborhoods,
+  };
+}

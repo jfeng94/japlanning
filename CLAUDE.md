@@ -82,16 +82,23 @@ warning) and deploys. `npm run ids` prints the next free ID.
 CSV into the repo file (assigns missing IDs, moves a ★ prefix into Key,
 fixes column order and quoting); with no source it round-trips the file.
 
-The first layer is coffee: `data/tokyo-coffee.csv`.
+The first layer is **drinks** (`data/drinks.csv`): coffee, tea and bars
+in every region, one row each, with `Kind` saying which, `Region` saying
+where and `Icon` picking the artwork (decided 2026-11-05, see
+`docs/proposals/drinks-layer.md`). A layer is one location type; its
+rows carry the region.
 
-### Coffee columns (one row per shop)
+### Drinks columns (one row per place)
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | ID | integer | Stable id, assigned by hand, unique within the sheet. Bookmarks and share links key on it, so it never changes. `npm run ids` prints problems and the next free one; the build fails on a blank, non-integer or repeated ID. |
 | Name | string | The brand. An older ★ prefix still marks a key branch and is stripped for display. |
 | Branch | string | Which branch, when the name alone is ambiguous ("Yakumo"). Shown muted after the name; searched. |
-| Key | boolean | ★ or a checkbox (TRUE) = the key branch of a multi-branch brand, shown as a ★ flag. Blank = no. |
+| Key | boolean | ★ or a checkbox (TRUE) = the key branch of a multi-branch brand, shown as a star. Blank = no. |
+| Region | enum | Region id: tokyo · kyoto · hakone. Required; a bad value fails the build. |
+| Kind | enum | Coffee · Tea · Bar. First facet. |
+| Icon | enum | Pin artwork from the global icon enum (src/config/icons.ts): coffee · tea · bar. Blank = the layer default (coffee). |
 | Latitude, Longitude | number | WGS84 decimal degrees |
 | Neighborhood | enum | Shared across all layers in a region. Tokyo has 6 values, e.g. Central (Ginza / Jimbocho / Minato) |
 | Format | enum | Stand · Café · Kissaten · Tasting bar · Bean shop |

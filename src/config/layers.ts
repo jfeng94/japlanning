@@ -9,15 +9,16 @@ import type { LayerConfig, LayerId } from "../data/types.ts";
  */
 export const layers: LayerConfig[] = [
   {
-    id: "tokyo-coffee",
-    region: "tokyo",
-    label: "Coffee",
-    dataUrl: "/data/tokyo-coffee.csv",
+    // Coffee, tea and bars in every region: Kind says which, Region says where, Icon picks the artwork.
+    id: "drinks",
+    label: "Drinks",
+    dataUrl: "/data/drinks.csv",
     color: "#b5452b",
     icon: "coffee",
     hasHours: true,
     rowFacets: ["Format", "Specialty", "Linger"],
     facets: [
+      { column: "Kind", values: ["Coffee", "Tea", "Bar"] },
       { column: "Format", values: ["Stand", "Café", "Kissaten", "Tasting bar", "Bean shop"] },
       { column: "Roasting", values: ["In-house", "Guest roasters", "Both"] },
       { column: "Food", values: ["None", "Light", "Full menu"] },
@@ -32,6 +33,14 @@ export const layers: LayerConfig[] = [
           "Multi-roaster",
           "Latte art",
           "Food & sweets",
+          "Matcha",
+          "Sencha",
+          "Chinese tea",
+          "Cocktails",
+          "Sake",
+          "Whisky",
+          "Natural wine",
+          "Craft beer",
         ],
       },
       { column: "Reservation", values: ["Required", "Optional", "No"] },

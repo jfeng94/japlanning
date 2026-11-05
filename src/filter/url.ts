@@ -8,14 +8,14 @@ import { defaultSelection, defaultState, layersInRegion, type FacetSelection, ty
  * failing, so a stale shared link degrades to the nearest valid view.
  *
  *   ?r=kyoto                       region (omitted for the default region)
- *   &l=tokyo-coffee,tokyo-tea      layers (omitted when none selected, which means all)
+ *   &l=drinks,tokyo-tea      layers (omitted when none selected, which means all)
  *   &q=glitch                      text
  *   &n=Central&n=East              neighborhoods, repeated
  *   &star=1 &b=1 &open=1           flags (b = this device's bookmarks only)
  *   &hu=0                          open now: exclude unknown hours
  *   &at=2026-11-10T10:00           open at this Tokyo wall-clock time instead of now
- *   &f=tokyo-coffee/Format=Stand|Caf%C3%A9   facet values, repeated per facet
- *   &u=tokyo-coffee/Format         include-unknown OFF, repeated per facet
+ *   &f=drinks/Format=Stand|Caf%C3%A9   facet values, repeated per facet
+ *   &u=drinks/Format         include-unknown OFF, repeated per facet
  */
 export interface UrlContext {
   regions: RegionConfig[];

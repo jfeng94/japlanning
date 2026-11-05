@@ -1,5 +1,5 @@
 import Papa from "papaparse";
-import type { LayerConfig, ParseResult, ParseWarning, Place } from "./types.ts";
+import type { LayerConfig, ParseResult, ParseWarning, Place, RegionId } from "./types.ts";
 
 /** Thrown when the sheet is unusable as a whole (not for bad rows). */
 export class ParseError extends Error {
@@ -7,8 +7,10 @@ export class ParseError extends Error {
 }
 
 export interface ParseOptions {
-  /** The region's shared neighborhood list; values outside it warn. */
-  neighborhoods?: string[];
+  /** Known region ids; a Region cell outside them warns and skips the row (layers without a fixed region). */
+  regions?: readonly string[];
+  /** A region's shared neighborhood list; a Neighborhood outside it warns. */
+  neighborhoodsFor?: (region: RegionId) => readonly string[] | undefined;
   /** Known icon ids; an Icon cell outside them warns and is dropped. */
   icons?: string[];
 }
@@ -23,6 +25,7 @@ const COL = {
   id: ID_COLUMN,
   branch: "Branch",
   key: "Key",
+  region: "Region",
   neighborhood: "Neighborhood",
   hours: "Hours",
   hoursOsm: "Hours (OSM)",
@@ -82,7 +85,6 @@ export function parseLayerCsv(
     ...facetColumns,
   ]);
   const extraColumns = headers.filter((h) => h !== "" && !knownColumns.has(h));
-  const neighborhoods = options.neighborhoods ? new Set(options.neighborhoods) : undefined;
   const icons = options.icons ? new Set(options.icons) : undefined;
 
   const places: Place[] = [];
@@ -145,6 +147,19 @@ export function parseLayerCsv(
     }
     const starred = starPrefix || (rawKey !== undefined && KEY_YES.has(rawKey));
 
+    // Region: the layer's, or the row's own cell when the layer spans regions.
+    let region: RegionId;
+    if (layer.region) {
+      region = layer.region;
+    } else {
+      const raw = cell(COL.region);
+      if (!raw || (options.regions && !options.regions.includes(raw))) {
+        warn(`${name}: Region ${raw ? `"${raw}" is not a known region` : "is blank"}; row skipped`, COL.region);
+        return;
+      }
+      region = raw as RegionId;
+    }
+
     const lat = parseCoordinate(cell("Latitude"), JAPAN.south, JAPAN.north);
     const lng = parseCoordinate(cell("Longitude"), JAPAN.west, JAPAN.east);
     if (lat === undefined || lng === undefined) {
@@ -163,7 +178,8 @@ export function parseLayerCsv(
     }
 
     const neighborhood = cell(COL.neighborhood);
-    if (neighborhood && neighborhoods && !neighborhoods.has(neighborhood)) {
+    const neighborhoods = options.neighborhoodsFor?.(region);
+    if (neighborhood && neighborhoods && !neighborhoods.includes(neighborhood)) {
       warn(`${name}: Neighborhood "${neighborhood}" is not in the region's list`, COL.neighborhood);
     }
 
@@ -193,7 +209,7 @@ export function parseLayerCsv(
     places.push({
       id: placeId(name, cell(COL.id), warn),
       layerId: layer.id,
-      region: layer.region,
+      region,
       name,
       branch: cell(COL.branch),
       starred,

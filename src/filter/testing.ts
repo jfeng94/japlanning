@@ -2,7 +2,7 @@
 import type { LayerConfig, LayerId, Place } from "../data/types.ts";
 
 export const coffee: LayerConfig = {
-  id: "tokyo-coffee",
+  id: "drinks",
   region: "tokyo",
   label: "Coffee",
   dataUrl: "https://example.invalid/coffee.csv",
@@ -39,8 +39,8 @@ let seq = 0;
 export function place(over: Partial<Place> & { name: string }): Place {
   seq++;
   return {
-    id: `${over.layerId ?? "tokyo-coffee"}:${seq}`,
-    layerId: "tokyo-coffee",
+    id: `${over.layerId ?? "drinks"}:${seq}`,
+    layerId: "drinks",
     region: "tokyo",
     starred: false,
     lat: 35.6,

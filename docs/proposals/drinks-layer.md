@@ -1,6 +1,6 @@
 # One drinks layer, region per row
 
-Status: **approved** (2026-11-05), building.
+Status: **built** (2026-11-05).
 
 ## Why
 

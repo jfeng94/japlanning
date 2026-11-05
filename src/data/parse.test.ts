@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
-import coffeeCsv from "../../data/tokyo-coffee.csv?raw";
+import drinksCsv from "../../data/drinks.csv?raw";
 import lodgingCsv from "./__fixtures__/stub-lodging.csv?raw";
 import { layers } from "../config/layers.ts";
-import { regionById } from "../config/regions.ts";
+import { regionOptions } from "../config/regions.ts";
 import { ParseError, parseLayerCsv, slug, splitMulti } from "./parse.ts";
 import type { LayerConfig, LayerId } from "./types.ts";
 
-const coffee = layers.find((l) => l.id === "tokyo-coffee")!;
-const tokyo = regionById("tokyo");
+const coffee = layers.find((l) => l.id === "drinks")!;
 
 /** A second layer with a different schema. Not in LAYER_IDS on purpose. */
 const lodging: LayerConfig = {
@@ -30,10 +29,8 @@ const minimal: LayerConfig = {
 
 const csv = (lines: string[]) => lines.join("\n") + "\n";
 
-describe("coffee data (the repo file, so every test run validates it)", () => {
-  const { places, warnings } = parseLayerCsv(coffeeCsv, coffee, {
-    neighborhoods: tokyo.neighborhoods,
-  });
+describe("drinks data (the repo file, so every test run validates it)", () => {
+  const { places, warnings } = parseLayerCsv(drinksCsv, coffee, regionOptions());
 
   it("parses every row with no warnings", () => {
     expect(places).toHaveLength(39);
@@ -53,7 +50,7 @@ describe("coffee data (the repo file, so every test run validates it)", () => {
     const glitch = places.find((p) => p.name === "Glitch Coffee & Roasters")!;
     expect(glitch.starred).toBe(true);
     expect(glitch.branch).toBe("Jimbocho");
-    expect(glitch.id).toBe("tokyo-coffee:1");
+    expect(glitch.id).toBe("drinks:1");
     expect(glitch.facets["Specialty"]).toEqual(["Light roast / Nordic"]);
     expect(glitch.lastVerified).toBe("2026-11-04");
   });
@@ -200,7 +197,7 @@ describe("edge cases", () => {
     const { warnings } = parseLayerCsv(
       csv(["Name,Latitude,Longitude,Neighborhood", "X,35.6,139.7,Atlantis"]),
       minimal,
-      { neighborhoods: ["Central"] },
+      { neighborhoodsFor: () => ["Central"] },
     );
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toMatchObject({ row: 1, column: "Neighborhood" });
@@ -307,5 +304,33 @@ describe("Key column", () => {
     expect(places.map((p) => [p.name, p.starred])).toEqual([["A", true], ["B", false]]);
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toMatchObject({ row: 2, column: "Key" });
+  });
+});
+
+describe("Region column (a layer without a fixed region)", () => {
+  const spanning: LayerConfig = { ...minimal, region: undefined };
+  const header = "Name,Latitude,Longitude,Region,Neighborhood";
+
+  it("takes each row's region from the cell and validates the neighborhood against that region", () => {
+    const { places, warnings } = parseLayerCsv(
+      csv([header, "A,35.6,139.7,tokyo,Central (Ginza / Jimbocho / Minato)", "B,35.0,135.7,kyoto,", "C,35.6,139.7,tokyo,Atlantis"]),
+      spanning,
+      regionOptions(),
+    );
+    expect(places.map((p) => [p.name, p.region])).toEqual([["A", "tokyo"], ["B", "kyoto"], ["C", "tokyo"]]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatchObject({ row: 3, column: "Neighborhood" });
+  });
+
+  it("skips a row with a blank or unknown region, with a warning on the Region column", () => {
+    const { places, warnings } = parseLayerCsv(csv([header, "A,35.6,139.7,,", "B,35.6,139.7,atlantis,", "C,35.6,139.7,hakone,"]), spanning, regionOptions());
+    expect(places.map((p) => p.name)).toEqual(["C"]);
+    expect(warnings.map((w) => [w.row, w.column])).toEqual([[1, "Region"], [2, "Region"]]);
+  });
+
+  it("ignores the column when the layer has a fixed region", () => {
+    const { places, warnings } = parseLayerCsv(csv([header, "A,35.6,139.7,kyoto,"]), minimal, regionOptions());
+    expect(places[0]!.region).toBe("tokyo");
+    expect(warnings).toEqual([]);
   });
 });

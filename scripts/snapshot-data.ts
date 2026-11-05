@@ -17,7 +17,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { layers } from "../src/config/layers.ts";
-import { regionById } from "../src/config/regions.ts";
+import { regionOptions } from "../src/config/regions.ts";
 import { formatIdReport, idReport } from "../src/data/ids.ts";
 import { parseLayerCsv } from "../src/data/parse.ts";
 
@@ -32,7 +32,7 @@ for (const layer of layers) {
   const out = path.join(OUT_DIR, `${layer.id}.csv`);
   try {
     const text = await readFile(source, "utf8");
-    const result = parseLayerCsv(text, layer, { neighborhoods: regionById(layer.region).neighborhoods });
+    const result = parseLayerCsv(text, layer, regionOptions());
     const { places, warnings } = result;
     console.log(`${layer.id}: ${places.length} places, ${warnings.length} warnings`);
     for (const w of warnings) {

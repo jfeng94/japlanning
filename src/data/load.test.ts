@@ -15,7 +15,8 @@ import type { LayerConfig, LayerId } from "./types.ts";
 // In production the network tier and the bundled copy fetch the same path (/data/<id>.csv, with
 // different cache modes); the test gives the network tier its own URL so the scripted fetch can
 // tell the two apart.
-const coffee: LayerConfig = { ...layers.find((l) => l.id === "tokyo-coffee")!, dataUrl: "https://example.invalid/coffee.csv" };
+// Fixed to Tokyo so the inline CSVs need no Region column.
+const coffee: LayerConfig = { ...layers.find((l) => l.id === "drinks")!, region: "tokyo", dataUrl: "https://example.invalid/coffee.csv" };
 const KEY = cacheKey(coffee.id);
 const NOW = new Date("2026-11-10T01:00:00Z");
 const BUILT = new Date("2026-11-04T10:00:00Z");
@@ -77,12 +78,12 @@ describe("loadLayer source chain", () => {
     const { store, deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: ok(BROKEN) }), { [KEY]: cachedEntry });
     const r = await loadLayer(coffee, d);
     expect(r.source).toBe("cache");
-    expect(r.error).toMatch(/^network: layer tokyo-coffee: missing required column\(s\): Longitude$/);
+    expect(r.error).toMatch(/^network: layer drinks: missing required column\(s\): Longitude$/);
     expect(await store.get(KEY)).toEqual(cachedEntry);
   });
 
   it("network down, no cache, bundled present: returns bundled with build time", async () => {
-    const { deps: d } = deps(scriptedFetch({ "/data/tokyo-coffee.csv": ok(BUNDLED) }));
+    const { deps: d } = deps(scriptedFetch({ "/data/drinks.csv": ok(BUNDLED) }));
     const r = await loadLayer(coffee, d);
     expect(r.source).toBe("bundled");
     expect(r.places.map((p) => p.name)).toEqual(["Bundled"]);
@@ -91,14 +92,14 @@ describe("loadLayer source chain", () => {
   });
 
   it("honours a custom bundled URL", async () => {
-    const { deps: d } = deps(scriptedFetch({ "/snap/tokyo-coffee.csv": ok(BUNDLED) }), {}, {
+    const { deps: d } = deps(scriptedFetch({ "/snap/drinks.csv": ok(BUNDLED) }), {}, {
       bundledUrl: (id) => `/snap/${id}.csv`,
     });
     expect((await loadLayer(coffee, d)).source).toBe("bundled");
   });
 
   it("everything fails: source none with every reason", async () => {
-    const { deps: d } = deps(scriptedFetch({ "/data/tokyo-coffee.csv": status(404) }));
+    const { deps: d } = deps(scriptedFetch({ "/data/drinks.csv": status(404) }));
     const r = await loadLayer(coffee, d);
     expect(r.source).toBe("none");
     expect(r.places).toEqual([]);
@@ -114,10 +115,10 @@ describe("loadLayer source chain", () => {
 
   it("a cache that no longer parses is skipped, not fatal", async () => {
     const broken: CachedText = { text: BROKEN, fetchedAt: "2026-11-01T00:00:00.000Z" };
-    const { deps: d } = deps(scriptedFetch({ "/data/tokyo-coffee.csv": ok(BUNDLED) }), { [KEY]: broken });
+    const { deps: d } = deps(scriptedFetch({ "/data/drinks.csv": ok(BUNDLED) }), { [KEY]: broken });
     const r = await loadLayer(coffee, d);
     expect(r.source).toBe("bundled");
-    expect(r.error).toContain("cache: layer tokyo-coffee: missing required column(s): Longitude");
+    expect(r.error).toContain("cache: layer drinks: missing required column(s): Longitude");
   });
 
   it("passes the region's neighborhoods to the parser", async () => {
@@ -163,7 +164,7 @@ describe("loadLayerStaged", () => {
   });
 
   it("bundled stands in when there is no cache", async () => {
-    const { deps: d } = deps(scriptedFetch({ "/data/tokyo-coffee.csv": ok(BUNDLED) }));
+    const { deps: d } = deps(scriptedFetch({ "/data/drinks.csv": ok(BUNDLED) }));
     expect((await run(d)).emitted).toEqual([
       ["bundled", ["Bundled"], false, undefined],
       ["bundled", ["Bundled"], true, `network: Failed to fetch ${coffee.dataUrl}`],
@@ -171,7 +172,7 @@ describe("loadLayerStaged", () => {
   });
 
   it("nothing anywhere: one final none with every reason, network first", async () => {
-    const { deps: d } = deps(scriptedFetch({ "/data/tokyo-coffee.csv": status(404) }));
+    const { deps: d } = deps(scriptedFetch({ "/data/drinks.csv": status(404) }));
     expect((await run(d)).emitted).toEqual([
       ["none", [], true, `network: Failed to fetch ${coffee.dataUrl}; cache: empty; bundled: HTTP 404`],
     ]);
@@ -190,7 +191,7 @@ describe("loadAllLayersStaged", () => {
       seen.push([results.map((r) => `${r.layerId}:${r.source}`), done]),
     );
     expect(finals.map((r) => r.source)).toEqual(["network", "cache"]);
-    expect(seen.at(-1)).toEqual([["tokyo-coffee:network", "stub-other:cache"], true]);
+    expect(seen.at(-1)).toEqual([["drinks:network", "stub-other:cache"], true]);
     expect(seen.filter(([, done]) => done)).toHaveLength(1);
     expect(seen.length).toBe(4);
   });
@@ -202,7 +203,7 @@ describe("loadAllLayers", () => {
     const { deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: ok(GOOD) }));
     const results = await loadAllLayers([coffee, other], d);
     expect(results.map((r) => [r.layerId, r.source])).toEqual([
-      ["tokyo-coffee", "network"],
+      ["drinks", "network"],
       ["stub-other", "none"],
     ]);
   });

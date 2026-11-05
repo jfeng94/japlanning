@@ -494,9 +494,12 @@ export function mountApp(root: HTMLElement): void {
     target.hidden = true;
     if (busy && places.length === 0) return;
     if (layersInRegion(layers, state.region).length === 0) {
-      target.append(note(`${regionLabel(state.region)} has no layers yet. Add a sheet to src/config/layers.ts.`));
+      target.append(note(`${regionLabel(state.region)} has no layers yet. Add one to src/config/layers.ts.`));
     } else if (total === 0) {
-      target.append(note("No data loaded for these layers. Check Diagnostics."));
+      // Either nothing loaded at all, or the data has no rows for this region yet.
+      target.append(
+        note(places.length === 0 ? "No data loaded. Check Diagnostics." : `No places in ${regionLabel(state.region)} yet. Add rows with Region = ${state.region} to the data file.`),
+      );
     } else if (shown === 0) {
       target.append(note("Nothing matches these filters."));
       if (hasActiveFilters(state)) {

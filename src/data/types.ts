@@ -6,7 +6,7 @@
 export type RegionId = "tokyo" | "kyoto" | "hakone";
 
 /** Every layer id, as a tuple so LayerId is a checked string union. */
-export const LAYER_IDS = ["tokyo-coffee"] as const;
+export const LAYER_IDS = ["drinks"] as const;
 export type LayerId = (typeof LAYER_IDS)[number];
 
 export interface RegionConfig {
@@ -29,9 +29,13 @@ export interface FacetConfig {
 
 export interface LayerConfig {
   id: LayerId;
-  region: RegionId;
+  /**
+   * Fixed region: every row is in it and the file needs no Region column.
+   * Absent: each row says in its Region column (a region id); the layer
+   * is available in every region. One file for the whole trip.
+   */
+  region?: RegionId;
   label: string;
-  /** Published-to-web CSV URL. */
   /** The layer's CSV, served from the site: data/<id>.csv in the repo, copied by the build. */
   dataUrl: string;
   /** Pin colour, one per layer type. */

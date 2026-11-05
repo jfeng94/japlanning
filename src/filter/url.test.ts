@@ -41,13 +41,13 @@ describe("toSearchParams", () => {
   it("encodes facet selections and unknown toggles per facet", () => {
     const s = state(
       { type: "toggleLayer", layer: TEA },
-      { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Stand" },
-      { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Café" },
-      { type: "setIncludeUnknown", layer: "tokyo-coffee", column: "Specialty", value: false },
+      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" },
+      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Café" },
+      { type: "setIncludeUnknown", layer: "drinks", column: "Specialty", value: false },
     );
     const p = toSearchParams(s, ctx);
-    expect(p.getAll("f")).toEqual(["tokyo-coffee/Format=Stand|Caf%C3%A9"]);
-    expect(p.getAll("u")).toEqual(["tokyo-coffee/Specialty"]);
+    expect(p.getAll("f")).toEqual(["drinks/Format=Stand|Caf%C3%A9"]);
+    expect(p.getAll("u")).toEqual(["drinks/Specialty"]);
   });
 });
 
@@ -61,9 +61,9 @@ describe("round trip", () => {
       { type: "setStarredOnly", value: true },
       { type: "setBookmarkedOnly", value: true },
       { type: "setOpenNow", value: true },
-      { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Café" },
-      { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Specialty", value: "Pour-over" },
-      { type: "setIncludeUnknown", layer: "tokyo-coffee", column: "Specialty", value: false },
+      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Café" },
+      { type: "toggleFacetValue", layer: "drinks", column: "Specialty", value: "Pour-over" },
+      { type: "setIncludeUnknown", layer: "drinks", column: "Specialty", value: false },
     );
     expect(roundTrip(s)).toEqual(s);
   });
@@ -79,8 +79,8 @@ describe("round trip", () => {
     const s = state(
       { type: "toggleLayer", layer: TEA },
       { type: "setText", text: "神保町 / ｶﾌｪ" },
-      { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Light roast / Nordic" },
-      { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "A|B=C&D" },
+      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Light roast / Nordic" },
+      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "A|B=C&D" },
     );
     expect(roundTrip(s)).toEqual(s);
   });
@@ -94,7 +94,7 @@ describe("fromSearchParams drops what it doesn't recognise", () => {
   });
 
   it("unknown or wrong-region layers are dropped; all-unknown leaves none selected (= all)", () => {
-    expect([...parse("l=tokyo-coffee,kyoto-food,bogus").layers]).toEqual(["tokyo-coffee"]);
+    expect([...parse("l=drinks,kyoto-food,bogus").layers]).toEqual(["drinks"]);
     expect(parse("l=bogus").layers.size).toBe(0);
   });
 
@@ -104,13 +104,13 @@ describe("fromSearchParams drops what it doesn't recognise", () => {
 
   it("unknown layers and columns in facets are dropped, leaving no selection", () => {
     expect(parse("f=bogus/Format=Stand").facets).toEqual({});
-    expect(parse("f=tokyo-coffee/Bogus=Stand").facets).toEqual({});
-    expect(parse("u=tokyo-coffee/Bogus").facets).toEqual({});
-    expect(parse("f=tokyo-coffee/Format").facets).toEqual({});
-    expect(parse("f=tokyo-coffee/Format=").facets).toEqual({});
+    expect(parse("f=drinks/Bogus=Stand").facets).toEqual({});
+    expect(parse("u=drinks/Bogus").facets).toEqual({});
+    expect(parse("f=drinks/Format").facets).toEqual({});
+    expect(parse("f=drinks/Format=").facets).toEqual({});
   });
 
   it("malformed percent-encoding does not throw", () => {
-    expect(parse("f=tokyo-coffee/Format=%E0%A4%A").facets).toEqual({});
+    expect(parse("f=drinks/Format=%E0%A4%A").facets).toEqual({});
   });
 });

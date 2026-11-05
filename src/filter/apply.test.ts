@@ -11,7 +11,7 @@ const names = (s: FilterState) => applyFilters(places, s).map((p) => p.name);
 function state(...actions: FilterAction[]): FilterState {
   return actions.reduce((s, a) => reduce(s, a, allLayers), defaultState("tokyo", allLayers));
 }
-const coffeeOnly: FilterAction = { type: "setLayers", layers: ["tokyo-coffee"] };
+const coffeeOnly: FilterAction = { type: "setLayers", layers: ["drinks"] };
 
 describe("applyFilters", () => {
   it("default state (no layers picked) shows every place in the region, none from other regions", () => {
@@ -58,7 +58,7 @@ describe("applyFilters", () => {
         [id("Bear Pond"), "unknown"],
         // "Unknown Kissa" and "ＧＬＩＴＣＨ annex" absent from the map -> unknown
       ]),
-      layersWithHours: new Set(["tokyo-coffee"]), // tea has no hours: untouched
+      layersWithHours: new Set(["drinks"]), // tea has no hours: untouched
     };
     expect(applyFilters(places, state(on), { hours }).map((p) => p.name)).toEqual(["Glitch", "Bear Pond", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo"]);
     const strict = state(on, { type: "setIncludeUnknownHours", value: false });
@@ -76,31 +76,31 @@ describe("applyFilters", () => {
   });
 
   it("facet values OR within a facet; blanks still pass by default", () => {
-    const s = state(coffeeOnly, { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Stand" });
+    const s = state(coffeeOnly, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" });
     expect(names(s)).toEqual(["Bear Pond", "Unknown Kissa"]);
-    const s2 = reduce(s, { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Café" }, allLayers);
+    const s2 = reduce(s, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Café" }, allLayers);
     expect(names(s2)).toEqual(["Glitch", "Fuglen", "Bear Pond", "Unknown Kissa"]);
   });
 
   it("include unknown off drops blank rows, with or without a value selection", () => {
-    const off: FilterAction = { type: "setIncludeUnknown", layer: "tokyo-coffee", column: "Format", value: false };
+    const off: FilterAction = { type: "setIncludeUnknown", layer: "drinks", column: "Format", value: false };
     expect(names(state(coffeeOnly, off))).toEqual(["Glitch", "Fuglen", "Bear Pond", "ＧＬＩＴＣＨ annex"]);
     expect(
-      names(state(coffeeOnly, off, { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Stand" })),
+      names(state(coffeeOnly, off, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" })),
     ).toEqual(["Bear Pond"]);
   });
 
   it("facets AND across columns; multi-value rows match on any value", () => {
     const s = state(
       coffeeOnly,
-      { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Café" },
-      { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Specialty", value: "Espresso" },
+      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Café" },
+      { type: "toggleFacetValue", layer: "drinks", column: "Specialty", value: "Espresso" },
     );
     expect(names(s)).toEqual(["Fuglen", "Unknown Kissa"]);
   });
 
   it("facets are ignored while two layers are selected and come back with one", () => {
-    const one = state(coffeeOnly, { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Stand" });
+    const one = state(coffeeOnly, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" });
     const two = reduce(one, { type: "toggleLayer", layer: TEA }, allLayers);
     expect(names(two)).toHaveLength(6);
     expect(names(reduce(two, { type: "toggleLayer", layer: TEA }, allLayers))).toEqual(["Bear Pond", "Unknown Kissa"]);
@@ -110,7 +110,7 @@ describe("applyFilters", () => {
     const s = state(
       coffeeOnly,
       { type: "setText", text: "glitch" },
-      { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Kissaten" },
+      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Kissaten" },
     );
     expect(names(s)).toEqual(["ＧＬＩＴＣＨ annex"]);
   });
@@ -145,8 +145,8 @@ describe("facetCounts", () => {
   it("a facet's own selection does not reduce its counts, but other facets do", () => {
     const s = state(
       coffeeOnly,
-      { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Stand" },
-      { type: "setIncludeUnknown", layer: "tokyo-coffee", column: "Format", value: false },
+      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" },
+      { type: "setIncludeUnknown", layer: "drinks", column: "Format", value: false },
     );
     const counts = facetCounts(places, s, coffee);
     expect([...counts.get("Format")!.values]).toEqual([["Stand", 1], ["Café", 2], ["Kissaten", 1]]);
@@ -188,11 +188,11 @@ describe("normalise", () => {
 
 describe("sinkUnknownHours", () => {
   it("moves unknown-hours rows of hours layers to the end, in order, and leaves the rest alone", () => {
-    const coffeeRows = places.filter((p) => p.layerId === "tokyo-coffee");
+    const coffeeRows = places.filter((p) => p.layerId === "drinks");
     const [a, b, c] = coffeeRows as [typeof coffeeRows[0], typeof coffeeRows[0], typeof coffeeRows[0]];
     const hours: HoursInput = {
       states: new Map([[a.id, "unknown"], [b.id, "open"]]), // c has no entry: unknown too
-      layersWithHours: new Set(["tokyo-coffee"]),
+      layersWithHours: new Set(["drinks"]),
     };
     expect(sinkUnknownHours([a, b, c], hours).map((p) => p.name)).toEqual([b.name, a.name, c.name]);
     expect(sinkUnknownHours([a, b, c], undefined)).toEqual([a, b, c]);

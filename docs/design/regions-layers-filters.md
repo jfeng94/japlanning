@@ -34,17 +34,18 @@ interface RegionConfig {
 
 ## Layers
 
-A **layer** is one location type in one region, backed by one CSV file in
-the repo (`data/<id>.csv`; it began as a published Google Sheet, moved
-into the repo 2026-11-05, see `docs/proposals/data-in-repo.md`). Planned
-layers: Coffee, Tea, Pastry, Restaurants, Lodging, Points of
+A **layer** is one location type, backed by one CSV file in the repo
+(`data/<id>.csv`; it began as a published Google Sheet per region, moved
+into the repo 2026-11-05, see `docs/proposals/data-in-repo.md`). A layer
+may be fixed to one region, or span all of them with a `Region` column
+per row (`docs/proposals/drinks-layer.md`, 2026-11-05). Planned layers: Coffee, Tea, Pastry, Restaurants, Lodging, Points of
 interest. Each layer is one entry in a config file in the repo:
 
 ```ts
 interface LayerConfig {
   id: string;                  // "tokyo-coffee"
-  region: RegionId;
-  label: string;               // "Coffee"
+  region?: RegionId;           // fixed region; absent = rows carry a Region column
+  label: string;               // "Drinks"
   dataUrl: string;             // "/data/<id>.csv", served from the site
   color: string;               // pin colour, one per layer type
   icon: string;                // pin glyph
@@ -69,7 +70,7 @@ Shared by every layer, looked up by header name, all optional except Name,
 Latitude, Longitude:
 
 ```
-ID   Name   Branch   Key   Latitude   Longitude   Neighborhood
+ID   Name   Branch   Key   Region   Latitude   Longitude   Neighborhood   Icon
 Hours   Hours (OSM)   Link   Address (JA)   Notes   Last verified
 ```
 

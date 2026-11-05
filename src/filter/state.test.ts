@@ -18,7 +18,7 @@ describe("defaultState", () => {
   it("selects no layers (which means all) and nothing else", () => {
     const s = defaultState("tokyo", allLayers);
     expect(s.layers.size).toBe(0);
-    expect([...effectiveLayers(s, ["tokyo-coffee", TEA])]).toEqual(["tokyo-coffee", "tokyo-tea"]);
+    expect([...effectiveLayers(s, ["drinks", TEA])]).toEqual(["drinks", "tokyo-tea"]);
     expect(s.text).toBe("");
     expect(s.neighborhoods.size).toBe(0);
     expect(s.starredOnly).toBe(false);
@@ -57,47 +57,47 @@ describe("reduce", () => {
   });
 
   it("activeFacetLayer is set only with exactly one layer in play", () => {
-    const ids: LayerId[] = ["tokyo-coffee", TEA];
+    const ids: LayerId[] = ["drinks", TEA];
     const none = defaultState("tokyo", allLayers); // none selected = both in play
     expect(activeFacetLayer(none, ids)).toBeUndefined();
-    const one = r(none, { type: "toggleLayer", layer: "tokyo-coffee" });
-    expect(activeFacetLayer(one, ids)).toBe("tokyo-coffee");
+    const one = r(none, { type: "toggleLayer", layer: "drinks" });
+    expect(activeFacetLayer(one, ids)).toBe("drinks");
     const two = r(one, { type: "toggleLayer", layer: TEA });
     expect(activeFacetLayer(two, ids)).toBeUndefined();
   });
 
   it("toggleFacetValue builds and tears down selections", () => {
     let s = defaultState("tokyo", allLayers);
-    s = r(s, { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Stand" });
-    s = r(s, { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Café" });
-    expect([...getSelection(s, "tokyo-coffee", "Format").values]).toEqual(["Stand", "Café"]);
+    s = r(s, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" });
+    s = r(s, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Café" });
+    expect([...getSelection(s, "drinks", "Format").values]).toEqual(["Stand", "Café"]);
     expect(hasActiveFilters(s)).toBe(true);
 
-    s = r(s, { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Stand" });
-    s = r(s, { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Café" });
+    s = r(s, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" });
+    s = r(s, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Café" });
     expect(s.facets).toEqual({});
     expect(hasActiveFilters(s)).toBe(false);
   });
 
   it("setIncludeUnknown false is a non-default selection on its own", () => {
     let s = defaultState("tokyo", allLayers);
-    s = r(s, { type: "setIncludeUnknown", layer: "tokyo-coffee", column: "Format", value: false });
-    expect(getSelection(s, "tokyo-coffee", "Format").includeUnknown).toBe(false);
+    s = r(s, { type: "setIncludeUnknown", layer: "drinks", column: "Format", value: false });
+    expect(getSelection(s, "drinks", "Format").includeUnknown).toBe(false);
     expect(hasActiveFilters(s)).toBe(true);
-    s = r(s, { type: "setIncludeUnknown", layer: "tokyo-coffee", column: "Format", value: true });
+    s = r(s, { type: "setIncludeUnknown", layer: "drinks", column: "Format", value: true });
     expect(s.facets).toEqual({});
   });
 
   it("facet selections survive the layer being deselected", () => {
-    const ids: LayerId[] = ["tokyo-coffee", TEA];
+    const ids: LayerId[] = ["drinks", TEA];
     let s = defaultState("tokyo", allLayers);
-    s = r(s, { type: "toggleLayer", layer: "tokyo-coffee" }); // coffee only
-    s = r(s, { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Stand" });
+    s = r(s, { type: "toggleLayer", layer: "drinks" }); // coffee only
+    s = r(s, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" });
     s = r(s, { type: "toggleLayer", layer: TEA }); // both
     expect(activeFacetLayer(s, ids)).toBeUndefined();
-    expect(getSelection(s, "tokyo-coffee", "Format").values.has("Stand")).toBe(true);
+    expect(getSelection(s, "drinks", "Format").values.has("Stand")).toBe(true);
     s = r(s, { type: "toggleLayer", layer: TEA }); // coffee only again
-    expect(activeFacetLayer(s, ids)).toBe("tokyo-coffee");
+    expect(activeFacetLayer(s, ids)).toBe("drinks");
   });
 
   it("clearFilters keeps region and layers", () => {
@@ -108,7 +108,7 @@ describe("reduce", () => {
     s = r(s, { type: "setStarredOnly", value: true });
     s = r(s, { type: "setBookmarkedOnly", value: true });
     expect(hasActiveFilters(s)).toBe(true);
-    s = r(s, { type: "toggleFacetValue", layer: "tokyo-coffee", column: "Format", value: "Stand" });
+    s = r(s, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" });
     s = r(s, { type: "clearFilters" });
     expect(s.region).toBe("tokyo");
     expect([...s.layers]).toEqual(["tokyo-tea"]);

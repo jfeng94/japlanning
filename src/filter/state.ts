@@ -49,7 +49,8 @@ export type FilterAction =
   | { type: "clearFilters" };
 
 export function layersInRegion(layers: LayerConfig[], region: RegionId): LayerConfig[] {
-  return layers.filter((l) => l.region === region);
+  // A layer with no fixed region spans every region (its rows say which).
+  return layers.filter((l) => l.region === undefined || l.region === region);
 }
 
 /** Nothing selected: every layer in the region shows. `layers` is unused but kept so callers needn't change when the rule does. */

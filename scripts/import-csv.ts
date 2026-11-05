@@ -24,7 +24,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import Papa from "papaparse";
 import { layerById } from "../src/config/layers.ts";
-import { regionById } from "../src/config/regions.ts";
+import { regionOptions } from "../src/config/regions.ts";
 import { formatIdReport, idReport } from "../src/data/ids.ts";
 import { ID_COLUMN, parseLayerCsv } from "../src/data/parse.ts";
 import type { LayerId } from "../src/data/types.ts";
@@ -32,7 +32,7 @@ import type { LayerId } from "../src/data/types.ts";
 const DATA_DIR = path.resolve(import.meta.dirname, "..", "data");
 const STAR = "★";
 /** Canonical leading columns; anything else follows in source order. */
-const LEADING = [ID_COLUMN, "Name", "Branch", "Key", "Latitude", "Longitude", "Neighborhood"];
+const LEADING = [ID_COLUMN, "Name", "Branch", "Key", "Region", "Latitude", "Longitude", "Neighborhood"];
 
 export function dataFile(layerId: string): string {
   return path.join(DATA_DIR, `${layerId}.csv`);
@@ -121,7 +121,7 @@ const text = await readSource(sourceArg ?? file);
 const normalised = normaliseCsv(text, (line) => console.log(`  ${line}`));
 await writeFile(file, normalised);
 
-const result = parseLayerCsv(normalised, layer, { neighborhoods: regionById(layer.region).neighborhoods });
+const result = parseLayerCsv(normalised, layer, regionOptions());
 console.log(`${layer.id}: ${result.places.length} places, ${result.warnings.length} warnings -> ${path.relative(process.cwd(), file)}`);
 for (const w of result.warnings) console.log(`  row ${w.row ?? "?"}${w.column ? ` ${w.column}` : ""}: ${w.message}`);
 for (const line of formatIdReport(layer, idReport(layer, result))) console.log(`  ${line}`);

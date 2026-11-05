@@ -10,7 +10,7 @@ describe("placesToPins", () => {
     const glitch = place({ name: "Glitch", starred: true, lat: 35.69, lng: 139.76 });
     const pins = placesToPins([glitch], [coffeeLayer], new Map([[glitch.id, "star" as const]]));
     expect(pins).toEqual([
-      { id: expect.any(String), name: "Glitch", lat: 35.69, lng: 139.76, icon: "coffee", color: "#b5452b", mark: "star", layerId: "tokyo-coffee" },
+      { id: expect.any(String), name: "Glitch", lat: 35.69, lng: 139.76, icon: "coffee", color: "#b5452b", mark: "star", layerId: "drinks" },
     ]);
   });
 

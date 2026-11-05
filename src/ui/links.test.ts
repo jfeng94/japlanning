@@ -13,8 +13,8 @@ describe("directionsUrl", () => {
 
 describe("shareUrl", () => {
   it("links to region and id only", () => {
-    const url = shareUrl({ id: "tokyo-coffee:bear-pond-espresso", region: "tokyo" }, "https://japan.garbage.house");
-    expect(url).toBe("https://japan.garbage.house/?r=tokyo&s=tokyo-coffee%3Abear-pond-espresso");
+    const url = shareUrl({ id: "drinks:bear-pond-espresso", region: "tokyo" }, "https://japan.garbage.house");
+    expect(url).toBe("https://japan.garbage.house/?r=tokyo&s=drinks%3Abear-pond-espresso");
   });
 });
 
@@ -28,10 +28,10 @@ describe("linkLabel", () => {
 });
 
 describe("parseSharedLink", () => {
-  const id = "tokyo-coffee:bear-pond-espresso";
+  const id = "drinks:bear-pond-espresso";
 
   it("reads a full link to this site", () => {
-    expect(parseSharedLink(`https://${HOST}/?r=tokyo&s=tokyo-coffee%3Abear-pond-espresso`, HOST)).toBe(id);
+    expect(parseSharedLink(`https://${HOST}/?r=tokyo&s=drinks%3Abear-pond-espresso`, HOST)).toBe(id);
     expect(parseSharedLink(`${HOST}/?s=${id}`, HOST)).toBe(id);
     expect(parseSharedLink(`  https://${HOST}/?s=${id}&q=x  `, HOST)).toBe(id);
   });

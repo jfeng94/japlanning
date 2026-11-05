@@ -16,7 +16,7 @@ const SOURCE_LABEL: Record<LoadSource, string> = {
  */
 export function renderDataStatus(list: HTMLElement, results: LoadResult[], loading: boolean): void {
   if (loading && results.length === 0) {
-    list.replaceChildren(...layers.map((l) => row(l.label, regionById(l.region).label, "loading…")));
+    list.replaceChildren(...layers.map((l) => row(l.label, l.region ? regionById(l.region).label : "all regions", "loading…")));
     return;
   }
   list.replaceChildren(...results.map(renderResult));
@@ -24,7 +24,7 @@ export function renderDataStatus(list: HTMLElement, results: LoadResult[], loadi
 
 function renderResult(r: LoadResult): HTMLLIElement {
   const layer = layers.find((l) => l.id === r.layerId);
-  const li = row(layer?.label ?? r.layerId, layer ? regionById(layer.region).label : "");
+  const li = row(layer?.label ?? r.layerId, layer?.region ? regionById(layer.region).label : layer ? "all regions" : "");
   const body = li.querySelector(".layer-body")!;
 
   const summary = document.createElement("p");

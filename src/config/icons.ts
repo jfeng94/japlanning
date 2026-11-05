@@ -8,9 +8,13 @@ import type { LayerConfig, Place } from "../data/types.ts";
  * for DOM markers.
  *
  * Adding an icon: drop the files in src/map/icons/{sdf,dom}/ and add a line.
+ * The sdf file is a black silhouette on transparent (make one from the
+ * artwork's alpha channel); the dom file is the artwork itself.
  */
 export const ICONS = {
   coffee: { sdf: "coffee.webp", dom: "coffee.svg" },
+  tea: { sdf: "tea.png", dom: "tea.png" },
+  bar: { sdf: "bar.png", dom: "bar.png" },
 } as const;
 
 export type IconId = keyof typeof ICONS;
