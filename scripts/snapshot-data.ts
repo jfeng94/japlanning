@@ -1,64 +1,51 @@
 /**
- * Fetch every configured layer's CSV and write it to public/data/<id>.csv,
- * so the built site ships a snapshot the loader can fall back to when
- * there's no network and no cache (a first launch offline).
+ * Validate every layer's data file (data/<id>.csv, the source of truth)
+ * and copy it to public/data/<id>.csv so the built site serves it: the
+ * app fetches it from there, and falls back to the same copy when there
+ * is no network and no cache.
  *
  * Run with Node 26, which executes TypeScript directly:
  *   node scripts/snapshot-data.ts
  *
- * Fails the build if a sheet can't be fetched after retries, is missing a
- * required column, or has ID problems (blank, non-integer or repeated), since
- * those rows would silently get name-based ids. Other parse warnings are
- * printed but don't fail.
+ * Fails the build on any parse warning: a missing required column, a bad
+ * ID (blank, non-integer, repeated), a facet value outside the configured
+ * list, a neighborhood outside the region's list, a malformed date. The
+ * data is in the repo, so a warning is an edit to fix, not a condition
+ * to tolerate.
  */
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { layers } from "../src/config/layers.ts";
 import { regionById } from "../src/config/regions.ts";
 import { formatIdReport, idReport } from "../src/data/ids.ts";
 import { parseLayerCsv } from "../src/data/parse.ts";
 
+const DATA_DIR = path.resolve(import.meta.dirname, "..", "data");
 const OUT_DIR = path.resolve(import.meta.dirname, "..", "public", "data");
-const ATTEMPTS = 3;
-
-async function fetchWithRetry(url: string): Promise<string> {
-  let lastError: unknown;
-  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.text();
-    } catch (e) {
-      lastError = e;
-      if (attempt < ATTEMPTS) await new Promise((r) => setTimeout(r, 2_000 * attempt));
-    }
-  }
-  throw lastError;
-}
 
 await mkdir(OUT_DIR, { recursive: true });
 
 let failed = false;
 for (const layer of layers) {
-  const file = path.join(OUT_DIR, `${layer.id}.csv`);
+  const source = path.join(DATA_DIR, `${layer.id}.csv`);
+  const out = path.join(OUT_DIR, `${layer.id}.csv`);
   try {
-    const text = await fetchWithRetry(layer.csvUrl);
-    const result = parseLayerCsv(text, layer, {
-      neighborhoods: regionById(layer.region).neighborhoods,
-    });
+    const text = await readFile(source, "utf8");
+    const result = parseLayerCsv(text, layer, { neighborhoods: regionById(layer.region).neighborhoods });
     const { places, warnings } = result;
-    await writeFile(file, text);
-    console.log(`${layer.id}: ${places.length} places, ${warnings.length} warnings -> ${path.relative(process.cwd(), file)}`);
+    console.log(`${layer.id}: ${places.length} places, ${warnings.length} warnings`);
     for (const w of warnings) {
       console.log(`  row ${w.row ?? "?"}${w.column ? ` ${w.column}` : ""}: ${w.message}`);
     }
-    const ids = idReport(layer, result);
-    for (const line of formatIdReport(layer, ids)) console.log(`  ${line}`);
-    if (ids.problems.length > 0) {
+    for (const line of formatIdReport(layer, idReport(layer, result))) console.log(`  ${line}`);
+    if (warnings.length > 0) {
       failed = true;
-      console.error(`${layer.id}: FAILED: fix the ID column (npm run ids shows the next free ID)`);
+      console.error(`${layer.id}: FAILED: fix ${path.relative(process.cwd(), source)} (npm run ids shows the next free ID)`);
+      continue;
     }
+    await writeFile(out, text);
+    console.log(`  -> ${path.relative(process.cwd(), out)}`);
   } catch (e) {
     failed = true;
     console.error(`${layer.id}: FAILED: ${e instanceof Error ? e.message : String(e)}`);

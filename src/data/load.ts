@@ -14,7 +14,7 @@ export interface LoadDeps {
   now: () => Date;
   /** Abort a network fetch after this long. Default 10 s. */
   timeoutMs?: number;
-  /** Where the build-time snapshot of a layer lives. Default /data/<id>.csv. */
+  /** Where the copy bundled with the site lives (the same file the network tier fetches). Default /data/<id>.csv. */
   bundledUrl?: (layerId: LayerId) => string;
   /** When the bundled snapshot was taken; reported as its fetchedAt. */
   bundledBuiltAt?: Date;
@@ -107,7 +107,7 @@ export async function loadAllLayersStaged(
 
 const fromNetwork: Source = async (layer, deps, parse) => {
   try {
-    const text = await fetchText(deps, layer.csvUrl);
+    const text = await fetchText(deps, layer.dataUrl);
     const parsed = parse(text); // throws ParseError on an unusable sheet
     const fetchedAt = deps.now();
     await deps.store.set(cacheKey(layer.id), { text, fetchedAt: fetchedAt.toISOString() });

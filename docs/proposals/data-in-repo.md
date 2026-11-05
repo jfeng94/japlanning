@@ -1,6 +1,6 @@
 # Data in the repo
 
-Status: **proposed** (2026-11-05), waiting for a go-ahead.
+Status: **built** (2026-11-05).
 
 ## Why
 

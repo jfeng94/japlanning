@@ -5,7 +5,7 @@ export const coffee: LayerConfig = {
   id: "tokyo-coffee",
   region: "tokyo",
   label: "Coffee",
-  csvUrl: "https://example.invalid/coffee.csv",
+  dataUrl: "https://example.invalid/coffee.csv",
   color: "#b5452b",
   icon: "coffee",
   hasHours: true,

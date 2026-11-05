@@ -32,7 +32,8 @@ export interface LayerConfig {
   region: RegionId;
   label: string;
   /** Published-to-web CSV URL. */
-  csvUrl: string;
+  /** The layer's CSV, served from the site: data/<id>.csv in the repo, copied by the build. */
+  dataUrl: string;
   /** Pin colour, one per layer type. */
   color: string;
   /** Pin glyph; interpreted by the map layer in M3. */

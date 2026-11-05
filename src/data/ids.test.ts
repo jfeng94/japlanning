@@ -7,7 +7,7 @@ const layer: LayerConfig = {
   id: "stub-ids" as LayerId,
   region: "tokyo",
   label: "Stub",
-  csvUrl: "https://example.invalid/ids.csv",
+  dataUrl: "https://example.invalid/ids.csv",
   color: "#333",
   icon: "coffee",
   hasHours: false,

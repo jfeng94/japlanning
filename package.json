@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "snapshot": "node scripts/snapshot-data.ts",
     "ids": "node scripts/check-ids.ts",
+    "import": "node scripts/import-csv.ts",
     "basemap": "node scripts/build-basemap.ts"
   },
   "devDependencies": {

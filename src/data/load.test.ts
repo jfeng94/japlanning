@@ -12,7 +12,10 @@ import {
 import { createMemoryStore, type CachedText } from "./store.ts";
 import type { LayerConfig, LayerId } from "./types.ts";
 
-const coffee = layers.find((l) => l.id === "tokyo-coffee")!;
+// In production the network tier and the bundled copy fetch the same path (/data/<id>.csv, with
+// different cache modes); the test gives the network tier its own URL so the scripted fetch can
+// tell the two apart.
+const coffee: LayerConfig = { ...layers.find((l) => l.id === "tokyo-coffee")!, dataUrl: "https://example.invalid/coffee.csv" };
 const KEY = cacheKey(coffee.id);
 const NOW = new Date("2026-11-10T01:00:00Z");
 const BUILT = new Date("2026-11-04T10:00:00Z");
@@ -51,7 +54,7 @@ const cachedEntry: CachedText = { text: CACHED, fetchedAt: "2026-11-01T00:00:00.
 
 describe("loadLayer source chain", () => {
   it("network OK: returns network data and stores it", async () => {
-    const { store, deps: d } = deps(scriptedFetch({ [coffee.csvUrl]: ok(GOOD) }));
+    const { store, deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: ok(GOOD) }));
     const r = await loadLayer(coffee, d);
     expect(r.source).toBe("network");
     expect(r.places.map((p) => p.name)).toEqual(["Fresh"]);
@@ -61,7 +64,7 @@ describe("loadLayer source chain", () => {
   });
 
   it("network 500 with cache: returns cache, leaves it untouched, explains why", async () => {
-    const { store, deps: d } = deps(scriptedFetch({ [coffee.csvUrl]: status(500) }), { [KEY]: cachedEntry });
+    const { store, deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: status(500) }), { [KEY]: cachedEntry });
     const r = await loadLayer(coffee, d);
     expect(r.source).toBe("cache");
     expect(r.places.map((p) => p.name)).toEqual(["Cached"]);
@@ -71,7 +74,7 @@ describe("loadLayer source chain", () => {
   });
 
   it("network OK but unparsable: cache wins and is not overwritten", async () => {
-    const { store, deps: d } = deps(scriptedFetch({ [coffee.csvUrl]: ok(BROKEN) }), { [KEY]: cachedEntry });
+    const { store, deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: ok(BROKEN) }), { [KEY]: cachedEntry });
     const r = await loadLayer(coffee, d);
     expect(r.source).toBe("cache");
     expect(r.error).toMatch(/^network: layer tokyo-coffee: missing required column\(s\): Longitude$/);
@@ -84,7 +87,7 @@ describe("loadLayer source chain", () => {
     expect(r.source).toBe("bundled");
     expect(r.places.map((p) => p.name)).toEqual(["Bundled"]);
     expect(r.fetchedAt).toEqual(BUILT);
-    expect(r.error).toBe(`network: Failed to fetch ${coffee.csvUrl}; cache: empty`);
+    expect(r.error).toBe(`network: Failed to fetch ${coffee.dataUrl}; cache: empty`);
   });
 
   it("honours a custom bundled URL", async () => {
@@ -99,7 +102,7 @@ describe("loadLayer source chain", () => {
     const r = await loadLayer(coffee, d);
     expect(r.source).toBe("none");
     expect(r.places).toEqual([]);
-    expect(r.error).toBe(`network: Failed to fetch ${coffee.csvUrl}; cache: empty; bundled: HTTP 404`);
+    expect(r.error).toBe(`network: Failed to fetch ${coffee.dataUrl}; cache: empty; bundled: HTTP 404`);
   });
 
   it("timeout counts as a network failure", async () => {
@@ -119,7 +122,7 @@ describe("loadLayer source chain", () => {
 
   it("passes the region's neighborhoods to the parser", async () => {
     const csv = "Name,Latitude,Longitude,Neighborhood\nX,35.6,139.7,Atlantis\n";
-    const { deps: d } = deps(scriptedFetch({ [coffee.csvUrl]: ok(csv) }));
+    const { deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: ok(csv) }));
     const r = await loadLayer(coffee, d);
     expect(r.warnings).toHaveLength(1);
     expect(r.warnings[0]!.column).toBe("Neighborhood");
@@ -137,7 +140,7 @@ describe("loadLayerStaged", () => {
   }
 
   it("cache then network: emits cached first, network second and final", async () => {
-    const { deps: d } = deps(scriptedFetch({ [coffee.csvUrl]: ok(GOOD) }), { [KEY]: cachedEntry });
+    const { deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: ok(GOOD) }), { [KEY]: cachedEntry });
     const { emitted, returned } = await run(d);
     expect(emitted).toEqual([
       ["cache", ["Cached"], false, undefined],
@@ -147,12 +150,12 @@ describe("loadLayerStaged", () => {
   });
 
   it("no local copy: emits the network result once", async () => {
-    const { deps: d } = deps(scriptedFetch({ [coffee.csvUrl]: ok(GOOD) }));
+    const { deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: ok(GOOD) }));
     expect((await run(d)).emitted).toEqual([["network", ["Fresh"], true, undefined]]);
   });
 
   it("cache then network failure: re-emits the cached data as final with the reason", async () => {
-    const { deps: d } = deps(scriptedFetch({ [coffee.csvUrl]: status(500) }), { [KEY]: cachedEntry });
+    const { deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: status(500) }), { [KEY]: cachedEntry });
     expect((await run(d)).emitted).toEqual([
       ["cache", ["Cached"], false, undefined],
       ["cache", ["Cached"], true, "network: HTTP 500"],
@@ -163,22 +166,22 @@ describe("loadLayerStaged", () => {
     const { deps: d } = deps(scriptedFetch({ "/data/tokyo-coffee.csv": ok(BUNDLED) }));
     expect((await run(d)).emitted).toEqual([
       ["bundled", ["Bundled"], false, undefined],
-      ["bundled", ["Bundled"], true, `network: Failed to fetch ${coffee.csvUrl}`],
+      ["bundled", ["Bundled"], true, `network: Failed to fetch ${coffee.dataUrl}`],
     ]);
   });
 
   it("nothing anywhere: one final none with every reason, network first", async () => {
     const { deps: d } = deps(scriptedFetch({ "/data/tokyo-coffee.csv": status(404) }));
     expect((await run(d)).emitted).toEqual([
-      ["none", [], true, `network: Failed to fetch ${coffee.csvUrl}; cache: empty; bundled: HTTP 404`],
+      ["none", [], true, `network: Failed to fetch ${coffee.dataUrl}; cache: empty; bundled: HTTP 404`],
     ]);
   });
 });
 
 describe("loadAllLayersStaged", () => {
   it("reports after every emission and flags done only on the last", async () => {
-    const other: LayerConfig = { ...coffee, id: "stub-other" as LayerId, csvUrl: "https://example.invalid/other.csv" };
-    const { deps: d } = deps(scriptedFetch({ [coffee.csvUrl]: ok(GOOD), [other.csvUrl]: status(500) }), {
+    const other: LayerConfig = { ...coffee, id: "stub-other" as LayerId, dataUrl: "https://example.invalid/other.csv" };
+    const { deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: ok(GOOD), [other.dataUrl]: status(500) }), {
       [KEY]: cachedEntry,
       [cacheKey(other.id)]: cachedEntry,
     });
@@ -195,8 +198,8 @@ describe("loadAllLayersStaged", () => {
 
 describe("loadAllLayers", () => {
   it("loads in parallel and one failure does not block the others", async () => {
-    const other: LayerConfig = { ...coffee, id: "stub-other" as LayerId, csvUrl: "https://example.invalid/other.csv" };
-    const { deps: d } = deps(scriptedFetch({ [coffee.csvUrl]: ok(GOOD) }));
+    const other: LayerConfig = { ...coffee, id: "stub-other" as LayerId, dataUrl: "https://example.invalid/other.csv" };
+    const { deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: ok(GOOD) }));
     const results = await loadAllLayers([coffee, other], d);
     expect(results.map((r) => [r.layerId, r.source])).toEqual([
       ["tokyo-coffee", "network"],

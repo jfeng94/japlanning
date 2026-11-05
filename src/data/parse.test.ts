@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import coffeeCsv from "./__fixtures__/tokyo-coffee.csv?raw";
+import coffeeCsv from "../../data/tokyo-coffee.csv?raw";
 import lodgingCsv from "./__fixtures__/stub-lodging.csv?raw";
 import { layers } from "../config/layers.ts";
 import { regionById } from "../config/regions.ts";
@@ -14,7 +14,7 @@ const lodging: LayerConfig = {
   id: "stub-lodging" as LayerId,
   region: "tokyo",
   label: "Lodging",
-  csvUrl: "https://example.invalid/lodging.csv",
+  dataUrl: "https://example.invalid/lodging.csv",
   color: "#333",
   icon: "bed",
   hasHours: false,
@@ -30,7 +30,7 @@ const minimal: LayerConfig = {
 
 const csv = (lines: string[]) => lines.join("\n") + "\n";
 
-describe("coffee fixture (snapshot of the live sheet, 2026-11-04)", () => {
+describe("coffee data (the repo file, so every test run validates it)", () => {
   const { places, warnings } = parseLayerCsv(coffeeCsv, coffee, {
     neighborhoods: tokyo.neighborhoods,
   });
@@ -49,11 +49,11 @@ describe("coffee fixture (snapshot of the live sheet, 2026-11-04)", () => {
     expect(places.filter((p) => p.facets["Reservation"]!.length === 0)).toHaveLength(13);
   });
 
-  it("strips the star from the name and keeps the flag", () => {
-    const glitch = places.find((p) => p.name.startsWith("Glitch Coffee"))!;
+  it("reads the key branch from the Key column, the id from ID and the branch from Branch", () => {
+    const glitch = places.find((p) => p.name === "Glitch Coffee & Roasters")!;
     expect(glitch.starred).toBe(true);
-    expect(glitch.name).not.toContain("★");
-    expect(glitch.id).toBe("tokyo-coffee:glitch-coffee-roasters-jimbocho");
+    expect(glitch.branch).toBe("Jimbocho");
+    expect(glitch.id).toBe("tokyo-coffee:1");
     expect(glitch.facets["Specialty"]).toEqual(["Light roast / Nordic"]);
     expect(glitch.lastVerified).toBe("2026-11-04");
   });

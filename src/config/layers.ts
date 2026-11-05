@@ -1,19 +1,18 @@
 import type { LayerConfig, LayerId } from "../data/types.ts";
 
 /**
- * One entry per sheet. Adding a layer: add its id to LAYER_IDS in
- * data/types.ts, publish the sheet as CSV, add an entry here, push.
- * Facet `values` are the sheet's enum in display order; values that turn
- * up in the sheet but not here still render (after these) and raise a
- * parse warning so typos are visible.
+ * One entry per layer. Adding a layer: add its id to LAYER_IDS in
+ * data/types.ts, put its CSV at data/<id>.csv (npm run import normalises
+ * one), add an entry here, push. Facet `values` are the column's enum in
+ * display order; values in the data but not here still render (after
+ * these) and fail the build's data check so typos are visible.
  */
 export const layers: LayerConfig[] = [
   {
     id: "tokyo-coffee",
     region: "tokyo",
     label: "Coffee",
-    csvUrl:
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vSIp7NVV6JlTMCW2NDTF4cgozZ7zDwdh1YmXjrD82owzZBeAvN-4AN5UmQEJP1f5cdQLEVbOnlNwAs_/pub?output=csv",
+    dataUrl: "/data/tokyo-coffee.csv",
     color: "#b5452b",
     icon: "coffee",
     hasHours: true,

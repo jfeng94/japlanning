@@ -67,15 +67,22 @@ Jerry wants to be hands-on with this project. He's an experienced engineer
 
 ## Data source
 
-Each layer is backed by a Google Sheet that Jerry edits by hand, published to
-the web as CSV. A published sheet is readable by anyone with the URL; that's
-fine for this data, but **nothing private goes in any sheet**.
+Each layer is one CSV file in the repo, `data/<layer-id>.csv`, the source
+of truth (decided 2026-11-05, see `docs/proposals/data-in-repo.md`; the
+layers began as Google Sheets Jerry edited by hand, and the original
+**Tokyo Coffee Master** sheet in the Japan_2026 Drive folder is now a
+read-only reference). The site is public, so **nothing private goes in
+any data file**.
 
-The first layer is coffee:
+Workflow: Jerry says what to add or change; Claude edits the CSV, runs
+the tests (which parse the real file), commits naming the places, pushes;
+Actions validates it again (`npm run snapshot` fails on any parse
+warning) and deploys. `npm run ids` prints the next free ID.
+`npm run import -- <layer-id> [<csv url or file>]` normalises an external
+CSV into the repo file (assigns missing IDs, moves a ★ prefix into Key,
+fixes column order and quoting); with no source it round-trips the file.
 
-- Drive folder: Japan_2026
-- Sheet: **Tokyo Coffee Master**, ID 1eQWY1mCVvzAQ6wcDyk9sC5WNtbyEgH8b-Mvs4AIApxA
-- Published CSV: https://docs.google.com/spreadsheets/d/e/2PACX-1vSIp7NVV6JlTMCW2NDTF4cgozZ7zDwdh1YmXjrD82owzZBeAvN-4AN5UmQEJP1f5cdQLEVbOnlNwAs_/pub?output=csv
+The first layer is coffee: `data/tokyo-coffee.csv`.
 
 ### Coffee columns (one row per shop)
 
