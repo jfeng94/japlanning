@@ -762,14 +762,14 @@ button {
 }
 
 /*
- * Locate states: idle (no fix) hollow in the text colour; waiting pulses;
- * ready (fix, not following) hollow blue; locked (following) filled blue.
+ * Locate states: idle (no fix) and ready (fix, not following) hollow in the
+ * text colour; waiting pulses; locked (following) filled blue. Blue means
+ * the map is actively following, nothing less.
  */
 .locate-button .locate-centre {
   display: none;
 }
 
-.locate-button[data-state="ready"],
 .locate-button[data-state="locked"] {
   color: var(--location);
 }

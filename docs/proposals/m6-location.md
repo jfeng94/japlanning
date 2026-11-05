@@ -269,6 +269,9 @@ button, removes the dot and the distances; on brings the button back
 idle, and does not start watching while the browser reports the
 permission denied. Dark theme: button and dot in the dark blue.
 
-For the phone pass: the first tap prompts; after that, a cold launch
-should show the dot without a tap (the browser reports the grant); the
-ring's size against the scale bar; following while walking.
+Phone pass of the revision (2026-11-05): the dot shows at launch without
+a tap (iOS reports the grant to the Permissions API), lock and unlock
+work, the ring looks right, on/off behaves. Following while walking is
+untested until there are tiles for where Jerry is. One polish: the
+button is blue only while actually following; with a fix but unlocked it
+is the text colour, like idle (Jerry: blue reads as an active state).
