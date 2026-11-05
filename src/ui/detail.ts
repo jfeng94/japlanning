@@ -4,6 +4,7 @@ import { openStatus } from "../hours/open.ts";
 import { tag } from "./chips.ts";
 import { detailFields, type DetailRow } from "./detail-fields.ts";
 import bookmarkIcon from "./icons/bookmark.webp";
+import centerIcon from "./icons/center.webp";
 import linkIcon from "./icons/link.webp";
 import shareIcon from "./icons/share.webp";
 import { directionsUrl, linkLabel, shareUrl } from "./links.ts";
@@ -15,6 +16,8 @@ export interface DetailHandlers {
   origin: string;
   isBookmarked: (id: string) => boolean;
   onToggleBookmark: (id: string) => void;
+  /** Ease the map back to this place (after panning away). */
+  onShowOnMap: () => void;
   /** Tokyo wall-clock moment to evaluate hours at; undefined means now. */
   at?: Date;
   /** The device's position, for "1.2 km away" in the meta line. */
@@ -70,6 +73,8 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   // ---- actions (Directions lives in the strip above the card) ----
   const actions = document.createElement("div");
   actions.className = "detail-actions";
+  // Show on map: back to the pin after panning away; the map eases, the card stays.
+  actions.append(iconButton("Show on map", centerIcon, h.onShowOnMap));
   // Share copies the place's link, nothing else: no OS share sheet, no name prefix.
   actions.append(iconButton("Copy link to this place", shareIcon, () => copyToClipboard(shareUrl(place, h.origin), "Link copied")));
   // Always present so the row keeps its shape; greyed and inert when the sheet has no link.

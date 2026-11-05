@@ -409,6 +409,7 @@ export function mountApp(root: HTMLElement): void {
       renderDetail(detailBody, selected, regionLayers.find((l) => l.id === selected.layerId), {
         onBack: deselect,
         origin: location.origin,
+        onShowOnMap: () => view.focus(selected.lng, selected.lat),
         isBookmarked: (id) => bookmarks.has(id),
         onToggleBookmark: (id) => bookmarks.toggle(id),
         at: hoursAt(state),
