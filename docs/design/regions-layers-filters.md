@@ -17,7 +17,8 @@ the UI. Each region has:
   the Neighborhood filter means the same thing for coffee and restaurants.
 
 Offline basemaps are downloaded per region on demand, each with its own
-"offline ready / last synced" indicator.
+"offline ready / last synced" indicator. Kyoto's neighborhoods and bbox
+were set 2026-11-05 with its first pins; Uji counts as Kyoto.
 
 Region is config, not architecture. If one app ever becomes a problem
 (storage quota, size), splitting to tokyo.garbage.house etc. is a deploy

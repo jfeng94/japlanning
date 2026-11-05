@@ -19,7 +19,7 @@ export const layers: LayerConfig[] = [
     rowFacets: ["Format", "Specialty", "Linger"],
     facets: [
       { column: "Kind", values: ["Coffee", "Tea", "Bar"] },
-      { column: "Format", values: ["Stand", "Café", "Kissaten", "Tasting bar", "Bean shop"] },
+      { column: "Format", values: ["Stand", "Café", "Kissaten", "Tasting bar", "Bean shop", "Shop"] },
       { column: "Roasting", values: ["In-house", "Guest roasters", "Both"] },
       { column: "Food", values: ["None", "Light", "Full menu"] },
       { column: "Linger", values: ["Grab & go", "Short stay", "Settle in"] },
@@ -35,6 +35,7 @@ export const layers: LayerConfig[] = [
           "Latte art",
           "Food & sweets",
           "Matcha",
+          "Hojicha",
           "Sencha",
           "Chinese tea",
           "Cocktails",

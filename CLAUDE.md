@@ -114,6 +114,7 @@ rows carry the region.
 | Address (JA) | string | Japanese address. **Leading `~` = approximate** (neighborhood-level only) |
 | Notes | string | Free text |
 | Last verified | date | YYYY-MM-DD; blank = hours unverified |
+| Google rating, Google reviews, Rated on | number, integer, date | A dated snapshot of the Google Maps rating and review count, taken by hand from an aggregator that mirrors Google (no Places API key, decided 2026-11-05). Blank when none was reachable. Shown in the card's "Also in the sheet" section until there is UI for it. |
 
 **Any enum field may be blank (unknown).** Filters treat blank as "unknown"
 with an explicit include-unknowns toggle, never as a silent match or

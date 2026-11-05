@@ -2,8 +2,9 @@ import type { RegionConfig, RegionId } from "../data/types.ts";
 
 /**
  * Regions, in display order. Neighborhood lists are shared by every layer
- * in the region (docs/design/regions-layers-filters.md). Kyoto and Hakone
- * get neighborhoods and bounds once they have pins.
+ * in the region (docs/design/regions-layers-filters.md). Hakone gets
+ * neighborhoods and bounds once it has pins. A bbox makes the build
+ * extract that region's basemap (scripts/build-basemap.ts).
  */
 export const regions: RegionConfig[] = [
   {
@@ -19,7 +20,21 @@ export const regions: RegionConfig[] = [
     ],
     bbox: [139.6, 35.58, 139.85, 35.75],
   },
-  { id: "kyoto", label: "Kyoto", neighborhoods: [] },
+  {
+    id: "kyoto",
+    label: "Kyoto",
+    // Uji counts as Kyoto (decided 2026-11-05).
+    neighborhoods: [
+      "Higashiyama (Gion / Kiyomizu)",
+      "Downtown (Kawaramachi / Karasuma)",
+      "Kyoto Station",
+      "Arashiyama",
+      "North (Kinkaku-ji / Kitayama)",
+      "Uji",
+    ],
+    // Arashiyama in the west to Uji in the south-east, with margin.
+    bbox: [135.65, 34.86, 135.85, 35.1],
+  },
   { id: "hakone", label: "Hakone", neighborhoods: [] },
 ];
 
