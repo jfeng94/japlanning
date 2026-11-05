@@ -88,6 +88,17 @@ export function passesOpenNow(place: Place, state: FilterState, hours: HoursInpu
   return state.includeUnknownHours;
 }
 
+/**
+ * With the open-now filter on: rows whose hours are unknown go after the
+ * rest, keeping their relative order, so the shops we know are open lead.
+ * Layers without hours (lodging) are not "unknown" and stay where they are.
+ */
+export function sinkUnknownHours(places: Place[], hours: HoursInput | undefined): Place[] {
+  if (!hours) return places;
+  const unknown = (p: Place) => hours.layersWithHours.has(p.layerId) && (hours.states.get(p.id) ?? "unknown") === "unknown";
+  return [...places.filter((p) => !unknown(p)), ...places.filter(unknown)];
+}
+
 export interface OpenNowCounts {
   open: number;
   unknown: number;

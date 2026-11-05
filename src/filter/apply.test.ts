@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LayerId } from "../data/types.ts";
-import { applyFilters, facetCounts, matchesFacet, neighborhoodCounts, normalise, openNowCounts, type HoursInput } from "./apply.ts";
+import { applyFilters, facetCounts, matchesFacet, neighborhoodCounts, normalise, openNowCounts, sinkUnknownHours, type HoursInput } from "./apply.ts";
 import { defaultState, reduce, type FilterAction, type FilterState } from "./state.ts";
 import { allLayers, coffee, NEIGHBORHOODS, samplePlaces } from "./testing.ts";
 
@@ -183,5 +183,21 @@ describe("normalise", () => {
   it("folds case and width", () => {
     expect(normalise("ＧＬＩＴＣＨ")).toBe("glitch");
     expect(normalise("  Café ")).toBe("café");
+  });
+});
+
+describe("sinkUnknownHours", () => {
+  it("moves unknown-hours rows of hours layers to the end, in order, and leaves the rest alone", () => {
+    const coffeeRows = places.filter((p) => p.layerId === "tokyo-coffee");
+    const [a, b, c] = coffeeRows as [typeof coffeeRows[0], typeof coffeeRows[0], typeof coffeeRows[0]];
+    const hours: HoursInput = {
+      states: new Map([[a.id, "unknown"], [b.id, "open"]]), // c has no entry: unknown too
+      layersWithHours: new Set(["tokyo-coffee"]),
+    };
+    expect(sinkUnknownHours([a, b, c], hours).map((p) => p.name)).toEqual([b.name, a.name, c.name]);
+    expect(sinkUnknownHours([a, b, c], undefined)).toEqual([a, b, c]);
+    const tea = places.find((p) => p.layerId === TEA)!;
+    // A layer without hours is not unknown; it keeps its place.
+    expect(sinkUnknownHours([a, tea, b], hours).map((p) => p.name)).toEqual([tea.name, b.name, a.name]);
   });
 });

@@ -175,8 +175,10 @@ A shared filter evaluated in Asia/Tokyo wall-clock time from the
   show a "no hours" mark while the filter is on.
 - Open: passes. Closed: hidden.
 - Unknown (blank or unparsable hours): passes iff `includeUnknownHours`
-  (default on, like the facets' include-unknown); rows show "hours
-  unknown".
+  (default on, like the facets' include-unknown). Those rows sink to the
+  end of the list, in their usual order, and carry a "?" marker before
+  the name (2026-11-05). The marker slot shows one thing, like the pins:
+  "?" beats the bookmark seal, which beats the ★.
 - Before the parser has loaded, everything passes so the list never
   blanks.
 

@@ -6,7 +6,7 @@ import { createBookmarks, createIdbBookmarkStorage } from "../data/bookmarks.ts"
 import { browserDeps } from "../data/browser.ts";
 import { loadAllLayersStaged } from "../data/load.ts";
 import type { LoadResult, Place, RegionId } from "../data/types.ts";
-import { applyFilters, type HoursInput } from "../filter/apply.ts";
+import { applyFilters, sinkUnknownHours, type HoursInput } from "../filter/apply.ts";
 import { sortByDistance } from "../geo/distance.ts";
 import { evaluateAll, type HoursState } from "../hours/evaluate-all.ts";
 import { loadParser, tokyoNow, tokyoWallClock, type OpeningHoursCtor } from "../hours/open.ts";
@@ -375,7 +375,8 @@ export function mountApp(root: HTMLElement): void {
     const total = places.filter((p) => p.region === state.region && layersOn.has(p.layerId)).length;
     const matching = applyFilters(places, state, { bookmarks: bookmarks.all(), hours: hoursInput() });
     const byDistance = settings().sort === "distance" && position !== undefined;
-    const shown = byDistance && position ? sortByDistance(matching, position) : sortByName(matching);
+    const sorted = byDistance && position ? sortByDistance(matching, position) : sortByName(matching);
+    const shown = state.openNow ? sinkUnknownHours(sorted, hoursInput()) : sorted;
     const selectedId = ui.get().selectedId;
     const selected = selectedId ? shown.find((p) => p.id === selectedId) : undefined;
     // Returning to the list: remember which place was open so its row can fade in from a highlight.

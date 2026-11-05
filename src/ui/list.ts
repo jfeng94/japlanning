@@ -2,6 +2,7 @@ import type { LayerConfig, Place } from "../data/types.ts";
 import { distanceM, formatDistance, type LatLng } from "../geo/distance.ts";
 import { tag } from "./chips.ts";
 import bookmarkIcon from "./icons/bookmark.webp";
+import unknownIcon from "./icons/unknown.webp";
 
 export interface ListOptions {
   layers: LayerConfig[];
@@ -38,14 +39,14 @@ export function renderList(ul: HTMLUListElement, places: Place[], opts: ListOpti
 
       const title = document.createElement("div");
       title.className = "place-title";
-      if (p.starred) title.append(tag("★", "star"));
-      if (opts.bookmarks?.has(p.id)) {
-        const mark = document.createElement("img");
-        mark.className = "row-bookmark";
-        mark.src = bookmarkIcon;
-        mark.alt = "Bookmarked";
-        mark.draggable = false;
-        title.append(mark);
+      // One marker before the name, like the pins: hours unknown (open-now on) beats the seal, which beats the ★.
+      const hoursMark = opts.hoursMarks?.get(p.id);
+      if (hoursMark === "hours unknown") {
+        title.append(markImg(unknownIcon, "Hours unknown", "row-mark row-mark--unknown"));
+      } else if (opts.bookmarks?.has(p.id)) {
+        title.append(markImg(bookmarkIcon, "Bookmarked", "row-mark row-mark--bookmark"));
+      } else if (p.starred) {
+        title.append(tag("★", "star"));
       }
       const name = document.createElement("span");
       name.className = "place-name";
@@ -73,8 +74,8 @@ export function renderList(ul: HTMLUListElement, places: Place[], opts: ListOpti
         distance.textContent = formatDistance(distanceM(opts.from, p));
         meta.append(p.neighborhood ? " · " : "", distance);
       }
-      const mark = opts.hoursMarks?.get(p.id);
-      if (mark) meta.append(" ", tag(mark, "tag tag--flag"));
+      // "no hours" (a layer without hours) stays a text tag; "hours unknown" is the marker above.
+      if (hoursMark && hoursMark !== "hours unknown") meta.append(" ", tag(hoursMark, "tag tag--flag"));
 
       const chips = document.createElement("div");
       chips.className = "place-chips";
@@ -88,6 +89,16 @@ export function renderList(ul: HTMLUListElement, places: Place[], opts: ListOpti
       return li;
     }),
   );
+}
+
+function markImg(src: string, alt: string, className: string): HTMLImageElement {
+  const img = document.createElement("img");
+  img.className = className;
+  img.src = src;
+  img.alt = alt;
+  img.title = alt;
+  img.draggable = false;
+  return img;
 }
 
 function rowFacets(layer: LayerConfig | undefined): string[] {
