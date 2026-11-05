@@ -74,7 +74,8 @@ layers began as Google Sheets Jerry edited by hand, and the original
 read-only reference). The site is public, so **nothing private goes in
 any data file**.
 
-Workflow: Jerry says what to add or change; Claude edits the CSV, runs
+Workflow (`docs/design/adding-places.md`: research, a findings table
+Jerry reviews, then the rows): Jerry says what to add or change; Claude edits the CSV, runs
 the tests (which parse the real file), commits naming the places, pushes;
 Actions validates it again (`npm run snapshot` fails on any parse
 warning) and deploys. `npm run ids` prints the next free ID.
