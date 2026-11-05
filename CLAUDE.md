@@ -135,6 +135,12 @@ is used only as the **directions hand-off**.
 - GitHub repo: `jfeng94/japlanning`, public (GitHub Pages on a free account
   requires a public repo; the data is public anyway).
 - Deploy with GitHub Actions to Pages.
+- The repo was recreated on 2026-11-05 after GitHub's storage for the
+  original rejected every ref write for hours ("fatal error in commit_refs"
+  from spokes-receive-pack; objects uploaded, the ref update failed). The
+  original lives on as `jfeng94/japlanning-old` with its Pages site removed
+  and can be deleted. The custom domain moved over without a DNS change,
+  since the CNAME points at the account, not the repo.
 - DNS is at Squarespace: a CNAME record for `japan` pointing at
   `jfeng94.github.io`, a `CNAME` file in the deployed site, then "Enforce
   HTTPS" in the Pages settings once the certificate issues (can take up to an
