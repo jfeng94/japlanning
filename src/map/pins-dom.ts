@@ -4,12 +4,13 @@ import { pinLabelMinZoom, pinStyle } from "../config/map.ts";
 import type { Mark } from "../data/marks.ts";
 import bookmarkIcon from "../ui/icons/bookmark.webp";
 import closedIcon from "../ui/icons/closed.webp";
+import starIcon from "../ui/icons/star.webp";
 import unknownIcon from "../ui/icons/unknown.webp";
 import type { MapView } from "./map.ts";
 import type { Pin, PinRenderer } from "./pins.ts";
 
-/** Badge artwork per mark; the ★ is CSS text, not an image. */
-const BADGES: Partial<Record<Mark, string>> = { bookmark: bookmarkIcon, unknown: unknownIcon, closed: closedIcon };
+/** Badge artwork per mark. */
+const BADGES: Record<Mark, string> = { bookmark: bookmarkIcon, unknown: unknownIcon, closed: closedIcon, star: starIcon };
 
 interface Entry {
   marker: Marker;

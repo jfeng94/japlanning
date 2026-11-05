@@ -197,8 +197,8 @@ filter on, closed places are hidden anyway. "?" shows only while the
 user is asking about opening times (the filter on, or an "open at" time
 set): it answers "is this open?" with "we don't know", and is noise
 otherwise. On rows the marker sits before the name; on pins
-it is the upper-right badge, with the ★ as text and the others as
-artwork.
+it is the upper-right badge. All four are artwork (the ★ glyph stays
+only in the filter chip and strip tag, which are labels).
 
 ## Sort (M6, 2026-11-04)
 

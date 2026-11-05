@@ -7,6 +7,7 @@ import bookmarkIcon from "./icons/bookmark.webp";
 import centerIcon from "./icons/center.webp";
 import linkIcon from "./icons/link.webp";
 import shareIcon from "./icons/share.webp";
+import starIcon from "./icons/star.webp";
 import { directionsUrl, linkLabel, shareUrl } from "./links.ts";
 import { showToast } from "./toast.ts";
 
@@ -49,7 +50,15 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   back.addEventListener("click", h.onBack);
   const title = document.createElement("h2");
   title.className = "detail-title";
-  if (place.starred) title.append(tag("★", "star"));
+  if (place.starred) {
+    const star = document.createElement("img");
+    star.className = "row-mark row-mark--star";
+    star.src = starIcon;
+    star.alt = "Key branch";
+    star.title = "Key branch";
+    star.draggable = false;
+    title.append(star);
+  }
   title.append(place.name);
   if (place.branch) {
     const branch = document.createElement("span");

@@ -3,6 +3,7 @@ import { ICON_IDS, iconAssetUrl, type IconId } from "../config/icons.ts";
 import { pinLabelMinZoom } from "../config/map.ts";
 import bookmarkIcon from "../ui/icons/bookmark.webp";
 import closedIcon from "../ui/icons/closed.webp";
+import starIcon from "../ui/icons/star.webp";
 import unknownIcon from "../ui/icons/unknown.webp";
 import type { MapView } from "./map.ts";
 import { pinsToGeoJson, type Pin, type PinRenderer } from "./pins.ts";
@@ -10,11 +11,10 @@ import { loadSdfImage, type SdfImage } from "./sdf.ts";
 
 const SOURCE = "pins";
 const ICON_LAYER = "pins-icon";
-const STAR_LAYER = "pins-star";
 const BADGE_LAYER = "pins-badge";
-/** Raster badge images by mark (the ★ is text in its own layer). */
-const BADGE_IMAGES = { bookmark: "bookmark-badge", unknown: "unknown-badge", closed: "closed-badge" } as const;
-const BADGE_ART: Record<keyof typeof BADGE_IMAGES, string> = { bookmark: bookmarkIcon, unknown: unknownIcon, closed: closedIcon };
+/** Raster badge images by mark. */
+const BADGE_IMAGES = { bookmark: "bookmark-badge", unknown: "unknown-badge", closed: "closed-badge", star: "star-badge" } as const;
+const BADGE_ART: Record<keyof typeof BADGE_IMAGES, string> = { bookmark: bookmarkIcon, unknown: unknownIcon, closed: closedIcon, star: starIcon };
 const LABEL_LAYER = "pins-label";
 const FONT = ["Noto Sans Medium"];
 
@@ -106,32 +106,12 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
       },
     });
     m.addLayer({
-      id: STAR_LAYER,
-      type: "symbol",
-      source: SOURCE,
-      // One badge per pin (data/marks.ts): the ★ only when nothing outranks it.
-      filter: ["==", ["get", "mark"], "star"],
-      layout: {
-        "text-field": "★",
-        "text-font": FONT,
-        "text-size": 13,
-        "text-offset": [1.1, -1.0],
-        "text-allow-overlap": true,
-        "text-ignore-placement": true,
-      },
-      paint: {
-        "text-color": ["get", "color"],
-        "text-halo-color": colors.halo,
-        "text-halo-width": 1.5,
-      },
-    });
-    m.addLayer({
       id: BADGE_LAYER,
       type: "symbol",
       source: SOURCE,
       filter: ["in", ["get", "mark"], ["literal", Object.keys(BADGE_IMAGES)]],
       layout: {
-        "icon-image": ["match", ["get", "mark"], "unknown", BADGE_IMAGES.unknown, "closed", BADGE_IMAGES.closed, BADGE_IMAGES.bookmark],
+        "icon-image": ["match", ["get", "mark"], "unknown", BADGE_IMAGES.unknown, "closed", BADGE_IMAGES.closed, "star", BADGE_IMAGES.star, BADGE_IMAGES.bookmark],
         "icon-size": 0.42,
         // Upper right, where the ★ goes; offset is in image pixels before icon-size.
         "icon-offset": [40, -40],
@@ -204,7 +184,7 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
       map.off("mouseenter", ICON_LAYER, onEnter);
       map.off("mouseleave", ICON_LAYER, onLeave);
       if (map.getStyle()) {
-        for (const id of [LABEL_LAYER, BADGE_LAYER, STAR_LAYER, ICON_LAYER]) if (map.getLayer(id)) map.removeLayer(id);
+        for (const id of [LABEL_LAYER, BADGE_LAYER, ICON_LAYER]) if (map.getLayer(id)) map.removeLayer(id);
         if (map.getSource(SOURCE)) map.removeSource(SOURCE);
       }
     },

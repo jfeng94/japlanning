@@ -4,10 +4,11 @@ import { distanceM, formatDistance, type LatLng } from "../geo/distance.ts";
 import { tag } from "./chips.ts";
 import bookmarkIcon from "./icons/bookmark.webp";
 import closedIcon from "./icons/closed.webp";
+import starIcon from "./icons/star.webp";
 import unknownIcon from "./icons/unknown.webp";
 
-/** Badge artwork per mark; the ★ is text. */
-const BADGES: Partial<Record<Mark, string>> = { bookmark: bookmarkIcon, unknown: unknownIcon, closed: closedIcon };
+/** Badge artwork per mark. */
+const BADGES: Record<Mark, string> = { bookmark: bookmarkIcon, unknown: unknownIcon, closed: closedIcon, star: starIcon };
 
 export interface ListOptions {
   layers: LayerConfig[];
@@ -46,8 +47,7 @@ export function renderList(ul: HTMLUListElement, places: Place[], opts: ListOpti
       title.className = "place-title";
       // One marker before the name, the same one the pin shows (data/marks.ts).
       const mark = opts.marks?.get(p.id);
-      if (mark === "star") title.append(tag("★", "star"));
-      else if (mark) title.append(markImg(BADGES[mark]!, MARK_LABELS[mark], `row-mark row-mark--${mark}`));
+      if (mark) title.append(markImg(BADGES[mark], MARK_LABELS[mark], `row-mark row-mark--${mark}`));
       const name = document.createElement("span");
       name.className = "place-name";
       name.textContent = p.name;
