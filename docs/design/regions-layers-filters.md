@@ -163,6 +163,26 @@ passed in. It refreshes once a minute while the filter is on and when
 the app returns to the foreground. The card's Open/Closed line reads the
 same moment, so the filter and the card never disagree.
 
+## Sort (M6, 2026-11-04)
+
+List order is a device preference, not filter state: `sort: "name" |
+"distance"` in the Settings store, shown as a Name / Distance pair at the
+top of the filter sheet and as "List order" in Settings. It is not in the
+share URL (a link shouldn't reorder a friend's list), though `?sort=` works
+as an override like the other settings.
+
+- Distance order needs a fix from the locate control. Without one the list
+  is by name and the Distance chip is disabled ("Distance · locate first");
+  the preference is kept and takes effect on the next fix.
+- "Sort by distance when located" (`autoDistanceSort`, off by default)
+  switches `sort` to distance on the first fix after launch. Off while
+  planning from home, on during the trip.
+- The strip shows a "by distance" tag alongside the filter tags so it is
+  visible why the order changed.
+- Rows and the card show the distance from the last fix whenever one
+  exists, whatever the order. Re-renders from new fixes are throttled to
+  one every 3 s so the list doesn't re-sort under a thumb.
+
 ## Devices and layout
 
 - **Primary target: iPhone, installed to the Home Screen from Chrome.** Every

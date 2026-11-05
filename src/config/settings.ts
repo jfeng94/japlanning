@@ -1,26 +1,33 @@
 /**
- * User-adjustable settings for things under test (renderers, looks).
- * Resolved in this order: built-in default, then what the Settings
- * sheet saved to localStorage, then a URL parameter, so a comparison
- * link always shows what it says and a Home Screen bookmark never has
- * to change. Adding a setting: one entry here, one line in
- * src/ui/settings-sheet.ts.
+ * User-adjustable settings: experiments (renderers, looks) and
+ * preferences (sort). Resolved in this order: built-in default, then
+ * what the Settings sheet saved to localStorage, then a URL parameter,
+ * so a comparison link always shows what it says and a Home Screen
+ * bookmark never has to change. Adding a setting: one entry here, one
+ * line in src/ui/settings-sheet.ts.
  */
 
 export type PinRendererKind = "dom" | "sdf";
 export type PinStyle = "disc" | "bare";
+export type SortKey = "name" | "distance";
 
 export interface Settings {
   pinRenderer: PinRendererKind;
   pinStyle: PinStyle;
   /** Zoom from which pin name labels show. */
   pinLabelMinZoom: number;
+  /** List order. Distance needs a fix; without one the list falls back to names. */
+  sort: SortKey;
+  /** Switch to distance order on the first fix after launch. Off while planning from home. */
+  autoDistanceSort: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   pinRenderer: "dom",
   pinStyle: "bare",
   pinLabelMinZoom: 14,
+  sort: "name",
+  autoDistanceSort: false,
 };
 
 /** URL parameter names, kept short for sharing. */
@@ -28,6 +35,8 @@ const URL_KEYS: Record<keyof Settings, string> = {
   pinRenderer: "pins",
   pinStyle: "pinstyle",
   pinLabelMinZoom: "labelzoom",
+  sort: "sort",
+  autoDistanceSort: "autosort",
 };
 
 const STORAGE_KEY = "japlanning.settings";
@@ -36,7 +45,17 @@ const VALID: { [K in keyof Settings]: (v: unknown) => v is Settings[K] } = {
   pinRenderer: (v): v is PinRendererKind => v === "dom" || v === "sdf",
   pinStyle: (v): v is PinStyle => v === "disc" || v === "bare",
   pinLabelMinZoom: (v): v is number => typeof v === "number" && v >= 0 && v <= 20,
+  sort: (v): v is SortKey => v === "name" || v === "distance",
+  autoDistanceSort: (v): v is boolean => typeof v === "boolean",
 };
+
+/** A URL parameter or `<select>` value as the setting's own type; validated by the caller. */
+export function coerceSetting(key: keyof Settings, raw: string): unknown {
+  const kind = typeof DEFAULT_SETTINGS[key];
+  if (kind === "number") return Number(raw);
+  if (kind === "boolean") return raw === "1" || raw === "true";
+  return raw;
+}
 
 let current: Settings | undefined;
 
@@ -81,7 +100,7 @@ function resolve(search = location.search): Settings {
   for (const key of Object.keys(URL_KEYS) as (keyof Settings)[]) {
     const raw = params.get(URL_KEYS[key]);
     if (raw === null) continue;
-    const v: unknown = typeof DEFAULT_SETTINGS[key] === "number" ? Number(raw) : raw;
+    const v = coerceSetting(key, raw);
     if (VALID[key](v)) (out as unknown as Record<string, unknown>)[key] = v;
   }
   return out;

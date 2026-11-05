@@ -15,6 +15,8 @@ export function renderFilterSummary(
   state: FilterState,
   regionLayers: LayerConfig[],
   countLabel: string,
+  /** The list is in distance order, which the tags say since it isn't a filter. */
+  byDistance = false,
 ): void {
   countEl.replaceChildren(countLabel);
   const icons = document.createElement("span");
@@ -31,12 +33,13 @@ export function renderFilterSummary(
   }
   if (icons.childElementCount > 0) countEl.append(icons);
 
-  summaryEl.replaceChildren(...summaryTags(state, regionLayers));
+  summaryEl.replaceChildren(...summaryTags(state, regionLayers, byDistance));
   summaryEl.hidden = summaryEl.childElementCount === 0;
 }
 
-function summaryTags(state: FilterState, regionLayers: LayerConfig[]): HTMLElement[] {
+function summaryTags(state: FilterState, regionLayers: LayerConfig[], byDistance: boolean): HTMLElement[] {
   const tags: HTMLElement[] = [];
+  if (byDistance) tags.push(tag("by distance"));
   if (state.text) tags.push(tag(`“${state.text}”`));
   for (const n of state.neighborhoods) tags.push(tag(shortNeighborhood(n)));
   if (state.starredOnly) tags.push(tag("★ key branches"));

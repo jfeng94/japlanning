@@ -1,3 +1,4 @@
+import type { SortKey } from "../config/settings.ts";
 import type { LayerConfig, Place, RegionConfig } from "../data/types.ts";
 import { facetCounts, neighborhoodCounts, openNowCounts, type HoursInput } from "../filter/apply.ts";
 import { clock, DAY, tokyoNow, tokyoWallClock, wallClockString } from "../hours/open.ts";
@@ -21,6 +22,10 @@ export interface FilterSheetContext {
   /** Evaluated hours, once the open-now filter is on and the parser has loaded. */
   hours?: HoursInput;
   dispatch: (action: FilterAction) => void;
+  /** List order (a setting, not filter state) and whether distance order is possible yet. */
+  sort: SortKey;
+  hasPosition: boolean;
+  onSort: (sort: SortKey) => void;
 }
 
 /**
@@ -67,6 +72,19 @@ export function renderFilterSheet(body: HTMLElement, state: FilterState, ctx: Fi
       ),
     );
   }
+
+  // Sort: a preference rather than a filter, but it belongs with "what am I looking at".
+  const byDistance = ctx.sort === "distance" && ctx.hasPosition;
+  body.append(
+    section("Sort", [
+      chip("Name", { pressed: !byDistance, onClick: () => ctx.onSort("name") }),
+      chip(ctx.hasPosition ? "Distance" : "Distance · locate first", {
+        pressed: byDistance,
+        disabled: !ctx.hasPosition,
+        onClick: () => ctx.onSort("distance"),
+      }),
+    ]),
+  );
 
   const bookmarkedInRegion = places.filter((p) => p.region === region.id && bookmarks.has(p.id)).length;
   body.append(

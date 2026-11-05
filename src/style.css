@@ -733,6 +733,11 @@ button {
   font-size: 0.9rem;
 }
 
+.place-distance {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Round map buttons in MapLibre's top-left stack: ours (fit) and its locate control. */
 .fit-button,
 .maplibregl-ctrl-top-left .maplibregl-ctrl-group {

@@ -1,5 +1,5 @@
 import {
-  DEFAULT_SETTINGS,
+  coerceSetting,
   resetSettings,
   settings,
   settingsChanged,
@@ -17,8 +17,26 @@ interface Field<K extends keyof Settings> {
   when?: (s: Settings) => boolean;
 }
 
-/** One entry per setting under test. Dropdowns; the value types come from settings.ts. */
+/** One entry per setting. Dropdowns; the value types come from settings.ts. */
 const FIELDS: Field<keyof Settings>[] = [
+  {
+    key: "sort",
+    label: "List order",
+    help: "Distance needs a location fix (the map's locate button); until there is one the list is by name.",
+    options: [
+      ["name", "By name"],
+      ["distance", "By distance"],
+    ],
+  },
+  {
+    key: "autoDistanceSort",
+    label: "Sort by distance when located",
+    help: "On: the first fix after launch switches the list to distance order. Off while planning from home, on during the trip.",
+    options: [
+      [false, "Off"],
+      [true, "On"],
+    ],
+  },
   {
     key: "pinRenderer",
     label: "Pin renderer",
@@ -91,7 +109,7 @@ export function renderSettingsSheet(body: HTMLElement, handlers: SettingsSheetHa
 
   const intro = document.createElement("p");
   intro.className = "note";
-  intro.textContent = "Experiments. Saved on this device; a link with the same option in its URL overrides the saved value.";
+  intro.textContent = "Saved on this device; a link with the same option in its URL overrides the saved value.";
   body.append(intro);
 
   for (const field of FIELDS) {
@@ -111,9 +129,7 @@ export function renderSettingsSheet(body: HTMLElement, handlers: SettingsSheetHa
       select.append(opt);
     }
     select.addEventListener("change", () => {
-      const raw = select.value;
-      const value = typeof DEFAULT_SETTINGS[field.key] === "number" ? Number(raw) : raw;
-      const next = updateSettings({ [field.key]: value } as Partial<Settings>);
+      const next = updateSettings({ [field.key]: coerceSetting(field.key, select.value) } as Partial<Settings>);
       renderSettingsSheet(body, handlers);
       onChange(next);
     });

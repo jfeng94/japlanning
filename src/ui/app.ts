@@ -1,11 +1,13 @@
 import { layers } from "../config/layers.ts";
 import { pinRendererKind } from "../config/map.ts";
 import { regions } from "../config/regions.ts";
+import { settings, updateSettings, type Settings } from "../config/settings.ts";
 import { createBookmarks, createIdbBookmarkStorage } from "../data/bookmarks.ts";
 import { browserDeps } from "../data/browser.ts";
 import { loadAllLayersStaged } from "../data/load.ts";
 import type { LoadResult, Place, RegionId } from "../data/types.ts";
 import { applyFilters, type HoursInput } from "../filter/apply.ts";
+import { sortByDistance } from "../geo/distance.ts";
 import { evaluateAll, type HoursState } from "../hours/evaluate-all.ts";
 import { loadParser, tokyoNow, tokyoWallClock, type OpeningHoursCtor } from "../hours/open.ts";
 import {
@@ -120,7 +122,7 @@ export function mountApp(root: HTMLElement): void {
   const filterSheet = createSheet(root, "Filters", () => renderSheet());
   const diagSheet = createSheet(root, "Diagnostics");
   const settingsSheet = createSheet(root, "Settings", () =>
-    renderSettingsSheet(settingsSheet.body, { onChange: () => swapPinRenderer(), onDiagnostics: () => diagSheet.open() }),
+    renderSettingsSheet(settingsSheet.body, { onChange: onSettingsChanged, onDiagnostics: () => diagSheet.open() }),
   );
   const diagnostics = mountDiagnostics(diagSheet.body, () => void reload());
 
@@ -152,8 +154,15 @@ export function mountApp(root: HTMLElement): void {
     }
   }
 
-  /** Settings changed: tear the renderer down and build it again from the new settings. */
-  function swapPinRenderer(): void {
+  /** Pin settings need the renderer rebuilt; anything else (sort) is a plain re-render. */
+  const pinKey = (s: Settings) => `${s.pinRenderer}/${s.pinStyle}/${s.pinLabelMinZoom}`;
+  let appliedPins = pinKey(settings());
+  function onSettingsChanged(next: Settings): void {
+    if (pinKey(next) === appliedPins) {
+      render();
+      return;
+    }
+    appliedPins = pinKey(next);
     pins.destroy();
     pins = createPinRenderer();
     pins.onSelect(onPinSelect);
@@ -163,13 +172,33 @@ export function mountApp(root: HTMLElement): void {
   // ---- location ----
   /** The device's last fix, while the locate control is watching. */
   let position: Position | undefined;
+  /** Fixes arrive every second or so while walking; the list re-sorts at most this often. */
+  const POSITION_RENDER_MS = 3000;
+  let lastPositionRender = 0;
+  let positionTimer: ReturnType<typeof setTimeout> | undefined;
+  let firstFixHandled = false;
 
   function onPosition(next: Position): void {
+    const first = position === undefined;
     position = next;
+    if (!firstFixHandled) {
+      firstFixHandled = true;
+      if (settings().autoDistanceSort && settings().sort !== "distance") updateSettings({ sort: "distance" });
+    }
+    const due = lastPositionRender + POSITION_RENDER_MS - Date.now();
+    if (first || due <= 0) renderForPosition();
+    else positionTimer ??= setTimeout(renderForPosition, due);
+  }
+
+  function renderForPosition(): void {
+    if (positionTimer) clearTimeout(positionTimer);
+    positionTimer = undefined;
+    lastPositionRender = Date.now();
+    render();
   }
 
   function onLocateError(kind: LocateError): void {
-    if (kind === "denied") position = undefined;
+    if (kind === "denied") dropPosition();
     const text: Record<LocateError, string> = {
       denied: "Location is off for this app. Allow it in the phone's Settings.",
       unavailable: "Couldn't get your location.",
@@ -179,7 +208,14 @@ export function mountApp(root: HTMLElement): void {
   }
 
   function onLocateOff(): void {
+    dropPosition();
+  }
+
+  /** No fix any more: distances go, and a distance-ordered list falls back to names. */
+  function dropPosition(): void {
+    if (position === undefined) return;
     position = undefined;
+    render();
   }
 
   // The panel's two contents. The strip is always visible; the body shows at half and full.
@@ -290,6 +326,12 @@ export function mountApp(root: HTMLElement): void {
       bookmarks: bookmarks.all(),
       hours: hoursInput(),
       dispatch: filters.dispatch,
+      sort: settings().sort,
+      hasPosition: position !== undefined,
+      onSort: (sort) => {
+        updateSettings({ sort });
+        render();
+      },
     });
   }
 
@@ -306,7 +348,9 @@ export function mountApp(root: HTMLElement): void {
 
     const layersOn = effectiveLayers(state, regionLayers.map((l) => l.id));
     const total = places.filter((p) => p.region === state.region && layersOn.has(p.layerId)).length;
-    const shown = sortByName(applyFilters(places, state, { bookmarks: bookmarks.all(), hours: hoursInput() }));
+    const matching = applyFilters(places, state, { bookmarks: bookmarks.all(), hours: hoursInput() });
+    const byDistance = settings().sort === "distance" && position !== undefined;
+    const shown = byDistance && position ? sortByDistance(matching, position) : sortByName(matching);
     const selectedId = ui.get().selectedId;
     const selected = selectedId ? shown.find((p) => p.id === selectedId) : undefined;
     // Returning to the list: remember which place was open so its row can fade in from a highlight.
@@ -318,6 +362,7 @@ export function mountApp(root: HTMLElement): void {
       state,
       regionLayers,
       loading && places.length === 0 ? "Loading…" : countLabel(shown.length, total),
+      byDistance,
     );
     renderStatus(status, results, loading);
     renderList(placeList, shown, {
@@ -327,6 +372,7 @@ export function mountApp(root: HTMLElement): void {
       bookmarks: bookmarks.all(),
       flashId,
       hoursMarks: state.openNow ? hoursMarks(shown) : undefined,
+      from: position,
       onSelect: (id) => {
         openedFrom = "list";
         select(id);
@@ -341,6 +387,7 @@ export function mountApp(root: HTMLElement): void {
         isBookmarked: (id) => bookmarks.has(id),
         onToggleBookmark: (id) => bookmarks.toggle(id),
         at: hoursAt(state),
+        from: position,
       });
       renderDetailStrip(detailStrip, selected);
     }

@@ -1,4 +1,5 @@
 import type { LayerConfig, Place } from "../data/types.ts";
+import { distanceM, formatDistance, type LatLng } from "../geo/distance.ts";
 import { openStatus } from "../hours/open.ts";
 import { tag } from "./chips.ts";
 import { detailFields, type DetailRow } from "./detail-fields.ts";
@@ -16,6 +17,8 @@ export interface DetailHandlers {
   onToggleBookmark: (id: string) => void;
   /** Tokyo wall-clock moment to evaluate hours at; undefined means now. */
   at?: Date;
+  /** The device's position, for "1.2 km away" in the meta line. */
+  from?: LatLng;
 }
 
 const FLAG_TEXT = { approximate: "approximate", unverified: "unverified", unknown: "" } as const;
@@ -55,7 +58,8 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
 
   const meta = document.createElement("p");
   meta.className = "detail-meta";
-  meta.textContent = [layer?.label, place.neighborhood].filter(Boolean).join(" · ");
+  const away = h.from ? `${formatDistance(distanceM(h.from, place))} away` : undefined;
+  meta.textContent = [layer?.label, place.neighborhood, away].filter(Boolean).join(" · ");
 
   // ---- actions (Directions lives in the strip above the card) ----
   const actions = document.createElement("div");

@@ -1,4 +1,5 @@
 import type { LayerConfig, Place } from "../data/types.ts";
+import { distanceM, formatDistance, type LatLng } from "../geo/distance.ts";
 import { tag } from "./chips.ts";
 import bookmarkIcon from "./icons/bookmark.webp";
 
@@ -13,6 +14,8 @@ export interface ListOptions {
   flashId?: string;
   /** With the open-now filter on: why a row is there when it isn't simply open ("no hours", "hours unknown"). */
   hoursMarks?: ReadonlyMap<string, string>;
+  /** The device's position; rows show their distance from it. */
+  from?: LatLng;
   onSelect: (id: string) => void;
 }
 
@@ -58,6 +61,12 @@ export function renderList(ul: HTMLUListElement, places: Place[], opts: ListOpti
         meta.append(dot, `${layer.label} · `);
       }
       meta.append(p.neighborhood ?? "");
+      if (opts.from) {
+        const distance = document.createElement("span");
+        distance.className = "place-distance";
+        distance.textContent = formatDistance(distanceM(opts.from, p));
+        meta.append(p.neighborhood ? " · " : "", distance);
+      }
       const mark = opts.hoursMarks?.get(p.id);
       if (mark) meta.append(" ", tag(mark, "tag tag--flag"));
 

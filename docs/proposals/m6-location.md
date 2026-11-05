@@ -1,6 +1,6 @@
 # M6: Location
 
-Status: **proposed** (2026-11-04). Waiting for go-ahead.
+Status: **built** (2026-11-04), waiting for the phone pass.
 
 ## Goal
 
@@ -11,23 +11,24 @@ the permission prompt is yours to trigger.
 
 ## Done when
 
-- [ ] A locate button in the map's corner (under fit-to-results) asks for
+- [x] A locate button in the map's corner (under fit-to-results) asks for
       permission on first tap, then shows a blue dot with an accuracy ring
       and centres the map on it. A second tap toggles following, which a
       pan turns off.
-- [ ] Denied permission or no fix within a few seconds shows a toast, not
+- [x] Denied permission or no fix within a few seconds shows a toast, not
       a silent nothing.
-- [ ] Once a position is known, each list row shows its distance ("350 m",
+- [x] Once a position is known, each list row shows its distance ("350 m",
       "1.2 km") after the neighborhood, and the card shows it in the meta
       line.
-- [ ] A sort control (Name / Distance) in the filter sheet; Distance is
+- [x] A sort control (Name / Distance) in the filter sheet; Distance is
       offered once a position exists. A Settings toggle, "Sort by distance
       when located", off by default, makes the list switch to distance
       order on the first fix; on the trip it goes on, while planning it
       stays off. Both are remembered on the device.
 - [ ] The dot and distances update as the phone moves, without re-sorting
-      the list under your thumb more than once every few seconds.
-- [ ] `npm test` covers the distance maths, formatting and the sort.
+      the list under your thumb more than once every few seconds. (Phone
+      pass; the pane can't walk.)
+- [x] `npm test` covers the distance maths, formatting and the sort.
 
 ## Design
 
@@ -121,4 +122,52 @@ About 10 files, roughly 350 lines, a quarter tests.
 
 ## Results
 
-(filled in after acceptance)
+Built 2026-11-04 in three commits, one per step. 137 tests (3 new:
+haversine sanity across Tokyo, distance formatting, stable sort).
+
+Verified in the browser pane at 375×812 with a mocked Geolocation API
+(a fix at Jimbocho):
+
+- Tap locate: dot with accuracy ring, map centres at zoom 16, button
+  turns blue and filled (following). Every row shows "· 6.4 km" after
+  its neighborhood; the card's meta line reads "Coffee · Central … ·
+  0 m away".
+- Filters → Sort → Distance: Glitch Jimbocho first at 0 m, then
+  Nihonbashi 1.6 km, ARC 2.4 km; the strip shows a "by distance" tag;
+  the choice is saved on the device.
+- "Sort by distance when located" on, relaunch, tap locate: the list
+  switches to distance order on the first fix and the Settings sheet
+  shows both rows.
+- Tap locate while following: control off, dot gone, distances gone,
+  list back to name order (the saved preference stays "distance" and
+  takes effect again on the next fix).
+- Permission denied: toast "Location is off for this app. Allow it in
+  the phone's Settings.", button greyed (MapLibre disables it until
+  reload).
+
+For the phone pass:
+
+- The real permission prompt, inside the installed app, and that it is
+  remembered.
+- The dot and distances updating while walking; the list shouldn't
+  re-sort more often than every 3 s.
+- The button artwork on the dark theme (it's a mask filled with the text
+  colour, unlike MapLibre's fixed-colour image).
+
+Decisions made while building:
+
+- The fit button became a MapLibre control so both buttons sit in the
+  map's own top-left stack with its spacing; no more hand-placed
+  absolute positioning.
+- The control's button cycle is MapLibre's: off → follow; a pan drops to
+  "watching, not following" (hollow blue icon); a tap there follows
+  again; a tap while following turns it off. The proposal said "a
+  second tap toggles following", which this is, with one more state.
+- The `sort` preference lives in the Settings store (localStorage, URL
+  override `sort=distance`), not in filter state or the share URL: a
+  shared link shouldn't change a friend's list order.
+- A timeout toast fires only for the first attempt; after one success
+  MapLibre ignores later timeouts (the dot just goes stale/grey).
+- With distance order chosen but no fix, the Sort section shows Name
+  pressed and "Distance · locate first" disabled, so the sheet always
+  says what the list is actually doing.
