@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { LayerId } from "../data/types.ts";
-import { applyFilters, facetCounts, matchesFacet, neighborhoodCounts, normalise, openNowCounts, sinkUnknownHours, type HoursInput } from "./apply.ts";
+import type { LayerConfig, LayerId } from "../data/types.ts";
+import { applyFilters, facetCounts, matchesFacet, neighborhoodCounts, normalise, openNowCounts, scopedFacetValues, sinkUnknownHours, type HoursInput } from "./apply.ts";
 import { defaultState, reduce, type FilterAction, type FilterState } from "./state.ts";
-import { allLayers, coffee, NEIGHBORHOODS, samplePlaces } from "./testing.ts";
+import { allLayers, coffee, NEIGHBORHOODS, place, samplePlaces } from "./testing.ts";
 
 const TEA = "tokyo-tea" as LayerId;
 const places = samplePlaces();
@@ -199,5 +199,35 @@ describe("sinkUnknownHours", () => {
     const tea = places.find((p) => p.layerId === TEA)!;
     // A layer without hours is not unknown; it keeps its place.
     expect(sinkUnknownHours([a, tea, b], hours).map((p) => p.name)).toEqual([tea.name, b.name, a.name]);
+  });
+});
+
+describe("scopedFacetValues", () => {
+  const drinks: LayerConfig = {
+    ...coffee,
+    facets: [
+      { column: "Kind", values: ["Coffee", "Tea"] },
+      { column: "Specialty", values: ["Nordic", "Matcha"], scopeBy: "Kind" },
+    ],
+  };
+  const rows = [
+    place({ name: "a", facets: { Kind: ["Coffee"], Specialty: ["Nordic", "Espresso"] } }),
+    place({ name: "b", facets: { Kind: ["Tea"], Specialty: ["Matcha"] } }),
+    place({ name: "c", facets: { Kind: ["Tea"], Specialty: [] } }),
+    place({ name: "k", region: "kyoto", facets: { Kind: ["Coffee"], Specialty: ["Kyoto-only"] } }),
+  ];
+  const specialty = drinks.facets[1]!;
+
+  it("offers every value in the region when the scoping column has no selection", () => {
+    expect([...scopedFacetValues(rows, state(coffeeOnly), drinks, specialty)!].sort()).toEqual(["Espresso", "Matcha", "Nordic"]);
+  });
+
+  it("narrows to the values held by rows matching the scoping selection", () => {
+    const tea = state(coffeeOnly, { type: "toggleFacetValue", layer: "drinks", column: "Kind", value: "Tea" });
+    expect([...scopedFacetValues(rows, tea, drinks, specialty)!]).toEqual(["Matcha"]);
+  });
+
+  it("is undefined for an unscoped facet", () => {
+    expect(scopedFacetValues(rows, state(coffeeOnly), drinks, drinks.facets[0]!)).toBeUndefined();
   });
 });

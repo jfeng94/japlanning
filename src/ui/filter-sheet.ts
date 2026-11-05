@@ -1,6 +1,6 @@
 import type { SortKey } from "../config/settings.ts";
 import type { LayerConfig, Place, RegionConfig } from "../data/types.ts";
-import { facetCounts, neighborhoodCounts, openNowCounts, type HoursInput } from "../filter/apply.ts";
+import { facetCounts, neighborhoodCounts, openNowCounts, scopedFacetValues, type HoursInput } from "../filter/apply.ts";
 import { clock, DAY, tokyoNow, tokyoWallClock, wallClockString } from "../hours/open.ts";
 import {
   activeFacetLayer,
@@ -112,7 +112,10 @@ export function renderFilterSheet(body: HTMLElement, state: FilterState, ctx: Fi
       const count = counts.get(facet.column);
       if (!count) continue;
       const sel = getSelection(state, layer.id, facet.column);
-      const chips = [...count.values].map(([value, n]) =>
+      // A scoped facet (Specialty by Kind) offers only the values the chosen kinds actually have.
+      const inScope = scopedFacetValues(places, state, layer, facet);
+      const offered = [...count.values].filter(([value]) => !inScope || inScope.has(value) || sel.values.has(value));
+      const chips = offered.map(([value, n]) =>
         chip(value, {
           pressed: sel.values.has(value),
           count: n,

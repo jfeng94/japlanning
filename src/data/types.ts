@@ -25,6 +25,13 @@ export interface FacetConfig {
   label?: string;
   /** Ordered. Values in the sheet but not listed here still render, after these. */
   values: string[];
+  /**
+   * Another facet column whose selection scopes this one: a value is
+   * offered only when some row matching that selection holds it (Specialty
+   * scoped by Kind shows coffee specialties for Coffee, tea ones for Tea).
+   * No selection there means every value. A selected value is always kept.
+   */
+  scopeBy?: string;
 }
 
 export interface LayerConfig {

@@ -25,6 +25,7 @@ export const layers: LayerConfig[] = [
       { column: "Linger", values: ["Grab & go", "Short stay", "Settle in"] },
       {
         column: "Specialty",
+        scopeBy: "Kind",
         values: [
           "Light roast / Nordic",
           "Pour-over",

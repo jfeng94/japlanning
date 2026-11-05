@@ -57,6 +57,7 @@ interface FacetConfig {
   column: string;              // exact header text, e.g. "Specialty"
   label?: string;              // display name, defaults to column
   values: string[];            // ordered; values not listed still render, after these
+  scopeBy?: string;            // another facet column whose selection narrows the values offered
 }
 ```
 
@@ -249,6 +250,12 @@ as an override like the other settings.
 - **Facet value order comes from config**, not from first appearance in the
   sheet, so the UI is stable as rows are added. Values present in the sheet
   but missing from config still render, after the configured ones.
+- **A facet can be scoped by another** (`scopeBy`, 2026-11-05): Specialty
+  is scoped by Kind, so with Coffee selected the sheet offers only the
+  specialties coffee rows hold, with Tea only the tea ones, with no Kind
+  selected all of them. The data stays flat ("Matcha", not "Tea: Matcha");
+  the grouping is read from the rows, so a new specialty on a tea row shows
+  under Tea with no config change. A selected value is never hidden.
 - **"Open now" leaves `hasHours: false` layers untouched.** With several
   layers selected, rows from layers without hours stay visible and show a
   small "no hours" marker.

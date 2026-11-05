@@ -1,4 +1,4 @@
-import type { LayerConfig, Place } from "../data/types.ts";
+import type { FacetConfig, LayerConfig, Place } from "../data/types.ts";
 import { activeFacetLayer, effectiveLayers, type FacetSelection, type FilterState } from "./state.ts";
 
 /** Case-insensitive, width-insensitive comparison key (full-width "Ａ" == "a"). */
@@ -116,6 +116,25 @@ export function openNowCounts(places: Place[], state: FilterState, opts: Omit<Ap
     else if (s === "unknown") unknown++;
   }
   return { open, unknown };
+}
+
+/**
+ * For a facet with `scopeBy`: the values held by rows of `layer` in the
+ * region that match the scoping column's current selection (all rows when
+ * nothing is selected there). Undefined for an unscoped facet. The sheet
+ * offers only these, plus anything already selected.
+ */
+export function scopedFacetValues(places: Place[], state: FilterState, layer: LayerConfig, facet: FacetConfig): Set<string> | undefined {
+  if (!facet.scopeBy) return undefined;
+  const scope = facet.scopeBy;
+  const picked = state.facets[layer.id]?.[scope]?.values;
+  const values = new Set<string>();
+  for (const p of places) {
+    if (p.region !== state.region || p.layerId !== layer.id) continue;
+    if (picked && picked.size > 0 && !(p.facets[scope] ?? []).some((v) => picked.has(v))) continue;
+    for (const v of p.facets[facet.column] ?? []) values.add(v);
+  }
+  return values;
 }
 
 export interface FacetCount {
