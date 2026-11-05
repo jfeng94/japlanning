@@ -368,16 +368,24 @@ button {
   right: -0.35rem;
 }
 
+/*
+ * Absolutely positioned inside the 1.9rem pin, so without a width the label
+ * would shrink-to-fit against the pin and wrap at every word, as wide as its
+ * longest word only. max-content makes it as wide as the whole name, capped;
+ * balance then splits a wrapped name into even lines.
+ */
 .dom-pin-label {
   position: absolute;
   top: 100%;
   left: 50%;
   transform: translate(-50%, 0.2rem);
   display: none;
-  max-width: 9rem;
+  width: max-content;
+  max-width: 11rem;
   font-size: 0.72rem;
   line-height: 1.15;
   text-align: center;
+  text-wrap: balance;
   color: var(--fg);
   text-shadow: 0 0 2px var(--bg-raised), 0 0 3px var(--bg-raised), 0 0 4px var(--bg-raised);
   pointer-events: none;
