@@ -32,7 +32,8 @@ import { renderDetail, renderDetailStrip } from "./detail.ts";
 import { mountDiagnostics } from "./diagnostics.ts";
 import { renderFilterSheet } from "./filter-sheet.ts";
 import { renderFilterSummary } from "./filter-summary.ts";
-import { mountHeader } from "./header.ts";
+import { mountHeader, SEARCH_ICON } from "./header.ts";
+import filtersIcon from "./icons/filters.webp";
 import { renderList, sortByName } from "./list.ts";
 import { mountPanel } from "./panel.ts";
 import { renderSettingsSheet } from "./settings-sheet.ts";
@@ -137,7 +138,6 @@ export function mountApp(root: HTMLElement): void {
       panel.setHeight("full");
     },
     onSharedLink: (id) => openPlaceById(id),
-    onFilters: filterSheet.open,
     onSettings: settingsSheet.open,
   });
 
@@ -250,14 +250,20 @@ export function mountApp(root: HTMLElement): void {
   }
 
   // The panel's two contents. The strip is always visible; the body shows at half and full.
+  // The list strip: the summary on the left, Search and Filters on the right, near the thumb.
   const listStrip = el(
-    "button",
+    "div",
     "strip-list",
-    `<p class="results-count"></p><p class="filter-summary" hidden></p><p class="status" role="status" hidden></p>`,
+    `<div class="strip-summary"><p class="results-count"></p><p class="filter-summary" hidden></p><p class="status" role="status" hidden></p></div>
+     <div class="strip-actions">
+       <button type="button" class="icon-button search-toggle" aria-label="Search">${SEARCH_ICON}<span class="dot" hidden></span></button>
+       <button type="button" class="icon-button filters-button" aria-label="Filters"><img alt="" draggable="false" src="${filtersIcon}"><span class="dot" hidden></span></button>
+     </div>`,
   );
-  (listStrip as HTMLButtonElement).type = "button";
-  listStrip.setAttribute("aria-label", "Open filters");
-  listStrip.addEventListener("click", filterSheet.open);
+  const searchToggle = listStrip.querySelector<HTMLButtonElement>(".search-toggle")!;
+  const filtersButton = listStrip.querySelector<HTMLButtonElement>(".filters-button")!;
+  searchToggle.addEventListener("click", () => header.openSearch());
+  filtersButton.addEventListener("click", filterSheet.open);
   const detailStrip = el("div", "strip-detail");
   const listBody = el("div", "body-list", `<ul class="place-list"></ul><div class="empty-state" hidden></div>`);
   const detailBody = el("div", "body-detail");
@@ -374,8 +380,11 @@ export function mountApp(root: HTMLElement): void {
     header.update({
       region: regions.find((r) => r.id === state.region)!,
       text: state.text,
-      filtersActive: hasActiveFilters(state),
     });
+    searchToggle.querySelector<HTMLElement>(".dot")!.hidden = state.text === "";
+    const filtersActive = hasActiveFilters(state);
+    filtersButton.querySelector<HTMLElement>(".dot")!.hidden = !filtersActive;
+    filtersButton.classList.toggle("is-active", filtersActive);
 
     const layersOn = effectiveLayers(state, regionLayers.map((l) => l.id));
     const total = places.filter((p) => p.region === state.region && layersOn.has(p.layerId)).length;

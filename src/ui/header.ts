@@ -1,5 +1,4 @@
 import type { RegionConfig, RegionId } from "../data/types.ts";
-import filtersIcon from "./icons/filters.webp";
 import settingsIcon from "./icons/settings.webp";
 import { parseSharedLink } from "./links.ts";
 import { createMenu } from "./menu.ts";
@@ -11,28 +10,28 @@ export interface HeaderHandlers {
   onSearchOpen?: () => void;
   /** A shared link or bare place id was pasted into search. */
   onSharedLink: (placeId: string) => void;
-  onFilters: () => void;
   onSettings: () => void;
 }
 
 export interface HeaderState {
   region: RegionConfig;
   text: string;
-  filtersActive: boolean;
 }
 
 export interface Header {
   el: HTMLElement;
   update(state: HeaderState): void;
+  /** Expand the search field across the top bar (the strip's search button calls this). */
+  openSearch(): void;
 }
 
-const SEARCH_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+export const SEARCH_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
 
 /**
- * One row: region menu, then search, Filters and Settings as icon
- * buttons. Search expands into a field across the row and collapses on
- * Cancel. Layers are chosen in the filter sheet; the panel strip shows
- * what's selected.
+ * One row: region menu and Settings. Search and Filters live in the panel
+ * strip, near the thumb; the search field itself still expands across
+ * this row and collapses on Cancel. Layers are chosen in the filter
+ * sheet; the strip shows what's selected.
  */
 export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: HeaderHandlers): Header {
   const el = document.createElement("header");
@@ -41,8 +40,6 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
     <div class="topbar-main">
       <button type="button" class="menu-button region-button"><span class="label"></span><span class="caret">▾</span></button>
       <span class="spacer"></span>
-      <button type="button" class="icon-button search-toggle" aria-label="Search">${SEARCH_ICON}<span class="dot" hidden></span></button>
-      <button type="button" class="icon-button filters-button" aria-label="Filters"><img alt="" draggable="false"><span class="dot" hidden></span></button>
       <button type="button" class="icon-button settings-button" aria-label="Settings"><img alt="" draggable="false"></button>
     </div>
     <div class="topbar-search" hidden>
@@ -55,16 +52,11 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
   const $ = <T extends HTMLElement>(sel: string) => el.querySelector<T>(sel)!;
   const regionButton = $(".region-button");
   const regionLabel = $(".region-button .label");
-  const searchToggle = $(".search-toggle");
-  const searchDot = $(".search-toggle .dot");
-  const filtersButton = $(".filters-button");
-  const filtersDot = $(".filters-button .dot");
   const settingsButton = $(".settings-button");
   const mainRow = $(".topbar-main");
   const searchRow = $(".topbar-search");
   const input = $<HTMLInputElement>(".search");
 
-  $<HTMLImageElement>(".filters-button img").src = filtersIcon;
   $<HTMLImageElement>(".settings-button img").src = settingsIcon;
 
   let current: HeaderState | undefined;
@@ -77,7 +69,6 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
     })),
   );
 
-  filtersButton.addEventListener("click", h.onFilters);
   settingsButton.addEventListener("click", h.onSettings);
 
   const showSearch = (show: boolean) => {
@@ -85,10 +76,6 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
     mainRow.hidden = show;
     if (show) input.focus();
   };
-  searchToggle.addEventListener("click", () => {
-    showSearch(true);
-    h.onSearchOpen?.();
-  });
   $(".search-cancel").addEventListener("click", () => {
     input.value = "";
     h.onSearch("");
@@ -116,11 +103,12 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
       current = state;
       regionLabel.textContent = state.region.label;
       if (input.value !== state.text) input.value = state.text;
-      searchDot.hidden = state.text === "";
-      filtersDot.hidden = !state.filtersActive;
-      filtersButton.classList.toggle("is-active", state.filtersActive);
       // A query cleared from elsewhere (region change, Clear) collapses the field.
       if (state.text === "" && !searchRow.hidden && document.activeElement !== input) showSearch(false);
+    },
+    openSearch() {
+      showSearch(true);
+      h.onSearchOpen?.();
     },
   };
 }

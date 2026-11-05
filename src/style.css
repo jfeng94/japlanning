@@ -811,14 +811,33 @@ button {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15), 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
-/* The list strip is one tap target that opens the filter sheet. */
+/* The list strip: summary left, Search and Filters right (near the thumb). */
 .strip-list {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.strip-summary {
+  min-width: 0;
+  flex: 1;
+}
+
+.strip-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex: none;
+}
+
+.strip-actions .icon-button {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+
+.strip-actions .icon-button img {
+  width: 1.45rem;
+  height: 1.45rem;
 }
 
 .results-count {
