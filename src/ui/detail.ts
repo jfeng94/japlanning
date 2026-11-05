@@ -48,6 +48,12 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   title.className = "detail-title";
   if (place.starred) title.append(tag("★", "star"));
   title.append(place.name);
+  if (place.branch) {
+    const branch = document.createElement("span");
+    branch.className = "detail-branch";
+    branch.textContent = place.branch;
+    title.append(" ", branch);
+  }
 
   // Bookmark: the seal in colour when set, greyscale when not. Only the card toggles it.
   const bookmarked = h.isBookmarked(place.id);
@@ -140,7 +146,7 @@ export function renderDetailStrip(strip: HTMLElement, place: Place): void {
   strip.replaceChildren();
   const name = document.createElement("p");
   name.className = "results-count";
-  name.textContent = place.name;
+  name.textContent = place.branch ? `${place.name} · ${place.branch}` : place.name;
   strip.append(name, anchor("Directions", directionsUrl(place), "action-button action-button--small"));
 }
 

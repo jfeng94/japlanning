@@ -67,9 +67,24 @@ Shared by every layer, looked up by header name, all optional except Name,
 Latitude, Longitude:
 
 ```
-Name (★ prefix convention)   Latitude   Longitude   Neighborhood
+ID   Name (★ prefix convention)   Branch   Latitude   Longitude   Neighborhood
 Hours   Hours (OSM)   Link   Address (JA)   Notes   Last verified
 ```
+
+**ID** (2026-11-05): a positive integer, assigned by hand, unique within the
+sheet. The place id is `<layer>:<ID>`, so renames and reorders never break
+bookmarks or share links. A sheet without the column still works with ids
+derived from the name (`<layer>:<slug>`, `-2` on repeats), and so does a row
+whose ID is blank, non-integer or a repeat: it falls back to the name id with
+a warning on the ID column, which Diagnostics shows. The snapshot step in CI
+fails on any such warning, so a bad edit can't ship; `npm run ids` runs the
+same check against the live sheets and prints the next free ID.
+
+**Branch**: for multi-branch brands, Name is the brand and Branch says
+which shop ("Onibus Coffee" / "Yakumo"), since neighborhoods are too coarse
+to tell them apart (all four Onibus rows are Nakameguro). Rows and the card
+show it muted after the name, search covers it, and name order sorts by
+name then branch. Pin labels show the name only.
 
 ### Facet columns
 

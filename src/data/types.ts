@@ -46,12 +46,19 @@ export interface LayerConfig {
 
 /** One row of a sheet after parsing. Blank cells become undefined, never "". */
 export interface Place {
-  /** `${layerId}:${slug(name)}`; stable across row reorders, changes on rename. */
+  /**
+   * `${layerId}:${ID}` from the sheet's integer ID column: survives renames
+   * and reorders, so bookmarks and share links keep working. A sheet without
+   * the column, or a row whose ID is missing or duplicated, falls back to
+   * `${layerId}:${slug(name)}` (with a -2, -3 suffix on repeats).
+   */
   id: string;
   layerId: LayerId;
   region: RegionId;
-  /** Display name with the ★ prefix stripped. */
+  /** Display name with the ★ prefix stripped. The brand, for multi-branch shops. */
   name: string;
+  /** Which branch, when the name alone is ambiguous ("Yakumo" for Onibus Coffee). */
+  branch?: string;
   starred: boolean;
   lat: number;
   lng: number;
@@ -86,6 +93,8 @@ export interface ParseWarning {
 export interface ParseResult {
   places: Place[];
   warnings: ParseWarning[];
+  /** Header text of every column in the sheet, in sheet order. */
+  columns: string[];
 }
 
 /** Where a layer's data came from, in order of preference. */

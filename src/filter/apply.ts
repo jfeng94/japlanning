@@ -9,7 +9,7 @@ export function normalise(s: string): string {
 export function matchesText(place: Place, query: string): boolean {
   const q = normalise(query);
   if (!q) return true;
-  return [place.name, place.neighborhood, place.notes]
+  return [place.name, place.branch, place.neighborhood, place.notes]
     .filter((s): s is string => typeof s === "string")
     .some((s) => normalise(s).includes(q));
 }

@@ -51,6 +51,12 @@ export function renderList(ul: HTMLUListElement, places: Place[], opts: ListOpti
       name.className = "place-name";
       name.textContent = p.name;
       title.append(name);
+      if (p.branch) {
+        const branch = document.createElement("span");
+        branch.className = "place-branch";
+        branch.textContent = p.branch;
+        title.append(branch);
+      }
 
       const meta = document.createElement("div");
       meta.className = "place-meta";
@@ -89,6 +95,8 @@ function rowFacets(layer: LayerConfig | undefined): string[] {
   return layer.rowFacets ?? layer.facets.slice(0, 2).map((f) => f.column);
 }
 
+/** By name, then branch, so a brand's branches sit together in a steady order. */
 export function sortByName(places: Place[]): Place[] {
-  return [...places].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  const cmp = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: "base" });
+  return [...places].sort((a, b) => cmp(a.name, b.name) || cmp(a.branch ?? "", b.branch ?? ""));
 }

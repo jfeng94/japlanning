@@ -899,6 +899,22 @@ button {
   overflow-wrap: anywhere;
 }
 
+/* The branch of a multi-branch shop: quieter than the name, on rows and the card. */
+.place-branch,
+.detail-branch {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.place-branch {
+  margin-left: 0.4rem;
+  font-size: 0.9em;
+}
+
+.detail-branch {
+  font-size: 0.85em;
+}
+
 .place-meta {
   display: flex;
   align-items: center;

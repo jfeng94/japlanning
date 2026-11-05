@@ -252,3 +252,42 @@ describe("helpers", () => {
     expect(slug("  -- Café --  ")).toBe("café");
   });
 });
+
+describe("ID and Branch columns", () => {
+  const header = "ID,Name,Branch,Latitude,Longitude";
+
+  it("uses the integer ID for the place id and keeps the branch", () => {
+    const { places, warnings, columns } = parseLayerCsv(
+      csv([header, "7,Onibus Coffee,Yakumo,35.6,139.7", "12,Onibus Coffee,Jiyugaoka,35.6,139.7"]),
+      minimal,
+    );
+    expect(places.map((p) => p.id)).toEqual(["stub-minimal:7", "stub-minimal:12"]);
+    expect(places.map((p) => p.branch)).toEqual(["Yakumo", "Jiyugaoka"]);
+    expect(warnings).toEqual([]);
+    expect(columns).toEqual(["ID", "Name", "Branch", "Latitude", "Longitude"]);
+  });
+
+  it("falls back to the name id, with a warning on the ID column, for blank, non-integer and repeated IDs", () => {
+    const { places, warnings } = parseLayerCsv(
+      csv([header, ",A,,35.6,139.7", "x,B,,35.6,139.7", "4,C,,35.6,139.7", "4,C,,35.6,139.7", "0,D,,35.6,139.7"]),
+      minimal,
+    );
+    expect(places.map((p) => p.id)).toEqual([
+      "stub-minimal:a",
+      "stub-minimal:b",
+      "stub-minimal:4",
+      "stub-minimal:c",
+      "stub-minimal:d",
+    ]);
+    expect(warnings.filter((w) => w.column === "ID").map((w) => w.row)).toEqual([1, 2, 4, 5]);
+    expect(warnings).toContainEqual({ row: 4, column: "ID", message: "C: ID 4 is already used by another row; using the name as id" });
+  });
+
+  it("without an ID column, ids still come from names", () => {
+    const { places, warnings, columns } = parseLayerCsv(csv(["Name,Latitude,Longitude", "Sidewalk Stand,35.6,139.7"]), minimal);
+    expect(places[0]!.id).toBe("stub-minimal:sidewalk-stand");
+    expect(places[0]!.branch).toBeUndefined();
+    expect(warnings).toEqual([]);
+    expect(columns).not.toContain("ID");
+  });
+});

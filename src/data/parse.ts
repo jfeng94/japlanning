@@ -15,8 +15,13 @@ export interface ParseOptions {
 
 const REQUIRED_COLUMNS = ["Name", "Latitude", "Longitude"] as const;
 
+/** The sheet's stable integer id column; optional per sheet, required per row once present. */
+export const ID_COLUMN = "ID";
+
 /** Core optional columns, by header text. */
 const COL = {
+  id: ID_COLUMN,
+  branch: "Branch",
   neighborhood: "Neighborhood",
   hours: "Hours",
   hoursOsm: "Hours (OSM)",
@@ -78,6 +83,36 @@ export function parseLayerCsv(
 
   const places: Place[] = [];
   const seenIds = new Map<string, number>();
+  const hasIdColumn = headers.includes(COL.id);
+  const seenSheetIds = new Set<string>();
+
+  /**
+   * The row's id. From the ID column when the sheet has one and the cell is a
+   * fresh positive integer; otherwise from the name, with a warning on the
+   * ID column so the build check and Diagnostics can single it out.
+   */
+  const placeId = (name: string, rawId: string | undefined, warn: (m: string, c?: string) => void): string => {
+    if (hasIdColumn) {
+      if (rawId === undefined) {
+        warn(`${name}: ID is blank; using the name as id until one is assigned`, COL.id);
+      } else if (!/^\d+$/.test(rawId) || Number(rawId) === 0) {
+        warn(`${name}: ID "${rawId}" is not a positive integer; using the name as id`, COL.id);
+      } else if (seenSheetIds.has(rawId)) {
+        warn(`${name}: ID ${rawId} is already used by another row; using the name as id`, COL.id);
+      } else {
+        seenSheetIds.add(rawId);
+        return `${layer.id}:${Number(rawId)}`;
+      }
+    }
+    let id = `${layer.id}:${slug(name)}`;
+    const seen = seenIds.get(id) ?? 0;
+    seenIds.set(id, seen + 1);
+    if (seen > 0) {
+      warn(`${name}: duplicate name; id suffixed`, "Name");
+      id = `${id}-${seen + 1}`;
+    }
+    return id;
+  };
 
   parsed.data.forEach((row, index) => {
     const rowNumber = index + 1; // 1-based data row; header is row 0
@@ -145,19 +180,12 @@ export function parseLayerCsv(
       if (v) extra[column] = v;
     }
 
-    let id = `${layer.id}:${slug(name)}`;
-    const seen = seenIds.get(id) ?? 0;
-    seenIds.set(id, seen + 1);
-    if (seen > 0) {
-      warn(`${name}: duplicate name; id suffixed`, "Name");
-      id = `${id}-${seen + 1}`;
-    }
-
     places.push({
-      id,
+      id: placeId(name, cell(COL.id), warn),
       layerId: layer.id,
       region: layer.region,
       name,
+      branch: cell(COL.branch),
       starred,
       lat,
       lng,
@@ -175,7 +203,7 @@ export function parseLayerCsv(
     });
   });
 
-  return { places, warnings };
+  return { places, warnings, columns: headers.filter((h) => h !== "") };
 }
 
 function parseCoordinate(raw: string | undefined, min: number, max: number): number | undefined {
