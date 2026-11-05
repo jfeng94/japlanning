@@ -20,9 +20,18 @@ interface Field<K extends keyof Settings> {
 /** One entry per setting. Dropdowns; the value types come from settings.ts. */
 const FIELDS: Field<keyof Settings>[] = [
   {
+    key: "location",
+    label: "Location",
+    help: "On shows the map's locate button; the phone asks for permission the first time you tap it. Off hides the button and stops using your position.",
+    options: [
+      [true, "On"],
+      [false, "Off"],
+    ],
+  },
+  {
     key: "sort",
     label: "List order",
-    help: "Distance needs a location fix (the map's locate button); until there is one the list is by name.",
+    help: "Distance needs a location fix (tap the map's locate button); until there is one the list is by name.",
     options: [
       ["name", "By name"],
       ["distance", "By distance"],

@@ -21,7 +21,8 @@ import {
 } from "../filter/state.ts";
 import { createStore } from "../filter/store.ts";
 import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url.ts";
-import { mountMap, watchFlavor, type LocateError, type Position } from "../map/map.ts";
+import { createWatch, permissionState, type LocateError, type Position } from "../geo/locate.ts";
+import { mountMap, watchFlavor } from "../map/map.ts";
 import { placesToPins, type PinRenderer } from "../map/pins.ts";
 import { createDomPinRenderer } from "../map/pins-dom.ts";
 import { createSdfPinRenderer } from "../map/pins-sdf.ts";
@@ -139,7 +140,7 @@ export function mountApp(root: HTMLElement): void {
     root.querySelector<HTMLElement>(".map-pane")!,
     regions.find((r) => r.id === filters.get().region)!,
     watchFlavor((flavor) => view.setFlavor(flavor)),
-    { onFit: fitToResults, onPosition, onLocateError, onLocateOff },
+    { onFit: fitToResults, onLocateRequest: () => watch.start() },
   );
   view.setBottomPadding(panel.heightPx());
   let pins: PinRenderer = createPinRenderer();
@@ -154,10 +155,15 @@ export function mountApp(root: HTMLElement): void {
     }
   }
 
-  /** Pin settings need the renderer rebuilt; anything else (sort) is a plain re-render. */
+  /** Pin settings need the renderer rebuilt; location starts or stops the watch; anything else (sort) is a plain re-render. */
   const pinKey = (s: Settings) => `${s.pinRenderer}/${s.pinStyle}/${s.pinLabelMinZoom}`;
   let appliedPins = pinKey(settings());
+  let appliedLocation = settings().location;
   function onSettingsChanged(next: Settings): void {
+    if (next.location !== appliedLocation) {
+      appliedLocation = next.location;
+      applyLocationSetting(next.location);
+    }
     if (pinKey(next) === appliedPins) {
       render();
       return;
@@ -170,8 +176,27 @@ export function mountApp(root: HTMLElement): void {
   }
 
   // ---- location ----
-  /** The device's last fix, while the locate control is watching. */
+  /** The device's last fix, while the watch is on. */
   let position: Position | undefined;
+  const watch = createWatch(() => navigator.geolocation, { onFix: onPosition, onError: onLocateError });
+
+  /**
+   * Location on: show the button, and start watching by ourselves only when
+   * the browser already holds a grant, so the app never prompts unasked (the
+   * first tap on the button does). Off: stop, drop the fix, hide the button.
+   */
+  function applyLocationSetting(on: boolean): void {
+    view.locate.setVisible(on);
+    if (on) {
+      void permissionState().then((state) => {
+        if (state === "granted" && settings().location) watch.start();
+      });
+    } else {
+      watch.stop();
+      dropPosition();
+    }
+  }
+  applyLocationSetting(settings().location);
   /** Fixes arrive every second or so while walking; the list re-sorts at most this often. */
   const POSITION_RENDER_MS = 3000;
   let lastPositionRender = 0;
@@ -181,6 +206,7 @@ export function mountApp(root: HTMLElement): void {
   function onPosition(next: Position): void {
     const first = position === undefined;
     position = next;
+    view.locate.setFix(next);
     if (!firstFixHandled) {
       firstFixHandled = true;
       if (settings().autoDistanceSort && settings().sort !== "distance") updateSettings({ sort: "distance" });
@@ -199,6 +225,8 @@ export function mountApp(root: HTMLElement): void {
 
   function onLocateError(kind: LocateError): void {
     if (kind === "denied") dropPosition();
+    // A failed request leaves the button idle again rather than "waiting" forever.
+    if (position === undefined) view.locate.setFix(undefined);
     const text: Record<LocateError, string> = {
       denied: "Location is off for this app. Allow it in the phone's Settings.",
       unavailable: "Couldn't get your location.",
@@ -207,12 +235,9 @@ export function mountApp(root: HTMLElement): void {
     showToast(text[kind], 3000);
   }
 
-  function onLocateOff(): void {
-    dropPosition();
-  }
-
   /** No fix any more: distances go, and a distance-ordered list falls back to names. */
   function dropPosition(): void {
+    view.locate.setFix(undefined);
     if (position === undefined) return;
     position = undefined;
     render();
@@ -523,7 +548,7 @@ export function mountApp(root: HTMLElement): void {
   // Debug handle beside the map's: inspect panel scroll bookkeeping from the console.
   const dbg = (window as unknown as { __japlanning?: Record<string, unknown> }).__japlanning ?? {};
   dbg["panel"] = { get listScrollTop() { return listScrollTop; }, get shownMode() { return shownMode; }, content: panel.content };
-  dbg["location"] = { get position() { return position; } };
+  dbg["location"] = { get position() { return position; }, watch, get state() { return view.locate.state; } };
   (window as unknown as { __japlanning: Record<string, unknown> }).__japlanning = dbg;
 
   render();

@@ -12,6 +12,8 @@ export type PinStyle = "disc" | "bare";
 export type SortKey = "name" | "distance";
 
 export interface Settings {
+  /** Use the device's position: shows the locate button; off also stops any watch. Never prompts by itself. */
+  location: boolean;
   pinRenderer: PinRendererKind;
   pinStyle: PinStyle;
   /** Zoom from which pin name labels show. */
@@ -23,6 +25,7 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  location: true,
   pinRenderer: "dom",
   pinStyle: "bare",
   pinLabelMinZoom: 14,
@@ -32,6 +35,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 /** URL parameter names, kept short for sharing. */
 const URL_KEYS: Record<keyof Settings, string> = {
+  location: "location",
   pinRenderer: "pins",
   pinStyle: "pinstyle",
   pinLabelMinZoom: "labelzoom",
@@ -42,6 +46,7 @@ const URL_KEYS: Record<keyof Settings, string> = {
 const STORAGE_KEY = "japlanning.settings";
 
 const VALID: { [K in keyof Settings]: (v: unknown) => v is Settings[K] } = {
+  location: (v): v is boolean => typeof v === "boolean",
   pinRenderer: (v): v is PinRendererKind => v === "dom" || v === "sdf",
   pinStyle: (v): v is PinStyle => v === "disc" || v === "bare",
   pinLabelMinZoom: (v): v is number => typeof v === "number" && v >= 0 && v <= 20,

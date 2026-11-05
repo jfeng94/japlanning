@@ -193,9 +193,15 @@ top of the filter sheet and as "List order" in Settings. It is not in the
 share URL (a link shouldn't reorder a friend's list), though `?sort=` works
 as an override like the other settings.
 
-- Distance order needs a fix from the locate control. Without one the list
-  is by name and the Distance chip is disabled ("Distance · locate first");
-  the preference is kept and takes effect on the next fix.
+- Distance order needs a fix. Without one the list is by name and the
+  Distance chip is disabled ("Distance · locate first"); the preference is
+  kept and takes effect on the next fix.
+- Location is a Settings toggle (`location`, default on, revised
+  2026-11-05): on shows the map's locate button and, when the browser
+  already reports the permission granted, starts watching at launch; the
+  app never prompts by itself, the first tap does. The button only
+  centres and locks (a tap, or a pan, unlocks; the dot stays). Off hides
+  the button, stops the watch and drops the fix.
 - "Sort by distance when located" (`autoDistanceSort`, off by default)
   switches `sort` to distance on the first fix after launch. Off while
   planning from home, on during the trip.

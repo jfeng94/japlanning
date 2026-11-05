@@ -224,7 +224,9 @@ proposal in `docs/proposals/` before work starts.
   handling, on top of M4's Tokyo-time evaluator (the card's Open/Closed
   status and the unverified badge land in M4). Optional: an "open at…"
   time picker for planning ahead.
-- **M6. Location.** Blue dot, recenter button, sort list by distance.
+- **M6. Location.** Blue dot, a locate button that centres and locks (our
+  own control, not MapLibre's), a Location on/off setting, sort list by
+  distance.
 - **M7. Offline.** PWA manifest, app-shell caching, per-region PMTiles
   download-and-store, self-hosted glyphs/sprites, storage-persist request,
   offline status indicator. **Acceptance:** airplane mode on the iPhone, cold

@@ -1,6 +1,5 @@
 import {
   addProtocol,
-  GeolocateControl,
   Map as MapLibreMap,
   ScaleControl,
   setWorkerUrl,
@@ -16,6 +15,7 @@ import { Protocol } from "pmtiles";
 
 setWorkerUrl(workerUrl);
 import type { RegionConfig } from "../data/types.ts";
+import { createLocateControl, type LocateControl } from "./locate-control.ts";
 import { atlasStyle, type Flavor } from "./style.ts";
 
 /** Japan, for regions that have no basemap extract yet. */
@@ -39,6 +39,8 @@ function ensureProtocol(): void {
 
 export interface MapView {
   map: MapLibreMap;
+  /** The locate button, dot and ring; the app feeds it fixes. */
+  locate: LocateControl;
   /** Swap basemap and fit to the region's bounds. */
   setRegion(region: RegionConfig): void;
   setFlavor(flavor: Flavor): void;
@@ -53,28 +55,11 @@ export interface MapView {
   destroy(): void;
 }
 
-/** A fix from the device, as the app keeps it. */
-export interface Position {
-  lat: number;
-  lng: number;
-  /** Radius in metres the device is confident about. */
-  accuracy: number;
-  /** When the fix was taken, epoch ms. */
-  at: number;
-}
-
-/** Why no fix arrived: the Geolocation API's three error codes, named. */
-export type LocateError = "denied" | "unavailable" | "timeout";
-
 export interface MapCallbacks {
   /** The fit-to-results button. */
   onFit(): void;
-  /** A new fix from the locate control. */
-  onPosition(position: Position): void;
-  /** The control asked and got no fix (first attempt only after a success). */
-  onLocateError(kind: LocateError): void;
-  /** Watching stopped: the button was tapped off, so the dot is gone and the last fix is stale. */
-  onLocateOff(): void;
+  /** The locate button was tapped with no fix yet: start watching. */
+  onLocateRequest(): void;
 }
 
 export function basemapUrl(region: RegionConfig): string {
@@ -102,7 +87,7 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
   map.addControl(new ScaleControl({ maxWidth: 90, unit: "metric" }), "top-left");
   // Our own buttons join MapLibre's top-left stack so the spacing is one rule, not three.
   map.addControl(fitControl(callbacks.onFit), "top-left");
-  const locate = locateControl(callbacks);
+  const locate = createLocateControl({ onRequest: callbacks.onLocateRequest });
   map.addControl(locate, "top-left");
 
   map.on("style.load", () => {
@@ -113,6 +98,7 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
 
   return {
     map,
+    locate,
     setRegion(next) {
       if (next.id === currentRegion.id) return;
       currentRegion = next;
@@ -178,37 +164,6 @@ function fitControl(onFit: () => void): IControl {
     </svg>`;
   button.addEventListener("click", onFit);
   return { onAdd: () => button, onRemove: () => button.remove() };
-}
-
-/**
- * MapLibre's locate control: it owns the permission prompt, the
- * `watchPosition` loop, the dot with its accuracy ring and the button's
- * states. With `trackUserLocation` the button cycles: off → tap → follow
- * the dot; a pan drops to "watching, not following"; a tap there follows
- * again; a tap while following turns it off and removes the dot. We only
- * listen, and translate its events for the app.
- */
-function locateControl(callbacks: MapCallbacks): GeolocateControl {
-  const control = new GeolocateControl({
-    positionOptions: { enableHighAccuracy: true, timeout: 10_000 },
-    trackUserLocation: true,
-    showUserLocation: true,
-    showAccuracyCircle: true,
-    fitBoundsOptions: { maxZoom: 16 },
-  });
-  control.on("geolocate", (e) => {
-    const { latitude: lat, longitude: lng, accuracy } = e.coords;
-    callbacks.onPosition({ lat, lng, accuracy, at: e.timestamp });
-  });
-  control.on("error", (e) => {
-    const kinds: Record<number, LocateError> = { 1: "denied", 2: "unavailable", 3: "timeout" };
-    callbacks.onLocateError(kinds[e.code] ?? "unavailable");
-  });
-  // Fired both when a pan drops follow mode and when a tap turns the control off; only the latter loses the dot.
-  control.on("trackuserlocationend", () => {
-    if (control._watchState === "OFF") callbacks.onLocateOff();
-  });
-  return control;
 }
 
 function styleFor(region: RegionConfig, flavor: Flavor) {

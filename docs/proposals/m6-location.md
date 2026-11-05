@@ -1,6 +1,6 @@
 # M6: Location
 
-Status: **built** (2026-11-04), phone pass done 2026-11-05; **revision proposed** below, waiting for a go-ahead.
+Status: **built** (2026-11-04); phone pass 2026-11-05; **revision built** (2026-11-05, Location defaults to on), waiting for its phone pass.
 
 ## Goal
 
@@ -251,3 +251,24 @@ control's CSS overrides pays back some of it.
 - Writing our own control means owning the dot and ring. They are
   simple, and it removes the private-field check and the CSS fights with
   MapLibre's control.
+
+### Revision results (2026-11-05)
+
+Built as proposed, Location defaulting to on. 149 tests (5 new: the
+watch wrapper's fix translation, denied stops and unavailable keeps
+watching, one timeout toast per start and none after a fix, missing API,
+and the permission query degrading to "unknown").
+
+Verified in the pane with a fake Geolocation API: a tap with permission
+denied gives the toast and the button returns to idle; with a fix the
+tap goes waiting → locked, centres at zoom 16, dot and ring appear (45 m
+accuracy = 93 px ring at zoom 16, matching the scale bar); a user pan
+unlocks and leaves the dot; a tap locks again and a tap unlocks; a fix
+while unlocked moves the dot but not the map; Location off hides the
+button, removes the dot and the distances; on brings the button back
+idle, and does not start watching while the browser reports the
+permission denied. Dark theme: button and dot in the dark blue.
+
+For the phone pass: the first tap prompts; after that, a cold launch
+should show the dot without a tap (the browser reports the grant); the
+ring's size against the scale bar; following while walking.
