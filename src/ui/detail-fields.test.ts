@@ -34,13 +34,18 @@ describe("detailFields", () => {
     expect(f.details[3]!.rows).toEqual([{ label: "Last verified", value: "2026-11-04" }]);
   });
 
-  it("sparse place: blanks are omitted except hours and verification, which say so", () => {
+  it("sparse place: blanks are omitted, including the whole Details section; hours and verification say so", () => {
     const f = detailFields(place({ name: "Mystery", facets: {} }), layer);
     expect(f.essentials).toEqual([{ label: "Hours", value: "Hours unknown", flag: "unknown" }]);
     expect(f.chips).toEqual([]);
-    expect(f.details.map((s) => s.title)).toEqual(["Details", "Verified"]);
-    expect(f.details[0]!.rows.every((r) => r.value === "Unknown" && r.flag === "unknown")).toBe(true);
-    expect(f.details[1]!.rows).toEqual([{ label: "Last verified", value: "Hours unverified", flag: "unverified" }]);
+    expect(f.details.map((s) => s.title)).toEqual(["Verified"]);
+    expect(f.details[0]!.rows).toEqual([{ label: "Last verified", value: "Hours unverified", flag: "unverified" }]);
+  });
+
+  it("lists only the facets with a value", () => {
+    const f = detailFields(place({ name: "Partial", facets: { Format: [], Specialty: ["Espresso"] } }), layer);
+    const details = f.details.find((s) => s.title === "Details")!;
+    expect(details.rows).toEqual([{ label: "Specialty", value: "Espresso" }]);
   });
 
   it("flags an approximate address", () => {

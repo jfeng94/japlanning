@@ -42,15 +42,14 @@ export function detailFields(place: Place, layer: LayerConfig | undefined): Deta
   const details: DetailSection[] = [];
   if (place.notes) details.push({ title: "Notes", rows: [{ label: "", value: place.notes }] });
 
-  if (layer && layer.facets.length > 0) {
-    details.push({
-      title: "Details",
-      rows: layer.facets.map((f) => {
-        const values = place.facets[f.column] ?? [];
-        const label = f.label ?? f.column;
-        return values.length > 0 ? { label, value: values.join(", ") } : { label, value: "Unknown", flag: "unknown" as const };
-      }),
+  // Only the facets this place has a value for; a blank is nothing to read, so it says nothing (2026-11-05).
+  // Hours and verification stay even when unknown, since that is itself worth knowing.
+  if (layer) {
+    const rows = layer.facets.flatMap((f) => {
+      const values = place.facets[f.column] ?? [];
+      return values.length > 0 ? [{ label: f.label ?? f.column, value: values.join(", ") }] : [];
     });
+    if (rows.length > 0) details.push({ title: "Details", rows });
   }
 
   const extra = Object.entries(place.extra);
