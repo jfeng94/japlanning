@@ -275,3 +275,7 @@ work, the ring looks right, on/off behaves. Following while walking is
 untested until there are tiles for where Jerry is. One polish: the
 button is blue only while actually following; with a fix but unlocked it
 is the text colour, like idle (Jerry: blue reads as an active state).
+Second polish: choosing a place from the list unlocks instead of the
+next fix panning back to the user. The rule became "any move the control
+did not start itself unlocks", which also covers fit to results and
+region switches.

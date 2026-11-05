@@ -28,8 +28,9 @@ export interface LocateControl extends IControl {
 /**
  * Our locate button, dot and accuracy ring. The button only centres and
  * locks: a tap centres the map on the fix and locks it there, so later
- * fixes move the map; a tap while locked, or any pan, zoom or rotate by
- * hand, unlocks and leaves the dot. With no fix yet the first tap asks
+ * fixes move the map; a tap while locked, or any move the control did not
+ * start itself (a pan by hand, a place chosen from the list, fit to
+ * results, a region switch), unlocks and leaves the dot. With no fix yet the first tap asks
  * the app to start watching and locks once the fix lands. Turning
  * location off is a setting, not a button state.
  *
@@ -82,14 +83,22 @@ export function createLocateControl(handlers: LocateControlHandlers): LocateCont
     ring.style.height = `${px}px`;
   };
 
+  /** True while our own easeTo is firing its movestart, so it doesn't unlock. */
+  let ownMove = false;
+
   const centre = (): void => {
     if (!map || !fix) return;
-    map.easeTo({ center: [fix.lng, fix.lat], zoom: Math.max(map.getZoom(), LOCK_MIN_ZOOM), duration: 500 });
+    ownMove = true;
+    try {
+      map.easeTo({ center: [fix.lng, fix.lat], zoom: Math.max(map.getZoom(), LOCK_MIN_ZOOM), duration: 500 });
+    } finally {
+      ownMove = false;
+    }
   };
 
-  const unlockOnUserMove = (e: { originalEvent?: unknown }): void => {
-    // Our own easeTo has no originalEvent; a drag, pinch or wheel does.
-    if (e.originalEvent && state === "locked") setState("ready");
+  const unlockOnOtherMove = (): void => {
+    // movestart fires synchronously inside easeTo, so ownMove is set for ours and clear for everyone else's.
+    if (!ownMove && state === "locked") setState("ready");
   };
 
   button.addEventListener("click", () => {
@@ -118,14 +127,14 @@ export function createLocateControl(handlers: LocateControlHandlers): LocateCont
     onAdd(m) {
       map = m;
       map.on("zoom", sizeRing);
-      map.on("movestart", unlockOnUserMove);
+      map.on("movestart", unlockOnOtherMove);
       return button;
     },
     onRemove() {
       marker?.remove();
       marker = undefined;
       map?.off("zoom", sizeRing);
-      map?.off("movestart", unlockOnUserMove);
+      map?.off("movestart", unlockOnOtherMove);
       map = undefined;
       button.remove();
     },
