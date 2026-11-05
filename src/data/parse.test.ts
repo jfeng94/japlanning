@@ -33,18 +33,18 @@ describe("drinks data (the repo file, so every test run validates it)", () => {
   const { places, warnings } = parseLayerCsv(drinksCsv, coffee, regionOptions());
 
   it("parses every row with no warnings", () => {
-    expect(places).toHaveLength(57);
+    expect(places).toHaveLength(74);
     expect(warnings).toEqual([]);
   });
 
   it("matches the profile of the data (update these when rows change on purpose)", () => {
     expect(places.filter((p) => p.starred)).toHaveLength(12);
-    expect(places.filter((p) => p.addressApproximate)).toHaveLength(12);
-    expect(places.filter((p) => p.hoursOsm === undefined)).toHaveLength(18);
-    expect(places.filter((p) => p.lastVerified === undefined)).toHaveLength(28);
+    expect(places.filter((p) => p.addressApproximate)).toHaveLength(11);
+    expect(places.filter((p) => p.hoursOsm === undefined)).toHaveLength(19);
+    expect(places.filter((p) => p.lastVerified === undefined)).toHaveLength(33);
     expect(places.filter((p) => p.facets["Format"]!.length === 0)).toHaveLength(4);
-    expect(places.filter((p) => p.facets["Reservation"]!.length === 0)).toHaveLength(23);
-    expect(places.filter((p) => p.region === "kyoto")).toHaveLength(6);
+    expect(places.filter((p) => p.facets["Reservation"]!.length === 0)).toHaveLength(40);
+    expect(places.filter((p) => p.region === "kyoto")).toHaveLength(13);
   });
 
   it("reads the key branch from the Key column, the id from ID and the branch from Branch", () => {
@@ -59,7 +59,7 @@ describe("drinks data (the repo file, so every test run validates it)", () => {
   it("lands only the rating snapshot columns in extra (they have no UI yet)", () => {
     const allowed = new Set(["Google rating", "Google reviews", "Rated on"]);
     expect(places.every((p) => Object.keys(p.extra).every((k) => allowed.has(k)))).toBe(true);
-    expect(places.filter((p) => p.extra["Google rating"] !== undefined)).toHaveLength(9);
+    expect(places.filter((p) => p.extra["Google rating"] !== undefined)).toHaveLength(43);
   });
 
   it("gives every place a unique id", () => {
