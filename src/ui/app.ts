@@ -460,9 +460,11 @@ export function mountApp(root: HTMLElement): void {
   function marksFor(shown: Place[]): Map<string, Mark> {
     const marks = new Map<string, Mark>();
     const bookmarked = bookmarks.all();
+    const state = filters.get();
+    const seekingOpen = state.openNow || state.openAt !== undefined;
     for (const p of shown) {
       const hours = hoursStates && layersWithHours.has(p.layerId) ? (hoursStates.get(p.id) ?? "unknown") : undefined;
-      const mark = markFor({ hours, bookmarked: bookmarked.has(p.id), starred: p.starred });
+      const mark = markFor({ hours, bookmarked: bookmarked.has(p.id), starred: p.starred, seekingOpen });
       if (mark) marks.set(p.id, mark);
     }
     return marks;

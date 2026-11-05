@@ -191,9 +191,12 @@ disagree.
 Each row and pin shows at most one marker, decided in one place
 (`src/data/marks.ts`) so list and map agree. Precedence: "?" (hours
 unknown) > "zz" (closed at the chosen moment) > the bookmark seal > ★
-(key branch). The hours marks show whenever hours have been evaluated,
-filter on or off; with the filter on, closed places are hidden, so "zz"
-is a filter-off thing. On rows the marker sits before the name; on pins
+(key branch). "zz" shows whenever hours have been evaluated, filter on or
+off, so a shut shop can be skipped without opening its card; with the
+filter on, closed places are hidden anyway. "?" shows only while the
+user is asking about opening times (the filter on, or an "open at" time
+set): it answers "is this open?" with "we don't know", and is noise
+otherwise. On rows the marker sits before the name; on pins
 it is the upper-right badge, with the ★ as text and the others as
 artwork.
 

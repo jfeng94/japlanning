@@ -4,7 +4,10 @@ import type { HoursState } from "../hours/evaluate-all.ts";
  * The one marker a row or pin shows next to a place, highest precedence
  * first: hours unknown, closed at the chosen moment, bookmarked, key
  * branch. Rows and pins read the same answer so the list and the map
- * never disagree.
+ * never disagree. "Unknown" only counts while the user is asking about
+ * opening times (the open-now filter, or an "open at" time): it answers
+ * "is this open?" with "we don't know". "Closed" always shows, so a shut
+ * shop can be skipped without opening its card.
  */
 export type Mark = "unknown" | "closed" | "bookmark" | "star";
 
@@ -13,10 +16,12 @@ export interface MarkInputs {
   hours?: HoursState;
   bookmarked: boolean;
   starred: boolean;
+  /** The open-now filter is on, or an "open at" time is set. */
+  seekingOpen: boolean;
 }
 
-export function markFor({ hours, bookmarked, starred }: MarkInputs): Mark | undefined {
-  if (hours === "unknown") return "unknown";
+export function markFor({ hours, bookmarked, starred, seekingOpen }: MarkInputs): Mark | undefined {
+  if (hours === "unknown" && seekingOpen) return "unknown";
   if (hours === "closed") return "closed";
   if (bookmarked) return "bookmark";
   if (starred) return "star";
