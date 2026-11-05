@@ -797,10 +797,7 @@ button {
 .maplibregl-ctrl button.maplibregl-ctrl-geolocate-background-error {
   color: var(--bad);
 }
-
-.maplibregl-ctrl button.maplibregl-ctrl-geolocate:disabled {
-  opacity: 0.4;
-}
+/* Disabled (permission already denied at launch): MapLibre fades the icon itself. */
 
 /* The list strip is one tap target that opens the filter sheet. */
 .strip-list {

@@ -144,6 +144,10 @@ Verified in the browser pane at 375×812 with a mocked Geolocation API
 - Permission denied: toast "Location is off for this app. Allow it in
   the phone's Settings.", button greyed (MapLibre disables it until
   reload).
+- Known limit: when permission was denied on an earlier visit, the
+  button is greyed from launch (MapLibre asks the Permissions API before
+  enabling it) and a tap on it does nothing, with no toast. The fix is in
+  the phone's Settings; worth a line in Diagnostics if it bites.
 
 For the phone pass:
 
