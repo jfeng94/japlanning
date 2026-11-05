@@ -6,18 +6,19 @@ import { pinsToGeoJson, placesToPins } from "./pins.ts";
 const coffeeLayer: LayerConfig = { ...coffee, icon: "coffee", color: "#b5452b" };
 
 describe("placesToPins", () => {
-  it("carries name, position, layer colour and star", () => {
-    const pins = placesToPins([place({ name: "Glitch", starred: true, lat: 35.69, lng: 139.76 })], [coffeeLayer]);
+  it("carries name, position, layer colour and the mark", () => {
+    const glitch = place({ name: "Glitch", starred: true, lat: 35.69, lng: 139.76 });
+    const pins = placesToPins([glitch], [coffeeLayer], new Map([[glitch.id, "star" as const]]));
     expect(pins).toEqual([
-      { id: expect.any(String), name: "Glitch", lat: 35.69, lng: 139.76, icon: "coffee", color: "#b5452b", starred: true, bookmarked: false, layerId: "tokyo-coffee" },
+      { id: expect.any(String), name: "Glitch", lat: 35.69, lng: 139.76, icon: "coffee", color: "#b5452b", mark: "star", layerId: "tokyo-coffee" },
     ]);
   });
 
-  it("marks bookmarked places", () => {
+  it("passes marks through to GeoJSON, with an empty string for none", () => {
     const [a, b] = [place({ name: "a" }), place({ name: "b" })];
-    const pins = placesToPins([a, b], [coffeeLayer], new Set([b.id]));
-    expect(pins.map((p) => p.bookmarked)).toEqual([false, true]);
-    expect(pinsToGeoJson(pins).features.map((f) => f.properties.bookmarked)).toEqual([false, true]);
+    const pins = placesToPins([a, b], [coffeeLayer], new Map([[b.id, "closed" as const]]));
+    expect(pins.map((p) => p.mark)).toEqual([undefined, "closed"]);
+    expect(pinsToGeoJson(pins).features.map((f) => f.properties.mark)).toEqual(["", "closed"]);
   });
 
   it("uses the row's icon when known, else the layer's, else the first icon", () => {

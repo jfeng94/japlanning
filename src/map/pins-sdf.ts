@@ -2,6 +2,8 @@ import type { GeoJSONSource, MapLayerMouseEvent, Map as MapLibreMap } from "mapl
 import { ICON_IDS, iconAssetUrl, type IconId } from "../config/icons.ts";
 import { pinLabelMinZoom } from "../config/map.ts";
 import bookmarkIcon from "../ui/icons/bookmark.webp";
+import closedIcon from "../ui/icons/closed.webp";
+import unknownIcon from "../ui/icons/unknown.webp";
 import type { MapView } from "./map.ts";
 import { pinsToGeoJson, type Pin, type PinRenderer } from "./pins.ts";
 import { loadSdfImage, type SdfImage } from "./sdf.ts";
@@ -9,8 +11,10 @@ import { loadSdfImage, type SdfImage } from "./sdf.ts";
 const SOURCE = "pins";
 const ICON_LAYER = "pins-icon";
 const STAR_LAYER = "pins-star";
-const BOOKMARK_LAYER = "pins-bookmark";
-const BOOKMARK_IMAGE = "bookmark-badge";
+const BADGE_LAYER = "pins-badge";
+/** Raster badge images by mark (the ★ is text in its own layer). */
+const BADGE_IMAGES = { bookmark: "bookmark-badge", unknown: "unknown-badge", closed: "closed-badge" } as const;
+const BADGE_ART: Record<keyof typeof BADGE_IMAGES, string> = { bookmark: bookmarkIcon, unknown: unknownIcon, closed: closedIcon };
 const LABEL_LAYER = "pins-label";
 const FONT = ["Noto Sans Medium"];
 
@@ -72,10 +76,12 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
       if (disposed || m !== map || !m.getStyle()) return;
       if (!m.hasImage(id)) m.addImage(id, img, { sdf: true, pixelRatio: IMAGE_PIXEL_RATIO });
     }
-    // The bookmark seal is multicolour, so it's a plain raster image, not an SDF.
-    const badge = await loadRaster(bookmarkIcon);
-    if (disposed || m !== map || !m.getStyle()) return;
-    if (!m.hasImage(BOOKMARK_IMAGE)) m.addImage(BOOKMARK_IMAGE, badge, { pixelRatio: 2 });
+    // The badges are multicolour, so they are plain raster images, not SDFs.
+    for (const [mark, image] of Object.entries(BADGE_IMAGES) as [keyof typeof BADGE_IMAGES, string][]) {
+      const badge = await loadRaster(BADGE_ART[mark]);
+      if (disposed || m !== map || !m.getStyle()) return;
+      if (!m.hasImage(image)) m.addImage(image, badge, { pixelRatio: 2 });
+    }
   };
 
   const addLayers = (m: MapLibreMap) => {
@@ -103,8 +109,8 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
       id: STAR_LAYER,
       type: "symbol",
       source: SOURCE,
-      // The seal takes the ★'s place when a key branch is also bookmarked.
-      filter: ["all", ["==", ["get", "starred"], true], ["!=", ["get", "bookmarked"], true]],
+      // One badge per pin (data/marks.ts): the ★ only when nothing outranks it.
+      filter: ["==", ["get", "mark"], "star"],
       layout: {
         "text-field": "★",
         "text-font": FONT,
@@ -120,12 +126,12 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
       },
     });
     m.addLayer({
-      id: BOOKMARK_LAYER,
+      id: BADGE_LAYER,
       type: "symbol",
       source: SOURCE,
-      filter: ["==", ["get", "bookmarked"], true],
+      filter: ["in", ["get", "mark"], ["literal", Object.keys(BADGE_IMAGES)]],
       layout: {
-        "icon-image": BOOKMARK_IMAGE,
+        "icon-image": ["match", ["get", "mark"], "unknown", BADGE_IMAGES.unknown, "closed", BADGE_IMAGES.closed, BADGE_IMAGES.bookmark],
         "icon-size": 0.42,
         // Upper right, where the ★ goes; offset is in image pixels before icon-size.
         "icon-offset": [40, -40],
@@ -198,7 +204,7 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
       map.off("mouseenter", ICON_LAYER, onEnter);
       map.off("mouseleave", ICON_LAYER, onLeave);
       if (map.getStyle()) {
-        for (const id of [LABEL_LAYER, BOOKMARK_LAYER, STAR_LAYER, ICON_LAYER]) if (map.getLayer(id)) map.removeLayer(id);
+        for (const id of [LABEL_LAYER, BADGE_LAYER, STAR_LAYER, ICON_LAYER]) if (map.getLayer(id)) map.removeLayer(id);
         if (map.getSource(SOURCE)) map.removeSource(SOURCE);
       }
     },

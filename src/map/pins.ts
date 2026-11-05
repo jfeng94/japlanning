@@ -1,5 +1,6 @@
 import type { FeatureCollection, Point } from "geojson";
 import { iconFor, type IconId } from "../config/icons.ts";
+import type { Mark } from "../data/marks.ts";
 import type { LayerConfig, Place } from "../data/types.ts";
 
 /** What a renderer needs to draw one place. Pure data; no DOM, no map. */
@@ -11,8 +12,8 @@ export interface Pin {
   icon: IconId;
   /** The layer's colour. */
   color: string;
-  starred: boolean;
-  bookmarked: boolean;
+  /** The one badge to draw (see data/marks.ts), if any. */
+  mark?: Mark;
   layerId: string;
 }
 
@@ -26,7 +27,7 @@ export interface PinRenderer {
   destroy(): void;
 }
 
-export function placesToPins(places: Place[], layers: LayerConfig[], bookmarks?: ReadonlySet<string>): Pin[] {
+export function placesToPins(places: Place[], layers: LayerConfig[], marks?: ReadonlyMap<string, Mark>): Pin[] {
   const byId = new Map(layers.map((l) => [l.id, l]));
   const pins: Pin[] = [];
   for (const p of places) {
@@ -39,8 +40,7 @@ export function placesToPins(places: Place[], layers: LayerConfig[], bookmarks?:
       lat: p.lat,
       icon: iconFor(p, layer),
       color: layer.color,
-      starred: p.starred,
-      bookmarked: bookmarks?.has(p.id) ?? false,
+      mark: marks?.get(p.id),
       layerId: p.layerId,
     });
   }
@@ -52,8 +52,8 @@ export interface PinProperties {
   name: string;
   icon: IconId;
   color: string;
-  starred: boolean;
-  bookmarked: boolean;
+  /** "" when there is no mark; expressions can't read undefined. */
+  mark: Mark | "";
   selected: boolean;
 }
 
@@ -70,8 +70,7 @@ export function pinsToGeoJson(pins: Pin[], selectedId?: string): FeatureCollecti
         name: p.name,
         icon: p.icon,
         color: p.color,
-        starred: p.starred,
-        bookmarked: p.bookmarked,
+        mark: p.mark ?? "",
         selected: p.id === selectedId,
       },
     })),

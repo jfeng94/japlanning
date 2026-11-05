@@ -1,9 +1,15 @@
 import { Marker } from "maplibre-gl";
 import { iconAssetUrl } from "../config/icons.ts";
-import bookmarkIcon from "../ui/icons/bookmark.webp";
 import { pinLabelMinZoom, pinStyle } from "../config/map.ts";
+import type { Mark } from "../data/marks.ts";
+import bookmarkIcon from "../ui/icons/bookmark.webp";
+import closedIcon from "../ui/icons/closed.webp";
+import unknownIcon from "../ui/icons/unknown.webp";
 import type { MapView } from "./map.ts";
 import type { Pin, PinRenderer } from "./pins.ts";
+
+/** Badge artwork per mark; the ★ is CSS text, not an image. */
+const BADGES: Partial<Record<Mark, string>> = { bookmark: bookmarkIcon, unknown: unknownIcon, closed: closedIcon };
 
 interface Entry {
   marker: Marker;
@@ -42,7 +48,7 @@ export function createDomPinRenderer(view: MapView): PinRenderer {
     el.type = "button";
     el.className = `dom-pin dom-pin--${style}`;
     el.setAttribute("aria-label", pin.name);
-    el.innerHTML = `<img alt="" draggable="false"><img class="dom-pin-badge" alt="" draggable="false" src="${bookmarkIcon}"><span class="dom-pin-label"></span>`;
+    el.innerHTML = `<img alt="" draggable="false"><img class="dom-pin-badge" alt="" draggable="false"><span class="dom-pin-label"></span>`;
     el.addEventListener("click", (e) => {
       e.stopPropagation();
       selectCb(pin.id);
@@ -57,8 +63,10 @@ export function createDomPinRenderer(view: MapView): PinRenderer {
     const { el } = entry;
     entry.pin = pin;
     el.style.setProperty("--pin-color", pin.color);
-    el.classList.toggle("is-starred", pin.starred);
-    el.classList.toggle("is-bookmarked", pin.bookmarked);
+    el.dataset["mark"] = pin.mark ?? "";
+    const badge = el.querySelector<HTMLImageElement>(".dom-pin-badge")!;
+    const art = pin.mark ? BADGES[pin.mark] : undefined;
+    if (art && badge.getAttribute("src") !== art) badge.src = art;
     el.classList.toggle("is-selected", pin.id === selectedId);
     el.querySelector("img")!.src = iconAssetUrl(pin.icon, "dom");
     el.querySelector(".dom-pin-label")!.textContent = pin.name;

@@ -8,6 +8,7 @@ import { loadAllLayersStaged } from "../data/load.ts";
 import type { LoadResult, Place, RegionId } from "../data/types.ts";
 import { applyFilters, sinkUnknownHours, type HoursInput } from "../filter/apply.ts";
 import { sortByDistance } from "../geo/distance.ts";
+import { markFor, type Mark } from "../data/marks.ts";
 import { evaluateAll, type HoursState } from "../hours/evaluate-all.ts";
 import { loadParser, tokyoNow, tokyoWallClock, type OpeningHoursCtor } from "../hours/open.ts";
 import {
@@ -80,15 +81,15 @@ export function mountApp(root: HTMLElement): void {
   const hoursAt = (state: FilterState): Date | undefined => tokyoWallClock(state.openAt);
   const hoursInput = (): HoursInput | undefined => (hoursStates ? { states: hoursStates, layersWithHours } : undefined);
 
-  /** Recompute every place's open state; load the parser first if needed; keep a minute timer while the filter is on. */
+  /**
+   * Recompute every place's open state (the filter, the card and the
+   * closed/unknown marks all read it); load the parser first if needed;
+   * keep a minute timer so the marks stay current. Always on, not only
+   * while the filter is: the closed mark only has a job when the filter
+   * is off.
+   */
   function refreshHours(): void {
     const state = filters.get();
-    if (!state.openNow) {
-      hoursStates = undefined;
-      if (hoursTimer) clearInterval(hoursTimer);
-      hoursTimer = undefined;
-      return;
-    }
     if (!parser) {
       void loadParser().then((p) => {
         parser = p;
@@ -104,7 +105,7 @@ export function mountApp(root: HTMLElement): void {
     }, 60_000);
   }
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && filters.get().openNow) {
+    if (document.visibilityState === "visible") {
       refreshHours();
       render();
     }
@@ -395,7 +396,7 @@ export function mountApp(root: HTMLElement): void {
       layers: regionLayers,
       showLayer: layersOn.size > 1,
       selectedId,
-      bookmarks: bookmarks.all(),
+      marks: marksFor(shown),
       flashId,
       hoursMarks: state.openNow ? hoursMarks(shown) : undefined,
       from: position,
@@ -441,17 +442,28 @@ export function mountApp(root: HTMLElement): void {
     }
     shownDetailId = selected?.id;
 
-    pins.update(placesToPins(shown, regionLayers, bookmarks.all()));
+    pins.update(placesToPins(shown, regionLayers, marksFor(shown)));
     pins.setSelected(selectedId);
     panel.relayout(); // the strip's height depends on what the summary shows
   }
 
-  /** Why a row is in an open-now list when it isn't simply "open". */
+  /** With open-now on: rows from layers without hours are there untouched, and say so. */
   function hoursMarks(shown: Place[]): Map<string, string> {
     const marks = new Map<string, string>();
     for (const p of shown) {
       if (!layersWithHours.has(p.layerId)) marks.set(p.id, "no hours");
-      else if ((hoursStates?.get(p.id) ?? "unknown") === "unknown") marks.set(p.id, "hours unknown");
+    }
+    return marks;
+  }
+
+  /** The one marker per place, shared by rows and pins. */
+  function marksFor(shown: Place[]): Map<string, Mark> {
+    const marks = new Map<string, Mark>();
+    const bookmarked = bookmarks.all();
+    for (const p of shown) {
+      const hours = hoursStates && layersWithHours.has(p.layerId) ? (hoursStates.get(p.id) ?? "unknown") : undefined;
+      const mark = markFor({ hours, bookmarked: bookmarked.has(p.id), starred: p.starred });
+      if (mark) marks.set(p.id, mark);
     }
     return marks;
   }

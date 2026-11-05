@@ -176,16 +176,26 @@ A shared filter evaluated in Asia/Tokyo wall-clock time from the
 - Open: passes. Closed: hidden.
 - Unknown (blank or unparsable hours): passes iff `includeUnknownHours`
   (default on, like the facets' include-unknown). Those rows sink to the
-  end of the list, in their usual order, and carry a "?" marker before
-  the name (2026-11-05). The marker slot shows one thing, like the pins:
-  "?" beats the bookmark seal, which beats the ★.
+  end of the list, in their usual order (2026-11-05).
 - Before the parser has loaded, everything passes so the list never
   blanks.
 
 The evaluation lives outside the filter state (like bookmarks) and is
-passed in. It refreshes once a minute while the filter is on and when
-the app returns to the foreground. The card's Open/Closed line reads the
-same moment, so the filter and the card never disagree.
+passed in. It runs whether or not the filter is on, refreshes once a
+minute and when the app returns to the foreground. The card's
+Open/Closed line reads the same moment, so the filter and the card never
+disagree.
+
+### Marks (2026-11-05)
+
+Each row and pin shows at most one marker, decided in one place
+(`src/data/marks.ts`) so list and map agree. Precedence: "?" (hours
+unknown) > "zz" (closed at the chosen moment) > the bookmark seal > ★
+(key branch). The hours marks show whenever hours have been evaluated,
+filter on or off; with the filter on, closed places are hidden, so "zz"
+is a filter-off thing. On rows the marker sits before the name; on pins
+it is the upper-right badge, with the ★ as text and the others as
+artwork.
 
 ## Sort (M6, 2026-11-04)
 

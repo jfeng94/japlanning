@@ -1,19 +1,24 @@
+import { MARK_LABELS, type Mark } from "../data/marks.ts";
 import type { LayerConfig, Place } from "../data/types.ts";
 import { distanceM, formatDistance, type LatLng } from "../geo/distance.ts";
 import { tag } from "./chips.ts";
 import bookmarkIcon from "./icons/bookmark.webp";
+import closedIcon from "./icons/closed.webp";
 import unknownIcon from "./icons/unknown.webp";
+
+/** Badge artwork per mark; the ★ is text. */
+const BADGES: Partial<Record<Mark, string>> = { bookmark: bookmarkIcon, unknown: unknownIcon, closed: closedIcon };
 
 export interface ListOptions {
   layers: LayerConfig[];
   /** Show the layer name on each row (when more than one layer is selected). */
   showLayer: boolean;
   selectedId?: string;
-  /** Bookmarked place ids; rows get a mark. */
-  bookmarks?: ReadonlySet<string>;
+  /** The one marker per place to show before the name (data/marks.ts). */
+  marks?: ReadonlyMap<string, Mark>;
   /** The place whose card was just closed: its row is highlighted and fades. */
   flashId?: string;
-  /** With the open-now filter on: why a row is there when it isn't simply open ("no hours", "hours unknown"). */
+  /** With the open-now filter on: rows from layers without hours get a "no hours" tag. */
   hoursMarks?: ReadonlyMap<string, string>;
   /** The device's position; rows show their distance from it. */
   from?: LatLng;
@@ -39,15 +44,10 @@ export function renderList(ul: HTMLUListElement, places: Place[], opts: ListOpti
 
       const title = document.createElement("div");
       title.className = "place-title";
-      // One marker before the name, like the pins: hours unknown (open-now on) beats the seal, which beats the ★.
-      const hoursMark = opts.hoursMarks?.get(p.id);
-      if (hoursMark === "hours unknown") {
-        title.append(markImg(unknownIcon, "Hours unknown", "row-mark row-mark--unknown"));
-      } else if (opts.bookmarks?.has(p.id)) {
-        title.append(markImg(bookmarkIcon, "Bookmarked", "row-mark row-mark--bookmark"));
-      } else if (p.starred) {
-        title.append(tag("★", "star"));
-      }
+      // One marker before the name, the same one the pin shows (data/marks.ts).
+      const mark = opts.marks?.get(p.id);
+      if (mark === "star") title.append(tag("★", "star"));
+      else if (mark) title.append(markImg(BADGES[mark]!, MARK_LABELS[mark], `row-mark row-mark--${mark}`));
       const name = document.createElement("span");
       name.className = "place-name";
       name.textContent = p.name;
@@ -74,8 +74,8 @@ export function renderList(ul: HTMLUListElement, places: Place[], opts: ListOpti
         distance.textContent = formatDistance(distanceM(opts.from, p));
         meta.append(p.neighborhood ? " · " : "", distance);
       }
-      // "no hours" (a layer without hours) stays a text tag; "hours unknown" is the marker above.
-      if (hoursMark && hoursMark !== "hours unknown") meta.append(" ", tag(hoursMark, "tag tag--flag"));
+      const hoursMark = opts.hoursMarks?.get(p.id);
+      if (hoursMark) meta.append(" ", tag(hoursMark, "tag tag--flag"));
 
       const chips = document.createElement("div");
       chips.className = "place-chips";
