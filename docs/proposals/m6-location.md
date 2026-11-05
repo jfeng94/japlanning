@@ -1,6 +1,6 @@
 # M6: Location
 
-Status: **built** (2026-11-04), waiting for the phone pass.
+Status: **built** (2026-11-04), phone pass done 2026-11-05; **revision proposed** below, waiting for a go-ahead.
 
 ## Goal
 
@@ -175,3 +175,78 @@ Decisions made while building:
 - With distance order chosen but no fix, the Sort section shows Name
   pressed and "Distance · locate first" disabled, so the sheet always
   says what the list is actually doing.
+
+### Phone pass (2026-11-05, installed app on the iPhone)
+
+- Dot, distances, Distance sort, following and the Settings rows all
+  work and feel natural.
+- The permission prompt appears again after a force-close and relaunch.
+  That is iOS, not us: Safari remembers a site's geolocation answer, but
+  the standalone Home Screen container asks on every cold launch. No
+  web-side fix exists, so the app must never request location on its own
+  or every launch would open with a prompt.
+- Jerry's verdict on the control: turning location on and off is a rare
+  action and does not belong on a map button. Hence the revision below.
+
+## Revision: location as a setting, locate as centre/lock (proposed 2026-11-05)
+
+### What changes
+
+1. **"Location" is an on/off toggle in Settings** (`location`, default
+   on, see trade-offs; a device preference like `sort`). Off stops any watch, drops the
+   position (distances gone, list back to name order) and hides the
+   locate button. On shows the button.
+2. **The locate button only centres and locks.** No off state. Tap:
+   centre the map on the position and lock (follow). Tap while locked, or
+   pan: unlock, dot stays. While there is no fix yet, the first tap starts
+   the watch (the prompt comes here) and centres once the fix lands.
+3. **When the toggle is on, the watch starts by itself only if the
+   browser already reports permission as granted** (Permissions API). On
+   iOS that is never the case after a cold launch, so the dot waits for a
+   tap and the prompt comes when you ask for it. On Android and desktop,
+   which do remember, the dot is there at launch. Never prompt unasked.
+4. The denied case becomes simpler: the button stays visible; a tap gets
+   the "Location is off for this app" toast and nothing else, every time.
+   The greyed-from-launch limit above goes away.
+
+### How
+
+Replace MapLibre's GeolocateControl with our own small control rather
+than bending its state machine (its tap cycle ends in OFF, and that is a
+private field). Three pieces:
+
+- `src/geo/locate.ts`: a watch wrapper over `navigator.geolocation`:
+  `start()` / `stop()`, callbacks for position and error, the
+  Permissions-API query, and a `timeout` rule (toast on the first attempt
+  only, as now). Unit-tested with a fake geolocation object.
+- `src/map/locate-control.ts`: an IControl with the button (idle / locked
+  / waiting / error classes, same mask icon), a dot marker and an
+  accuracy ring (a circle layer whose pixel radius follows zoom). Lock
+  follows new fixes with `easeTo`; a `dragstart` or `zoomstart` from the
+  user unlocks.
+- `src/ui/app.ts` wiring: start the watch on launch iff `location` is on
+  and permission is granted; on the toggle flipping, start or stop and
+  show or hide the button; on a tap with no watch, start it. Position
+  handling, throttle and sorting stay as they are.
+
+Also: `settings.ts` (`location` key, URL override `location=1`),
+`settings-sheet.ts` (the toggle, first in the list), `style.css` (drop the
+MapLibre overrides, style our button and dot), `map.ts` (no
+GeolocateControl import). Docs: this file, the design doc's Sort section,
+CLAUDE.md's M6 line.
+
+About 8 files, roughly 300 lines, a third of it the control replacing
+MapLibre's, with tests for the watch wrapper. Deleting the MapLibre
+control's CSS overrides pays back some of it.
+
+### Trade-offs
+
+- Default off means a new traveller has to find the toggle before the
+  button appears. Default on would put the button there from the first
+  launch, with no prompt until it is tapped. Recommended: **on**, since
+  nothing happens until a tap anyway; the toggle is there for people who
+  never want it. (Jerry's wireframe did not say; this is the one open
+  point.)
+- Writing our own control means owning the dot and ring. They are
+  simple, and it removes the private-field check and the CSS fights with
+  MapLibre's control.
