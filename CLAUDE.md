@@ -82,8 +82,9 @@ The first layer is coffee:
 | Column | Type | Notes |
 | --- | --- | --- |
 | ID | integer | Stable id, assigned by hand, unique within the sheet. Bookmarks and share links key on it, so it never changes. `npm run ids` prints problems and the next free one; the build fails on a blank, non-integer or repeated ID. |
-| Name | string | The brand. ★ prefix = key branch of a multi-branch brand. Render ★ as a visual flag and strip it for display/sorting if desired. |
+| Name | string | The brand. An older ★ prefix still marks a key branch and is stripped for display. |
 | Branch | string | Which branch, when the name alone is ambiguous ("Yakumo"). Shown muted after the name; searched. |
+| Key | boolean | ★ or a checkbox (TRUE) = the key branch of a multi-branch brand, shown as a ★ flag. Blank = no. |
 | Latitude, Longitude | number | WGS84 decimal degrees |
 | Neighborhood | enum | Shared across all layers in a region. Tokyo has 6 values, e.g. Central (Ginza / Jimbocho / Minato) |
 | Format | enum | Stand · Café · Kissaten · Tasting bar · Bean shop |

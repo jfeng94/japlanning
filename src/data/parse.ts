@@ -22,6 +22,7 @@ export const ID_COLUMN = "ID";
 const COL = {
   id: ID_COLUMN,
   branch: "Branch",
+  key: "Key",
   neighborhood: "Neighborhood",
   hours: "Hours",
   hoursOsm: "Hours (OSM)",
@@ -36,6 +37,9 @@ const COL = {
 const JAPAN = { west: 122, south: 24, east: 154, north: 46 };
 
 const STAR = "★";
+/** Key-column spellings that mean yes (a Sheets checkbox publishes TRUE/FALSE). */
+const KEY_YES = new Set(["★", "true", "yes", "y", "1", "x"]);
+const KEY_NO = new Set(["false", "no", "n", "0"]);
 const APPROX_PREFIXES = ["~", "～"];
 const MULTI_VALUE_SEPARATOR = ";";
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -128,12 +132,18 @@ export function parseLayerCsv(
       warn("blank Name; row skipped", "Name");
       return;
     }
-    const starred = rawName.startsWith(STAR);
-    const name = starred ? rawName.slice(STAR.length).trim() : rawName;
+    const starPrefix = rawName.startsWith(STAR);
+    const name = starPrefix ? rawName.slice(STAR.length).trim() : rawName;
     if (!name) {
       warn("Name is only a ★; row skipped", "Name");
       return;
     }
+    // Key branch: the Key column, or the older ★ prefix on the name. Either marks it.
+    const rawKey = cell(COL.key)?.toLowerCase();
+    if (rawKey !== undefined && !KEY_YES.has(rawKey) && !KEY_NO.has(rawKey)) {
+      warn(`${name}: Key "${cell(COL.key)}" is not ★, yes or no; treated as no`, COL.key);
+    }
+    const starred = starPrefix || (rawKey !== undefined && KEY_YES.has(rawKey));
 
     const lat = parseCoordinate(cell("Latitude"), JAPAN.south, JAPAN.north);
     const lng = parseCoordinate(cell("Longitude"), JAPAN.west, JAPAN.east);

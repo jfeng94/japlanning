@@ -291,3 +291,21 @@ describe("ID and Branch columns", () => {
     expect(columns).not.toContain("ID");
   });
 });
+
+describe("Key column", () => {
+  const header = "Name,Latitude,Longitude,Key";
+  const rows = (...r: string[]) => parseLayerCsv(csv([header, ...r]), minimal);
+
+  it("marks the key branch from the column, with checkbox and ★ spellings", () => {
+    const { places, warnings } = rows("A,35.6,139.7,★", "B,35.6,139.7,TRUE", "C,35.6,139.7,yes", "D,35.6,139.7,", "E,35.6,139.7,FALSE");
+    expect(places.map((p) => p.starred)).toEqual([true, true, true, false, false]);
+    expect(warnings).toEqual([]);
+  });
+
+  it("still honours the ★ prefix and warns on an unknown Key value", () => {
+    const { places, warnings } = rows("★ A,35.6,139.7,", "B,35.6,139.7,maybe");
+    expect(places.map((p) => [p.name, p.starred])).toEqual([["A", true], ["B", false]]);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatchObject({ row: 2, column: "Key" });
+  });
+});

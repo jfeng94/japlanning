@@ -67,7 +67,7 @@ Shared by every layer, looked up by header name, all optional except Name,
 Latitude, Longitude:
 
 ```
-ID   Name (★ prefix convention)   Branch   Latitude   Longitude   Neighborhood
+ID   Name   Branch   Key   Latitude   Longitude   Neighborhood
 Hours   Hours (OSM)   Link   Address (JA)   Notes   Last verified
 ```
 
@@ -85,6 +85,13 @@ which shop ("Onibus Coffee" / "Yakumo"), since neighborhoods are too coarse
 to tell them apart (all four Onibus rows are Nakameguro). Rows and the card
 show it muted after the name, search covers it, and name order sorts by
 name then branch. Pin labels show the name only.
+
+**Key** (2026-11-05): marks the key branch of a brand, shown as a ★ flag on
+rows, pins and the card and behind the "★ Key branches only" filter. Any of
+★, TRUE (a Sheets checkbox), yes or 1 means yes; blank, FALSE or no means
+no; anything else warns and counts as no. The older convention of a ★
+prefix on Name still works and is stripped for display, so a sheet can
+move to the column at its own pace.
 
 ### Facet columns
 

@@ -55,10 +55,11 @@ export interface Place {
   id: string;
   layerId: LayerId;
   region: RegionId;
-  /** Display name with the ★ prefix stripped. The brand, for multi-branch shops. */
+  /** The brand, for multi-branch shops; an older ★ prefix is stripped. */
   name: string;
   /** Which branch, when the name alone is ambiguous ("Yakumo" for Onibus Coffee). */
   branch?: string;
+  /** Key branch of a brand: the Key column, or the older ★ prefix on Name. */
   starred: boolean;
   lat: number;
   lng: number;
