@@ -7,6 +7,8 @@ import { createMenu } from "./menu.ts";
 export interface HeaderHandlers {
   onRegion: (region: RegionId) => void;
   onSearch: (text: string) => void;
+  /** The search field was opened (the list should take the screen so results have room). */
+  onSearchOpen?: () => void;
   /** A shared link or bare place id was pasted into search. */
   onSharedLink: (placeId: string) => void;
   onFilters: () => void;
@@ -83,7 +85,10 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
     mainRow.hidden = show;
     if (show) input.focus();
   };
-  searchToggle.addEventListener("click", () => showSearch(true));
+  searchToggle.addEventListener("click", () => {
+    showSearch(true);
+    h.onSearchOpen?.();
+  });
   $(".search-cancel").addEventListener("click", () => {
     input.value = "";
     h.onSearch("");

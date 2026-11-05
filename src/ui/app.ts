@@ -131,6 +131,7 @@ export function mountApp(root: HTMLElement): void {
   const header = mountHeader(root, regions, {
     onRegion: (region) => filters.dispatch({ type: "setRegion", region }),
     onSearch: (text) => filters.dispatch({ type: "setText", text }),
+    onSearchOpen: () => panel.setHeight("full"),
     onSharedLink: (id) => openPlaceById(id),
     onFilters: filterSheet.open,
     onSettings: settingsSheet.open,
