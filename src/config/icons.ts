@@ -15,6 +15,18 @@ export const ICONS = {
   coffee: { sdf: "coffee.webp", dom: "coffee.svg" },
   tea: { sdf: "tea.png", dom: "tea.png" },
   bar: { sdf: "bar.png", dom: "bar.png" },
+  // Food (2026-11-05), for the restaurant and pastry layers to come.
+  cheese: { sdf: "cheese.png", dom: "cheese.png" },
+  fork: { sdf: "fork.png", dom: "fork.webp" },
+  waffle: { sdf: "waffle.png", dom: "waffle.png" },
+  sushi: { sdf: "sushi.png", dom: "sushi.webp" },
+  icecream: { sdf: "icecream.png", dom: "icecream.png" },
+  fruit: { sdf: "fruit.png", dom: "fruit.webp" },
+  pastry: { sdf: "pastry.png", dom: "pastry.png" },
+  meat: { sdf: "meat.png", dom: "meat.png" },
+  strawberry: { sdf: "strawberry.png", dom: "strawberry.png" },
+  mushroom: { sdf: "mushroom.png", dom: "mushroom.png" },
+  soup: { sdf: "soup.png", dom: "soup.webp" },
 } as const;
 
 export type IconId = keyof typeof ICONS;
