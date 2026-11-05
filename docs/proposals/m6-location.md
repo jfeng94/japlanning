@@ -180,11 +180,12 @@ Decisions made while building:
 
 - Dot, distances, Distance sort, following and the Settings rows all
   work and feel natural.
-- The permission prompt appears again after a force-close and relaunch.
-  That is iOS, not us: Safari remembers a site's geolocation answer, but
-  the standalone Home Screen container asks on every cold launch. No
-  web-side fix exists, so the app must never request location on its own
-  or every launch would open with a prompt.
+- A prompt appeared once more after a force-close and relaunch, but not
+  on a second try, so the grant is remembered; the extra prompt was
+  probably one of iOS's follow-ups (precise location, or while-in-use
+  versus always) rather than the site permission again. Worth watching,
+  but not a bug of ours. The app still never requests location on its
+  own (rule 3 below), so if a prompt does recur it comes on a tap.
 - Jerry's verdict on the control: turning location on and off is a rare
   action and does not belong on a map button. Hence the revision below.
 
@@ -201,10 +202,10 @@ Decisions made while building:
    pan: unlock, dot stays. While there is no fix yet, the first tap starts
    the watch (the prompt comes here) and centres once the fix lands.
 3. **When the toggle is on, the watch starts by itself only if the
-   browser already reports permission as granted** (Permissions API). On
-   iOS that is never the case after a cold launch, so the dot waits for a
-   tap and the prompt comes when you ask for it. On Android and desktop,
-   which do remember, the dot is there at launch. Never prompt unasked.
+   browser already reports permission as granted** (Permissions API,
+   which iOS 16+ supports). After an earlier grant the dot is there at
+   launch; otherwise it waits for a tap and the prompt comes when you ask
+   for it. Never prompt unasked.
 4. The denied case becomes simpler: the button stays visible; a tap gets
    the "Location is off for this app" toast and nothing else, every time.
    The greyed-from-launch limit above goes away.
