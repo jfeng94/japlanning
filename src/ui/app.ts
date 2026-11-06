@@ -425,13 +425,12 @@ export function mountApp(root: HTMLElement): void {
       renderDetail(detailBody, selected, regionLayers.find((l) => l.id === selected.layerId), {
         onBack: deselect,
         origin: location.origin,
-        onShowOnMap: () => view.focus(selected.lng, selected.lat),
         isBookmarked: (id) => bookmarks.has(id),
         onToggleBookmark: (id) => bookmarks.toggle(id),
         at: hoursAt(state),
         from: position,
       });
-      renderDetailStrip(detailStrip, selected);
+      renderDetailStrip(detailStrip, selected, () => view.focus(selected.lng, selected.lat));
     }
     // One scroll container holds both contents: save the list's position on the
     // way into the card (before the list is hidden, or the browser clamps it to

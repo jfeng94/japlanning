@@ -5,6 +5,7 @@ import { tag } from "./chips.ts";
 import { detailFields, type DetailRow } from "./detail-fields.ts";
 import bookmarkIcon from "./icons/bookmark.webp";
 import centerIcon from "./icons/center.webp";
+import directionsIcon from "./icons/directions.webp";
 import linkIcon from "./icons/link.webp";
 import shareIcon from "./icons/share.webp";
 import starIcon from "./icons/star.webp";
@@ -17,8 +18,6 @@ export interface DetailHandlers {
   origin: string;
   isBookmarked: (id: string) => boolean;
   onToggleBookmark: (id: string) => void;
-  /** Ease the map back to this place (after panning away). */
-  onShowOnMap: () => void;
   /** Tokyo wall-clock moment to evaluate hours at; undefined means now. */
   at?: Date;
   /** The device's position, for "1.2 km away" in the meta line. */
@@ -82,8 +81,6 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   // ---- actions (Directions lives in the strip above the card) ----
   const actions = document.createElement("div");
   actions.className = "detail-actions";
-  // Show on map: back to the pin after panning away; the map eases, the card stays.
-  actions.append(iconButton("Show on map", centerIcon, h.onShowOnMap));
   // Share copies the place's link, nothing else: no OS share sheet, no name prefix.
   actions.append(iconButton("Copy link to this place", shareIcon, () => copyToClipboard(shareUrl(place, h.origin), "Link copied")));
   // Always present so the row keeps its shape; greyed and inert when the sheet has no link.
@@ -117,7 +114,8 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
       dd.append(" ", status);
       void openStatus(place.hoursOsm, h.at, h.at === undefined).then((s) => {
         if (token !== renderToken) return;
-        status.textContent = s.label;
+        // Just the state ("Open", "Closed today"); the "until 18:00" / "opens 9:00" tail is noise next to the hours.
+        status.textContent = s.label.split(" · ")[0] ?? s.label;
         status.dataset["state"] = s.state;
       });
     }
@@ -155,13 +153,21 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   }
 }
 
-/** The strip's content while a place is selected: name and Directions. */
-export function renderDetailStrip(strip: HTMLElement, place: Place): void {
+/** The strip's content while a place is selected: the name, then Show on map and Directions as icons on the right. */
+export function renderDetailStrip(strip: HTMLElement, place: Place, onShowOnMap: () => void): void {
   strip.replaceChildren();
   const name = document.createElement("p");
   name.className = "results-count";
   name.textContent = place.branch ? `${place.name} · ${place.branch}` : place.name;
-  strip.append(name, anchor("Directions", directionsUrl(place), "action-button action-button--small"));
+  const actions = document.createElement("div");
+  actions.className = "strip-actions";
+  // Show on map: back to the pin after panning away; the map eases, the card stays.
+  const show = iconButton("Show on map", centerIcon, onShowOnMap);
+  show.className = "icon-button";
+  const directions = iconAnchor("Directions", directionsIcon, directionsUrl(place));
+  directions.className = "icon-button";
+  actions.append(show, directions);
+  strip.append(name, actions);
 }
 
 function rowNodes(row: DetailRow): [HTMLElement, HTMLElement] {
@@ -175,16 +181,6 @@ function rowNodes(row: DetailRow): [HTMLElement, HTMLElement] {
     if (text) dd.append(" ", tag(text, "tag tag--flag"));
   }
   return [dt, dd];
-}
-
-function anchor(label: string, href: string, className: string): HTMLAnchorElement {
-  const a = document.createElement("a");
-  a.className = className;
-  a.href = href;
-  a.target = "_blank";
-  a.rel = "noopener";
-  a.textContent = label;
-  return a;
 }
 
 function icon(src: string): HTMLImageElement {
