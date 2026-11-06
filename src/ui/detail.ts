@@ -13,11 +13,8 @@ import { directionsUrl, linkLabel, shareUrl } from "./links.ts";
 import { showToast } from "./toast.ts";
 
 export interface DetailHandlers {
-  onBack: () => void;
   /** `location.origin`, for share links. */
   origin: string;
-  isBookmarked: (id: string) => boolean;
-  onToggleBookmark: (id: string) => void;
   /** Tokyo wall-clock moment to evaluate hours at; undefined means now. */
   at?: Date;
   /** The device's position, for "1.2 km away" in the meta line. */
@@ -30,48 +27,15 @@ const FLAG_TEXT = { approximate: "approximate", unverified: "unverified", unknow
 let renderToken = 0;
 
 /**
- * The selected place in the panel: head, actions, the street-corner
- * essentials (visible at half height), then everything else.
+ * The selected place in the panel body: meta line, actions, the
+ * street-corner essentials (visible at half height), then everything
+ * else. The name, Back, Bookmark and the map actions live in the panel's
+ * header and footer (renderDetailStrip and the app).
  */
 export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig | undefined, h: DetailHandlers): void {
   const token = ++renderToken;
   const fields = detailFields(place, layer);
   body.replaceChildren();
-
-  // ---- head ----
-  const head = document.createElement("div");
-  head.className = "detail-head";
-  const back = document.createElement("button");
-  back.type = "button";
-  back.className = "back-button";
-  back.setAttribute("aria-label", "Back to the list");
-  back.textContent = "‹";
-  back.addEventListener("click", h.onBack);
-  const title = document.createElement("h2");
-  title.className = "detail-title";
-  if (place.starred) {
-    const star = document.createElement("img");
-    star.className = "row-mark row-mark--star";
-    star.src = starIcon;
-    star.alt = "Key branch";
-    star.title = "Key branch";
-    star.draggable = false;
-    title.append(star);
-  }
-  title.append(place.name);
-  if (place.branch) {
-    const branch = document.createElement("span");
-    branch.className = "detail-branch";
-    branch.textContent = place.branch;
-    title.append(" ", branch);
-  }
-
-  // Bookmark: the seal in colour when set, greyscale when not. Only the card toggles it.
-  const bookmarked = h.isBookmarked(place.id);
-  const bookmark = iconButton(bookmarked ? "Remove bookmark" : "Bookmark this place", bookmarkIcon, () => h.onToggleBookmark(place.id));
-  bookmark.classList.add("bookmark-button");
-  bookmark.setAttribute("aria-pressed", String(bookmarked));
-  head.append(back, title, bookmark);
 
   const meta = document.createElement("p");
   meta.className = "detail-meta";
@@ -125,7 +89,7 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   chips.className = "place-chips";
   for (const c of fields.chips) chips.append(tag(c));
 
-  body.append(head, meta, actions, essentials);
+  body.append(meta, actions, essentials);
   if (fields.chips.length > 0) body.append(chips);
 
   // ---- details (full height) ----
@@ -153,21 +117,53 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   }
 }
 
-/** The strip's content while a place is selected: the name, then Show on map and Directions as icons on the right. */
-export function renderDetailStrip(strip: HTMLElement, place: Place, onShowOnMap: () => void): void {
+export interface DetailStripHandlers {
+  /** Ease the map back to this place (after panning away). */
+  onShowOnMap: () => void;
+  isBookmarked: (id: string) => boolean;
+  onToggleBookmark: (id: string) => void;
+}
+
+/**
+ * The panel header while a place is selected: the name (star, brand,
+ * muted branch) on the left, then Directions, Show on map and Bookmark
+ * as icons on the right, so every action on the place is in one row.
+ */
+export function renderDetailStrip(strip: HTMLElement, place: Place, h: DetailStripHandlers): void {
   strip.replaceChildren();
-  const name = document.createElement("p");
-  name.className = "results-count";
-  name.textContent = place.branch ? `${place.name} · ${place.branch}` : place.name;
+  const title = document.createElement("h2");
+  title.className = "strip-title";
+  if (place.starred) {
+    const star = document.createElement("img");
+    star.className = "row-mark row-mark--star";
+    star.src = starIcon;
+    star.alt = "Key branch";
+    star.title = "Key branch";
+    star.draggable = false;
+    title.append(star);
+  }
+  title.append(place.name);
+  if (place.branch) {
+    const branch = document.createElement("span");
+    branch.className = "detail-branch";
+    branch.textContent = place.branch;
+    title.append(" ", branch);
+  }
+
   const actions = document.createElement("div");
   actions.className = "strip-actions";
-  // Show on map: back to the pin after panning away; the map eases, the card stays.
-  const show = iconButton("Show on map", centerIcon, onShowOnMap);
-  show.className = "icon-button";
   const directions = iconAnchor("Directions", directionsIcon, directionsUrl(place));
   directions.className = "icon-button";
-  actions.append(show, directions);
-  strip.append(name, actions);
+  // Show on map: back to the pin after panning away; the map eases, the card stays.
+  const show = iconButton("Show on map", centerIcon, h.onShowOnMap);
+  show.className = "icon-button";
+  // Bookmark: the seal in colour when set, greyscale when not.
+  const bookmarked = h.isBookmarked(place.id);
+  const bookmark = iconButton(bookmarked ? "Remove bookmark" : "Bookmark this place", bookmarkIcon, () => h.onToggleBookmark(place.id));
+  bookmark.className = "icon-button bookmark-button";
+  bookmark.setAttribute("aria-pressed", String(bookmarked));
+  actions.append(directions, show, bookmark);
+  strip.append(title, actions);
 }
 
 function rowNodes(row: DetailRow): [HTMLElement, HTMLElement] {

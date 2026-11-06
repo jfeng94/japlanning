@@ -8,6 +8,8 @@ export interface HeaderHandlers {
   onSearch: (text: string) => void;
   /** The search field was opened (the list should take the screen so results have room). */
   onSearchOpen?: () => void;
+  /** The search field lost focus with text in it (the keyboard closed): the map can show again. */
+  onSearchBlur?: () => void;
   /** A shared link or bare place id was pasted into search. */
   onSharedLink: (placeId: string) => void;
   onSettings: () => void;
@@ -25,6 +27,8 @@ export interface Header {
   openSearch(): void;
 }
 
+export const CHEVRON_LEFT = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+export const CHEVRON_RIGHT = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 export const SEARCH_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
 
 /**
@@ -91,6 +95,9 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
       return;
     }
     h.onSearch(input.value);
+  });
+  input.addEventListener("blur", () => {
+    if (input.value !== "") h.onSearchBlur?.();
   });
   input.addEventListener("keydown", (e) => {
     // Return/Done on the phone keyboard just dismisses the keyboard; keep the query.

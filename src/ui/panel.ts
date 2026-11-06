@@ -1,9 +1,12 @@
 /**
- * The bottom panel over the map. Three snap heights: strip (just the
- * summary row), half, full. Drag the handle or the strip up and down and
+ * The bottom panel over the map. Three snap heights: strip (the header
+ * sitting on the footer, nothing between), half, full. Drag the handle or the strip up and down and
  * it follows the finger, then snaps to the nearest height, or in the
  * flick's direction. A tap on the handle still cycles. Content is
- * whatever the app puts in `content`; the strip is always visible.
+ * whatever the app puts in `content`; the strip (header) and the footer
+ * are always visible. The footer is the fixed end at the bottom of the
+ * screen, for the actions the thumb reaches for; the header travels with
+ * the panel (docs/proposals/strip-footer.md).
  *
  * Heights are set in pixels from JS (not CSS) so the drag and the snap
  * share one source of truth.
@@ -12,10 +15,12 @@ export type PanelHeight = "strip" | "half" | "full";
 
 export interface Panel {
   el: HTMLElement;
-  /** The always-visible summary row. */
+  /** The always-visible header row (travels with the panel). */
   strip: HTMLElement;
   /** Scrollable body shown at half and full. */
   content: HTMLElement;
+  /** The always-visible footer row, pinned to the bottom of the screen. */
+  footer: HTMLElement;
   getHeight(): PanelHeight;
   setHeight(height: PanelHeight): void;
   /** Current height in CSS pixels (the snap target while settling). */
@@ -41,6 +46,7 @@ export function mountPanel(root: HTMLElement, onHeightChange?: (h: PanelHeight, 
       <div class="panel-strip"></div>
     </div>
     <div class="panel-content"></div>
+    <div class="panel-footer"></div>
   `;
   root.append(el);
 
@@ -48,12 +54,13 @@ export function mountPanel(root: HTMLElement, onHeightChange?: (h: PanelHeight, 
   const handle = el.querySelector<HTMLButtonElement>(".panel-handle")!;
   const strip = el.querySelector<HTMLElement>(".panel-strip")!;
   const content = el.querySelector<HTMLElement>(".panel-content")!;
+  const footer = el.querySelector<HTMLElement>(".panel-footer")!;
   let height: PanelHeight = "half";
 
   const safeBottom = () => parseFloat(getComputedStyle(el).paddingBottom) || 0;
   const headerPx = () => root.querySelector<HTMLElement>(".topbar")?.offsetHeight ?? 52;
   const px: Record<PanelHeight, () => number> = {
-    strip: () => drag.offsetHeight + safeBottom(),
+    strip: () => drag.offsetHeight + footer.offsetHeight + safeBottom(),
     half: () => Math.round(window.innerHeight * HALF_FRACTION),
     full: () => window.innerHeight - headerPx() - FULL_GAP,
   };
@@ -70,6 +77,7 @@ export function mountPanel(root: HTMLElement, onHeightChange?: (h: PanelHeight, 
     el,
     strip,
     content,
+    footer,
     getHeight: () => height,
     setHeight(h) {
       if (h !== height) apply(h);

@@ -1,6 +1,6 @@
 # Strip footer, header and the search flow
 
-Status: **proposed** (2026-11-05), waiting for a go-ahead.
+Status: **built** (2026-11-05), waiting for the phone pass.
 
 ## Why
 
@@ -103,3 +103,20 @@ height arithmetic if it gets a pure helper.
       still returns to the list.
 - [ ] Keyboard Done with search text drops the panel to half; a row tap
       from search opens the card at half with the map visible.
+
+## Results (2026-11-05)
+
+Built as proposed; Prev/Next disable at the ends. Verified in the pane
+at 375×812: the footer shows Filters and Search in list mode with Back
+and Prev/Next hidden; a row tap opens the card at half with the header
+holding the name, Directions, Show on map and Bookmark, and the body
+starting with the meta line; Prev/Next walk the filtered list, replacing
+the history entry; Back returns to the list at its previous height;
+the collapsed panel is the header on the footer, 104 px. A blur on the
+search field with text drops the panel to half. Opening a card now sets
+the height before easing the map, since a padding change cancels an
+ease in flight.
+
+For the phone pass: the keyboard's Done key dropping the panel to half
+(the blur event on iOS), the footer against the home indicator (safe
+area), and the three header actions on a narrow screen with a long name.

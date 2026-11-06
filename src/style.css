@@ -479,7 +479,45 @@ button {
   border-top: 1px solid var(--rule);
 }
 
+/* Collapsed: the header sits straight on the footer, nothing between. */
 .panel[data-height="strip"] .panel-content {
+  display: none;
+}
+
+/* The footer: the fixed end of the scroll, pinned above the safe area at every height. */
+.panel-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 1rem 0.1rem;
+  border-top: 1px solid var(--rule);
+}
+
+.footer-left,
+.footer-middle,
+.footer-right {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.panel-footer .icon-button {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+.panel-footer .icon-button img {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.panel-footer .icon-button:disabled {
+  opacity: 0.35;
+}
+
+/* Back and Prev/Next only while a card is open; hidden, not removed, so Search stays pinned right. */
+.panel[data-mode="list"] .footer-detail {
   visibility: hidden;
 }
 
@@ -505,41 +543,8 @@ button {
   white-space: nowrap;
 }
 
-.detail-head {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0.5rem 0 0.25rem;
-}
-
-.back-button {
-  width: 2.2rem;
-  height: 2.2rem;
-  flex: none;
-  border: 1px solid var(--rule);
-  border-radius: 50%;
-  background: transparent;
-  font-size: 1.4rem;
-  line-height: 1;
-}
-
-.detail-title {
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-  font-size: 1.15rem;
-  overflow-wrap: anywhere;
-}
-
-.detail-head .bookmark-button {
-  flex: none;
-  width: 2.4rem;
-  height: 2.4rem;
-  background: transparent;
-}
-
 .detail-meta {
-  margin: 0 0 0.6rem 2.7rem;
+  margin: 0.5rem 0 0.6rem;
   color: var(--muted);
   font-size: 0.9rem;
 }
@@ -811,19 +816,12 @@ button {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15), 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
-/* The list strip: summary left, Search and Filters right (near the thumb). */
+/* The list header: the results summary alone (the actions live in the footer). */
 .strip-list {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  display: block;
 }
 
-.strip-summary {
-  min-width: 0;
-  flex: 1;
-}
-
+/* The card header's action row: Directions, Show on map, Bookmark. */
 .strip-actions {
   display: flex;
   gap: 0.4rem;
@@ -833,11 +831,23 @@ button {
 .strip-actions .icon-button {
   width: 2.2rem;
   height: 2.2rem;
+  background: transparent;
 }
 
 .strip-actions .icon-button img {
   width: 1.45rem;
   height: 1.45rem;
+}
+
+.strip-title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .results-count {

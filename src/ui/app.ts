@@ -32,10 +32,10 @@ import { renderDetail, renderDetailStrip } from "./detail.ts";
 import { mountDiagnostics } from "./diagnostics.ts";
 import { renderFilterSheet } from "./filter-sheet.ts";
 import { renderFilterSummary } from "./filter-summary.ts";
-import { mountHeader, SEARCH_ICON } from "./header.ts";
+import { CHEVRON_LEFT, CHEVRON_RIGHT, mountHeader, SEARCH_ICON } from "./header.ts";
 import filtersIcon from "./icons/filters.webp";
 import { renderList, sortByName } from "./list.ts";
-import { mountPanel } from "./panel.ts";
+import { mountPanel, type PanelHeight } from "./panel.ts";
 import { renderSettingsSheet } from "./settings-sheet.ts";
 import { createSheet } from "./sheet.ts";
 import { showToast } from "./toast.ts";
@@ -136,6 +136,10 @@ export function mountApp(root: HTMLElement): void {
       // Searching is a list activity: close an open card and give the list the screen.
       if (ui.get().selectedId !== undefined) deselect();
       panel.setHeight("full");
+    },
+    // The keyboard closed with a query in the field: show the map with the results still filtered.
+    onSearchBlur: () => {
+      if (panel.getHeight() === "full") panel.setHeight("half");
     },
     onSharedLink: (id) => openPlaceById(id),
     onSettings: settingsSheet.open,
@@ -249,22 +253,39 @@ export function mountApp(root: HTMLElement): void {
     render();
   }
 
-  // The panel's two contents. The strip is always visible; the body shows at half and full.
-  // The list strip: the summary on the left, Search and Filters on the right, near the thumb.
+  // The panel's two contents. The header (strip) travels with the panel: the
+  // results summary in list mode, the place's name and actions in card mode.
   const listStrip = el(
     "div",
     "strip-list",
-    `<div class="strip-summary"><p class="results-count"></p><p class="filter-summary" hidden></p><p class="status" role="status" hidden></p></div>
-     <div class="strip-actions">
-       <button type="button" class="icon-button search-toggle" aria-label="Search">${SEARCH_ICON}<span class="dot" hidden></span></button>
-       <button type="button" class="icon-button filters-button" aria-label="Filters"><img alt="" draggable="false" src="${filtersIcon}"><span class="dot" hidden></span></button>
-     </div>`,
+    `<p class="results-count"></p><p class="filter-summary" hidden></p><p class="status" role="status" hidden></p>`,
   );
-  const searchToggle = listStrip.querySelector<HTMLButtonElement>(".search-toggle")!;
-  const filtersButton = listStrip.querySelector<HTMLButtonElement>(".filters-button")!;
+  const detailStrip = el("div", "strip-detail");
+  // The footer is pinned to the bottom of the screen at every height: Search
+  // and Filters on the right always; Back on the left and Prev/Next in the
+  // middle while a card is open (docs/proposals/strip-footer.md).
+  panel.footer.innerHTML = `
+    <div class="footer-left footer-detail">
+      <button type="button" class="icon-button back-button" aria-label="Back to the list">${CHEVRON_LEFT}</button>
+    </div>
+    <div class="footer-middle footer-detail">
+      <button type="button" class="icon-button prev-button" aria-label="Previous place">${CHEVRON_LEFT}</button>
+      <button type="button" class="icon-button next-button" aria-label="Next place">${CHEVRON_RIGHT}</button>
+    </div>
+    <div class="footer-right">
+      <button type="button" class="icon-button filters-button" aria-label="Filters"><img alt="" draggable="false" src="${filtersIcon}"><span class="dot" hidden></span></button>
+      <button type="button" class="icon-button search-toggle" aria-label="Search">${SEARCH_ICON}<span class="dot" hidden></span></button>
+    </div>`;
+  const searchToggle = panel.footer.querySelector<HTMLButtonElement>(".search-toggle")!;
+  const filtersButton = panel.footer.querySelector<HTMLButtonElement>(".filters-button")!;
+  const backButton = panel.footer.querySelector<HTMLButtonElement>(".back-button")!;
+  const prevButton = panel.footer.querySelector<HTMLButtonElement>(".prev-button")!;
+  const nextButton = panel.footer.querySelector<HTMLButtonElement>(".next-button")!;
   searchToggle.addEventListener("click", () => header.openSearch());
   filtersButton.addEventListener("click", filterSheet.open);
-  const detailStrip = el("div", "strip-detail");
+  backButton.addEventListener("click", () => deselect());
+  prevButton.addEventListener("click", () => page(-1));
+  nextButton.addEventListener("click", () => page(1));
   const listBody = el("div", "body-list", `<ul class="place-list"></ul><div class="empty-state" hidden></div>`);
   const detailBody = el("div", "body-detail");
   panel.strip.append(listStrip, detailStrip);
@@ -303,6 +324,19 @@ export function mountApp(root: HTMLElement): void {
       filters.dispatch({ type: "clearFilters" });
       filters.dispatch({ type: "setLayers", layers: [] });
     }
+  }
+
+  /** The list as last rendered, in order, for Prev/Next. */
+  let lastShown: Place[] = [];
+  /** The panel height the list had when a card opened, restored on Back. */
+  let listHeight: PanelHeight | undefined;
+
+  /** Prev/Next in the footer: the neighbour in the current list; the entry is replaced, so Back still means "to the list". */
+  function page(delta: 1 | -1): void {
+    const current = ui.get().selectedId;
+    const i = lastShown.findIndex((p) => p.id === current);
+    const target = i >= 0 ? lastShown[i + delta] : undefined;
+    if (target) select(target.id);
   }
 
   /** Opening the detail pushes one history entry; switching place while open replaces it, so back always means "to the list". */
@@ -346,8 +380,15 @@ export function mountApp(root: HTMLElement): void {
   ui.subscribe(({ selectedId }) => {
     const place = selectedId ? places.find((p) => p.id === selectedId) : undefined;
     if (place) {
+      // A card opens at half so the place is visible on the map behind it; remember the list's height for Back.
+      // Height first: it changes the map padding, which would cancel an ease already under way.
+      if (listHeight === undefined) listHeight = panel.getHeight();
+      panel.setHeight("half");
       view.focus(place.lng, place.lat);
-      if (panel.getHeight() === "strip") panel.setHeight("half");
+    } else if (listHeight !== undefined) {
+      // Back to the list at the height it had (a map-browsing "strip" becomes half so the list shows).
+      panel.setHeight(listHeight === "strip" ? "half" : listHeight);
+      listHeight = undefined;
     }
     render();
   });
@@ -421,16 +462,21 @@ export function mountApp(root: HTMLElement): void {
     });
     renderEmptyState(emptyState, state, shown.length, total, loading);
 
+    lastShown = shown;
     if (selected) {
       renderDetail(detailBody, selected, regionLayers.find((l) => l.id === selected.layerId), {
-        onBack: deselect,
         origin: location.origin,
-        isBookmarked: (id) => bookmarks.has(id),
-        onToggleBookmark: (id) => bookmarks.toggle(id),
         at: hoursAt(state),
         from: position,
       });
-      renderDetailStrip(detailStrip, selected, () => view.focus(selected.lng, selected.lat));
+      renderDetailStrip(detailStrip, selected, {
+        onShowOnMap: () => view.focus(selected.lng, selected.lat),
+        isBookmarked: (id) => bookmarks.has(id),
+        onToggleBookmark: (id) => bookmarks.toggle(id),
+      });
+      const i = shown.findIndex((p) => p.id === selected.id);
+      prevButton.disabled = i <= 0;
+      nextButton.disabled = i < 0 || i >= shown.length - 1;
     }
     // One scroll container holds both contents: save the list's position on the
     // way into the card (before the list is hidden, or the browser clamps it to
@@ -579,7 +625,7 @@ export function mountApp(root: HTMLElement): void {
 
   // Debug handle beside the map's: inspect panel scroll bookkeeping from the console.
   const dbg = (window as unknown as { __japlanning?: Record<string, unknown> }).__japlanning ?? {};
-  dbg["panel"] = { get listScrollTop() { return listScrollTop; }, get shownMode() { return shownMode; }, content: panel.content };
+  dbg["panel"] = { get listScrollTop() { return listScrollTop; }, get shownMode() { return shownMode; }, content: panel.content, setHeight: panel.setHeight };
   dbg["location"] = { get position() { return position; }, watch, get state() { return view.locate.state; } };
   (window as unknown as { __japlanning: Record<string, unknown> }).__japlanning = dbg;
 
