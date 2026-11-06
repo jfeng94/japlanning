@@ -32,8 +32,10 @@ import { renderDetail, renderDetailStrip } from "./detail.ts";
 import { mountDiagnostics } from "./diagnostics.ts";
 import { renderFilterSheet } from "./filter-sheet.ts";
 import { renderFilterSummary } from "./filter-summary.ts";
-import { CHEVRON_LEFT, CHEVRON_RIGHT, mountHeader, SEARCH_ICON } from "./header.ts";
+import { CHEVRON_LEFT, mountHeader, SEARCH_ICON } from "./header.ts";
 import filtersIcon from "./icons/filters.webp";
+import nextIcon from "./icons/next.webp";
+import prevIcon from "./icons/prev.webp";
 import { renderList, sortByName } from "./list.ts";
 import { mountPanel, type PanelHeight } from "./panel.ts";
 import { renderSettingsSheet } from "./settings-sheet.ts";
@@ -133,8 +135,12 @@ export function mountApp(root: HTMLElement): void {
     onRegion: (region) => filters.dispatch({ type: "setRegion", region }),
     onSearch: (text) => filters.dispatch({ type: "setText", text }),
     onSearchOpen: () => {
-      // Searching is a list activity: close an open card and give the list the screen.
-      if (ui.get().selectedId !== undefined) deselect();
+      // Searching is a list activity: close an open card and give the list the screen. The card
+      // closes through history (async) and then restores the list's height, so make that height full.
+      if (ui.get().selectedId !== undefined) {
+        listHeight = "full";
+        deselect();
+      }
       panel.setHeight("full");
     },
     // The keyboard closed with a query in the field: show the map with the results still filtered.
@@ -269,8 +275,8 @@ export function mountApp(root: HTMLElement): void {
       <button type="button" class="icon-button back-button" aria-label="Back to the list">${CHEVRON_LEFT}</button>
     </div>
     <div class="footer-middle footer-detail">
-      <button type="button" class="icon-button prev-button" aria-label="Previous place">${CHEVRON_LEFT}</button>
-      <button type="button" class="icon-button next-button" aria-label="Next place">${CHEVRON_RIGHT}</button>
+      <button type="button" class="arrow-button prev-button" aria-label="Previous place"><img alt="" draggable="false" src="${prevIcon}"></button>
+      <button type="button" class="arrow-button next-button" aria-label="Next place"><img alt="" draggable="false" src="${nextIcon}"></button>
     </div>
     <div class="footer-right">
       <button type="button" class="icon-button filters-button" aria-label="Filters"><img alt="" draggable="false" src="${filtersIcon}"><span class="dot" hidden></span></button>

@@ -25,13 +25,29 @@ describe("detailFields", () => {
       { label: "Hours", value: "Weekdays 8–19" },
     ]);
     expect(f.chips).toEqual(["Café", "Pour-over", "Espresso"]);
-    expect(f.details.map((s) => s.title)).toEqual(["Notes", "Details", "Also in the sheet", "Verified"]);
-    expect(f.details[1]!.rows).toEqual([
+    expect(f.notes).toBe("Queues on weekends.");
+    expect(f.details.map((s) => s.title)).toEqual(["Details", "Also in the sheet", "Verified"]);
+    expect(f.details[0]!.rows).toEqual([
       { label: "Format", value: "Café" },
       { label: "Specialty", value: "Pour-over, Espresso" },
     ]);
-    expect(f.details[2]!.rows).toEqual([{ label: "Floor", value: "2F" }]);
-    expect(f.details[3]!.rows).toEqual([{ label: "Last verified", value: "2026-11-04" }]);
+    expect(f.details[1]!.rows).toEqual([{ label: "Floor", value: "2F" }]);
+    expect(f.details[2]!.rows).toEqual([{ label: "Last verified", value: "2026-11-04" }]);
+  });
+
+  it("puts the rating snapshot first and keeps its columns out of the extras; branch leads the details", () => {
+    const f = detailFields(
+      place({ name: "Onibus", branch: "Yakumo", facets: { Format: ["Café"] }, extra: { "Google rating": "4.3", "Google reviews": "227", "Rated on": "2026-11-04", Floor: "1F" } }),
+      layer,
+    );
+    expect(f.rating).toEqual({ value: "4.3", count: "227", on: "2026-11-04" });
+    expect(f.notes).toBeUndefined();
+    expect(f.details.find((s) => s.title === "Details")!.rows).toEqual([
+      { label: "Branch", value: "Yakumo" },
+      { label: "Format", value: "Café" },
+    ]);
+    expect(f.details.find((s) => s.title === "Also in the sheet")!.rows).toEqual([{ label: "Floor", value: "1F" }]);
+    expect(detailFields(place({ name: "x" }), layer).rating).toBeUndefined();
   });
 
   it("sparse place: blanks are omitted, including the whole Details section; hours and verification say so", () => {

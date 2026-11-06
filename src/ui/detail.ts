@@ -27,9 +27,9 @@ const FLAG_TEXT = { approximate: "approximate", unverified: "unverified", unknow
 let renderToken = 0;
 
 /**
- * The selected place in the panel body: meta line, actions, the
- * street-corner essentials (visible at half height), then everything
- * else. The name, Back, Bookmark and the map actions live in the panel's
+ * The selected place in the panel body: the rating snapshot, the notes,
+ * the meta line, actions, the street-corner essentials (visible at half
+ * height), then everything else. The name, Back, Bookmark and the map actions live in the panel's
  * header and footer (renderDetailStrip and the app).
  */
 export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig | undefined, h: DetailHandlers): void {
@@ -89,6 +89,21 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   chips.className = "place-chips";
   for (const c of fields.chips) chips.append(tag(c));
 
+  // ---- rating and notes first: the quickest read of what a place is like ----
+  if (fields.rating) {
+    const r = document.createElement("p");
+    r.className = "detail-rating";
+    r.textContent = fields.rating.count ? `★ ${fields.rating.value} (${formatCount(fields.rating.count)})` : `★ ${fields.rating.value}`;
+    r.title = fields.rating.on ? `Google, as of ${fields.rating.on}` : "Google";
+    body.append(r);
+  }
+  if (fields.notes) {
+    const notes = document.createElement("p");
+    notes.className = "detail-notes detail-notes--top";
+    notes.textContent = fields.notes;
+    body.append(notes);
+  }
+
   body.append(meta, actions, essentials);
   if (fields.chips.length > 0) body.append(chips);
 
@@ -143,12 +158,6 @@ export function renderDetailStrip(strip: HTMLElement, place: Place, h: DetailStr
     title.append(star);
   }
   title.append(place.name);
-  if (place.branch) {
-    const branch = document.createElement("span");
-    branch.className = "detail-branch";
-    branch.textContent = place.branch;
-    title.append(" ", branch);
-  }
 
   const actions = document.createElement("div");
   actions.className = "strip-actions";
@@ -177,6 +186,12 @@ function rowNodes(row: DetailRow): [HTMLElement, HTMLElement] {
     if (text) dd.append(" ", tag(text, "tag tag--flag"));
   }
   return [dt, dd];
+}
+
+/** "1173" → "1,173" for the review count. */
+function formatCount(raw: string): string {
+  const n = Number(raw);
+  return Number.isFinite(n) ? n.toLocaleString("en-US") : raw;
 }
 
 function icon(src: string): HTMLImageElement {
