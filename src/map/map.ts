@@ -24,17 +24,20 @@ const JAPAN_BOUNDS: LngLatBoundsLike = [
   [146, 45.5],
 ];
 
-let protocolRegistered = false;
+let protocol: Protocol | undefined;
 
 /**
  * MapLibre doesn't know PMTiles. The pmtiles package registers a
  * `pmtiles://` URL scheme whose tile requests become HTTP range requests
- * against the one archive (online) or reads from a stored Blob (M7).
+ * against the one archive (online) or, once a stored Blob has been added
+ * to the protocol for that URL (src/offline/basemap.ts), slices of it.
  */
-function ensureProtocol(): void {
-  if (protocolRegistered) return;
-  addProtocol("pmtiles", new Protocol().tile);
-  protocolRegistered = true;
+export function ensureProtocol(): Protocol {
+  if (!protocol) {
+    protocol = new Protocol();
+    addProtocol("pmtiles", protocol.tile);
+  }
+  return protocol;
 }
 
 export interface MapView {
@@ -60,6 +63,11 @@ export interface MapCallbacks {
   onFit(): void;
   /** The locate button was tapped with no fix yet: start watching. */
   onLocateRequest(): void;
+  /**
+   * Runs before the first style is set, with the pmtiles protocol, so
+   * stored basemaps can be registered ahead of the first tile request.
+   */
+  prepareBasemaps?(protocol: Protocol): Promise<void>;
 }
 
 export function basemapUrl(region: RegionConfig): string {
@@ -67,14 +75,16 @@ export function basemapUrl(region: RegionConfig): string {
 }
 
 export function mountMap(container: HTMLElement, region: RegionConfig, flavor: Flavor, callbacks: MapCallbacks): MapView {
-  ensureProtocol();
+  const proto = ensureProtocol();
   let currentRegion = region;
   let currentFlavor = flavor;
   const styleLoadCallbacks: ((map: MapLibreMap) => void)[] = [];
 
+  // The real style waits for prepareBasemaps (a few ms of IndexedDB), so the
+  // first tile requests already find a stored archive when there is one.
   const map = new MapLibreMap({
     container,
-    style: styleFor(region, flavor),
+    style: { version: 8, sources: {}, layers: [] },
     bounds: region.bbox ?? JAPAN_BOUNDS,
     maxZoom: 18,
     attributionControl: false,
@@ -90,8 +100,14 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
   const locate = createLocateControl({ onRequest: callbacks.onLocateRequest });
   map.addControl(locate, "top-left");
 
+  let styled = false;
   map.on("style.load", () => {
+    if (!styled) return; // the empty placeholder style
     for (const cb of styleLoadCallbacks) cb(map);
+  });
+  void (callbacks.prepareBasemaps?.(proto) ?? Promise.resolve()).finally(() => {
+    styled = true;
+    map.setStyle(styleFor(currentRegion, currentFlavor));
   });
   // Debug handle for the browser console; harmless in production.
   (window as unknown as { __japlanning?: unknown }).__japlanning = { map, locate };
@@ -115,7 +131,7 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
     },
     onStyleLoad(cb) {
       styleLoadCallbacks.push(cb);
-      if (map.isStyleLoaded()) cb(map);
+      if (styled && map.isStyleLoaded()) cb(map);
     },
     focus(lng, lat, minZoom = 15) {
       map.easeTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), minZoom), duration: 500 });

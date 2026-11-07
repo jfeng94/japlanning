@@ -84,6 +84,8 @@ export interface SettingsSheetHandlers {
   /** Fires after every save with the new settings. */
   onChange: (s: Settings) => void;
   onDiagnostics: () => void;
+  /** Renders the Offline section (M7) into the given container. */
+  renderOffline?: (container: HTMLElement) => void;
 }
 
 /**
@@ -150,6 +152,13 @@ export function renderSettingsSheet(body: HTMLElement, handlers: SettingsSheetHa
       row.append(help);
     }
     body.append(row);
+  }
+
+  if (handlers.renderOffline) {
+    const offline = document.createElement("section");
+    offline.className = "offline-section";
+    handlers.renderOffline(offline);
+    body.append(offline);
   }
 
   const actions = document.createElement("div");

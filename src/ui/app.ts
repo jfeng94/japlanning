@@ -23,7 +23,8 @@ import {
 import { createStore } from "../filter/store.ts";
 import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url.ts";
 import { createWatch, permissionState, type LocateError, type Position } from "../geo/locate.ts";
-import { mountMap, watchFlavor } from "../map/map.ts";
+import { basemapUrl, ensureProtocol, mountMap, watchFlavor } from "../map/map.ts";
+import { createIdbBasemapStore, registerStoredBasemaps } from "../offline/basemap.ts";
 import { placesToPins, type PinRenderer } from "../map/pins.ts";
 import { createDomPinRenderer } from "../map/pins-dom.ts";
 import { createSdfPinRenderer } from "../map/pins-sdf.ts";
@@ -37,6 +38,7 @@ import filtersIcon from "./icons/filters.webp";
 import nextIcon from "./icons/next.webp";
 import prevIcon from "./icons/prev.webp";
 import { renderList, sortByName } from "./list.ts";
+import { renderOfflineSection } from "./offline-section.ts";
 import { mountPanel, type PanelHeight } from "./panel.ts";
 import { renderSettingsSheet } from "./settings-sheet.ts";
 import { createSheet } from "./sheet.ts";
@@ -127,7 +129,24 @@ export function mountApp(root: HTMLElement): void {
   const filterSheet = createSheet(root, "Filters", () => renderSheet());
   const diagSheet = createSheet(root, "Diagnostics");
   const settingsSheet = createSheet(root, "Settings", () =>
-    renderSettingsSheet(settingsSheet.body, { onChange: onSettingsChanged, onDiagnostics: () => diagSheet.open() }),
+    renderSettingsSheet(settingsSheet.body, {
+      onChange: onSettingsChanged,
+      onDiagnostics: () => diagSheet.open(),
+      renderOffline: (container) =>
+        renderOfflineSection(container, {
+          regions,
+          basemaps,
+          urlFor: basemapUrl,
+          // A new or removed archive: re-point the protocol; the next tiles read (or stop reading) the Blob.
+          onChanged: (region) => void registerStoredBasemaps(ensureProtocol(), basemaps, [region], basemapUrl),
+          dataSynced: () => {
+            if (results.length === 0) return undefined;
+            const at = results.map((r) => r.fetchedAt).filter((d): d is Date => d !== undefined).sort((a, b) => b.getTime() - a.getTime())[0];
+            return { places: places.length, ...(at ? { at } : {}) };
+          },
+          buildSha: __BUILD_SHA__,
+        }),
+    }),
   );
   const diagnostics = mountDiagnostics(diagSheet.body, () => void reload());
 
@@ -151,12 +170,19 @@ export function mountApp(root: HTMLElement): void {
     onSettings: settingsSheet.open,
   });
 
+  /** Offline basemaps (M7): downloaded whole, kept as Blobs in IndexedDB. */
+  const basemaps = createIdbBasemapStore();
   const panel = mountPanel(root, (_h, px) => view.setBottomPadding(px));
   const view = mountMap(
     root.querySelector<HTMLElement>(".map-pane")!,
     regions.find((r) => r.id === filters.get().region)!,
     watchFlavor((flavor) => view.setFlavor(flavor)),
-    { onFit: fitToResults, onLocateRequest: () => watch.start() },
+    {
+      onFit: fitToResults,
+      onLocateRequest: () => watch.start(),
+      // Stored archives first, so an offline launch never asks the network for tiles it has.
+      prepareBasemaps: (protocol) => registerStoredBasemaps(protocol, basemaps, regions, basemapUrl).then(() => undefined),
+    },
   );
   view.setBottomPadding(panel.heightPx());
   let pins: PinRenderer = createPinRenderer();
@@ -632,6 +658,7 @@ export function mountApp(root: HTMLElement): void {
   // Debug handle beside the map's: inspect panel scroll bookkeeping from the console.
   const dbg = (window as unknown as { __japlanning?: Record<string, unknown> }).__japlanning ?? {};
   dbg["panel"] = { get listScrollTop() { return listScrollTop; }, get shownMode() { return shownMode; }, content: panel.content, setHeight: panel.setHeight };
+  dbg["basemaps"] = basemaps;
   dbg["location"] = { get position() { return position; }, watch, get state() { return view.locate.state; } };
   (window as unknown as { __japlanning: Record<string, unknown> }).__japlanning = dbg;
 

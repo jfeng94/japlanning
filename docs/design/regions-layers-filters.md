@@ -16,8 +16,18 @@ the UI. Each region has:
 - its own **neighborhood list**, shared by every layer in that region, so
   the Neighborhood filter means the same thing for coffee and restaurants.
 
-Offline basemaps are downloaded per region on demand, each with its own
-"offline ready / last synced" indicator. Kyoto's neighborhoods and bbox
+Offline basemaps are downloaded per region on demand from Settings →
+Offline, each with its own status (not on this device, downloading,
+ready with the build date, update available); see
+`docs/proposals/m7-offline.md`.
+
+**Anything stored on the device is either validated on read or kept
+under a versioned key** (2026-11-07): settings and the remembered region
+are checked against their allowed values when read; bookmarks live under
+`bookmarks:v1`; basemap Blobs carry a sidecar (build, maxzoom, bbox) that
+is compared with the config on every look; the service worker's cache is
+named by a content hash and older caches are deleted on activation.
+Never a bare key with an unchecked shape. Kyoto's neighborhoods and bbox
 were set 2026-11-05 with its first pins; Uji counts as Kyoto.
 
 Region is config, not architecture. If one app ever becomes a problem

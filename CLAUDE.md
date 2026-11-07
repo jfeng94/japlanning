@@ -174,18 +174,22 @@ is used only as the **directions hand-off**.
    **nth-weekday closures** (`We[3] off`) are already in the data and parse
    correctly. Keep tests for them.
 3. **PMTiles uses HTTP range requests**, which service-worker caching handles
-   poorly. Preferred approach: download the whole .pmtiles once per region,
-   store it as a Blob (Cache Storage or IndexedDB), and read it with the
-   pmtiles library's file/blob source. Call `navigator.storage.persist()`.
+   poorly. Done in M7 (2026-11-07): the worker passes `/basemap/` through;
+   each region's archive is downloaded whole from Settings → Offline, kept
+   as a Blob in IndexedDB with a build/bbox sidecar, and read through a
+   Blob-backed pmtiles Source registered under the archive's URL.
+   `navigator.storage.persist()` is asked before the first download.
 4. **iOS storage eviction and partitioning.** WebKit may clear storage for
    sites that aren't used for a while; Home Screen web apps fare better. The
    installed app also has its own storage, separate from any browser tab. So:
    install to Home Screen, open **the installed app** once on Wi-Fi before the
    trip, and show an "offline data ready / last synced" indicator per region.
-5. **Fonts/glyphs offline.** MapLibre needs glyph PBFs for labels. Self-host
-   the few Latin ranges needed. For Japanese text, rely on MapLibre's
-   `localIdeographFontFamily` (device CJK fonts) rather than shipping huge CJK
-   glyph sets. Verify station names render offline.
+5. **Fonts/glyphs offline.** MapLibre needs glyph PBFs for labels. Done in
+   M7: `npm run basemap` mirrors the three Noto Sans stacks (Latin ranges
+   0–1023) and the sprites into the site, pinned in
+   `src/config/assets-lock.json`, and the worker precaches them. Japanese
+   text uses `localIdeographFontFamily` (device CJK fonts); the airplane-mode
+   pass checks station names.
 6. **Directions deep link:**
    `https://www.google.com/maps/dir/?api=1&destination=<lat>,<lng>&travelmode=transit`
    opens the Google Maps app on iOS if installed. Using coordinates avoids

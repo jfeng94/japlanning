@@ -29,7 +29,7 @@ async function walk(dir: string, base = dir): Promise<string[]> {
 const files = await walk(DIST);
 const list = precacheList(files);
 
-// Version: a hash over every precached file's bytes, so it tracks content, not the clock.
+// Version: a hash over every precached file's bytes and the worker source, so it tracks content, not the clock.
 const hash = createHash("sha256");
 let bytes = 0;
 for (const url of list) {
@@ -38,9 +38,10 @@ for (const url of list) {
   bytes += data.length;
   hash.update(rel).update(data);
 }
+const source = await readFile(SOURCE, "utf8");
+hash.update(source); // the worker's own code is part of the version too
 const version = hash.digest("hex").slice(0, 12);
 
-const source = await readFile(SOURCE, "utf8");
 if (!source.includes("__PRECACHE__") || !source.includes("__VERSION__")) throw new Error("src/sw.js lost its placeholders");
 const out = source.replace("__VERSION__", version).replace("__PRECACHE__", JSON.stringify(list));
 await writeFile(path.join(DIST, "sw.js"), out);

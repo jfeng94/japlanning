@@ -1,6 +1,6 @@
 # M7: Offline
 
-Status: **proposed** (2026-11-07), waiting for a go-ahead.
+Status: **built** (2026-11-07), waiting for the phone pass (airplane mode).
 
 ## Goal
 
@@ -144,3 +144,47 @@ Settings section and indicator.
       device afterwards; Delete frees it; a new build shows as an update.
 - [ ] A new deploy shows "Update ready" and a tap reloads into it.
 - [ ] Settings says what the device holds and when it was synced.
+
+## Results (2026-11-07)
+
+Built in four commits, one per piece. 168 tests (7 new: the precache
+list rules, the sidecar comparison, a Blob source range read, and the
+protocol registration).
+
+Verified in the browser pane against the built site:
+
+- The style loads its sprite and glyphs from the site; nothing is
+  requested from the Protomaps host.
+- The worker registers on a built site only, precaches 55 files (4.2 MB)
+  including the page at "/", and leaves data and basemap paths alone. A
+  new build installs beside the old one, the "Update ready" toast
+  appears, a tap activates it, the page reloads on it and the old cache
+  is deleted.
+- Settings → Offline shows the app build, the places count with the sync
+  time, the persistence state, and one row per region with its size
+  from a HEAD request. Kyoto downloaded (27 MB) with a progress figure
+  and reads "ready"; switching to Kyoto afterwards made no network
+  request for its archive, so tiles came from the Blob.
+
+Decisions made while building:
+
+- **Navigations are network-first**, with the cached page as the offline
+  fallback. The first cut served the cached page first, and an older
+  worker then pointed at hashed assets a newer deploy had removed; a
+  stale shell is a worse failure than one extra request online.
+- **The worker's version** hashes the precached files and the worker's
+  own source, so a change to either produces a new worker and nothing
+  else does.
+- **The map starts with an empty style** and sets the real one after the
+  stored archives are registered, a few milliseconds of IndexedDB, so an
+  offline launch never asks the network for tiles it has.
+- **Mirrored assets are pinned** by SHA-256 in src/config/assets-lock.json
+  and verified on every build; PIN_ASSETS=1 rewrites the lock after a
+  deliberate change.
+
+For the phone pass: install fresh (the worker needs one online launch),
+download Tokyo in Settings, then airplane mode and a cold launch from the
+Home Screen: roads, rail, station names in Japanese, pins, list, filters,
+cards and bookmarks. Also: the persistence line after the first download
+(installed apps should get "persisted"), and the update toast after the
+next deploy.
