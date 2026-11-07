@@ -169,10 +169,10 @@ function fitControl(onFit: () => void): IControl {
 function styleFor(region: RegionConfig, flavor: Flavor) {
   if (!region.bbox) {
     // No extract yet: a plain background so the page isn't a wall of tile errors.
-    const style = atlasStyle({ pmtilesUrl: basemapUrl(region), flavor });
+    const style = atlasStyle({ pmtilesUrl: basemapUrl(region), flavor, assetsOrigin: location.origin });
     return { ...style, sources: {}, layers: style.layers.filter((l) => l.type === "background") };
   }
-  return atlasStyle({ pmtilesUrl: basemapUrl(region), flavor });
+  return atlasStyle({ pmtilesUrl: basemapUrl(region), flavor, assetsOrigin: location.origin });
 }
 
 /** Follow the system colour scheme; `onChange` fires on runtime switches. */

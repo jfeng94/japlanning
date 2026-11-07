@@ -1,6 +1,10 @@
 /**
  * Extract one PMTiles basemap per region that has a bbox, from the pinned
- * Protomaps planet build, into public/basemap/<region>.pmtiles.
+ * Protomaps planet build, into public/basemap/<region>.pmtiles, and mirror
+ * the glyphs and sprites the style needs into public/fonts and
+ * public/sprites (M7: the map must not depend on a third-party host
+ * offline). Mirrored files are verified against src/config/assets-lock.json;
+ * run with PIN_ASSETS=1 to (re)write the lock after a deliberate change.
  *
  *   node scripts/build-basemap.ts
  *
@@ -23,6 +27,9 @@ import { regions } from "../src/config/regions.ts";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const OUT_DIR = path.join(ROOT, "public", "basemap");
+const FONTS_DIR = path.join(ROOT, "public", "fonts");
+const SPRITES_DIR = path.join(ROOT, "public", "sprites");
+const LOCK_FILE = path.join(ROOT, "src", "config", "assets-lock.json");
 const CACHE_DIR = path.join(ROOT, ".cache", "pmtiles", BASEMAP.cli.version);
 const RELEASE_BASE = `https://github.com/protomaps/go-pmtiles/releases/download/v${BASEMAP.cli.version}`;
 const PLANET_URL = `https://build.protomaps.com/${BASEMAP.build}.pmtiles`;
@@ -79,6 +86,67 @@ async function ensureCli(): Promise<string> {
   return exe;
 }
 
+/** Every mirrored asset: its path under public/ and where it comes from. */
+function mirroredAssets(): { rel: string; url: string }[] {
+  const { base, fonts, ranges, spriteVersion, sprites } = BASEMAP.assets;
+  const out: { rel: string; url: string }[] = [];
+  for (const font of fonts) {
+    for (const range of ranges) {
+      out.push({ rel: `fonts/${font}/${range}.pbf`, url: `${base}/fonts/${encodeURIComponent(font)}/${range}.pbf` });
+    }
+  }
+  for (const flavor of sprites) {
+    for (const suffix of ["", "@2x"]) {
+      for (const ext of ["json", "png"]) {
+        out.push({ rel: `sprites/${flavor}${suffix}.${ext}`, url: `${base}/sprites/${spriteVersion}/${flavor}${suffix}.${ext}` });
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Download the mirrored assets that are missing and check every one against
+ * the lock. With PIN_ASSETS=1 the lock is rewritten from what was fetched.
+ */
+async function mirrorAssets(): Promise<boolean> {
+  const pin = process.env["PIN_ASSETS"] === "1";
+  let lock: Record<string, string> = {};
+  if (!pin) {
+    try {
+      lock = JSON.parse(await readFile(LOCK_FILE, "utf8")) as Record<string, string>;
+    } catch {
+      console.error(`${path.relative(ROOT, LOCK_FILE)} is missing; run with PIN_ASSETS=1 once to create it`);
+      return false;
+    }
+  }
+  await mkdir(FONTS_DIR, { recursive: true });
+  await mkdir(SPRITES_DIR, { recursive: true });
+  const hashes: Record<string, string> = {};
+  let ok = true;
+  for (const { rel, url } of mirroredAssets()) {
+    const file = path.join(ROOT, "public", rel);
+    if (!(await exists(file))) {
+      await mkdir(path.dirname(file), { recursive: true });
+      console.log(`fetching ${rel}`);
+      await download(url, file);
+    }
+    const hash = await sha256(file);
+    hashes[rel] = hash;
+    if (!pin && lock[rel] !== hash) {
+      ok = false;
+      console.error(`${rel}: SHA-256 ${hash} does not match the lock (${lock[rel] ?? "not in lock"})`);
+    }
+  }
+  if (pin) {
+    await writeFile(LOCK_FILE, JSON.stringify(hashes, null, 2) + "\n");
+    console.log(`pinned ${Object.keys(hashes).length} assets in ${path.relative(ROOT, LOCK_FILE)}`);
+  } else {
+    console.log(`assets: ${Object.keys(hashes).length} mirrored files match the lock`);
+  }
+  return ok;
+}
+
 interface Sidecar {
   build: string;
   maxzoom: number;
@@ -86,6 +154,7 @@ interface Sidecar {
 }
 
 async function main(): Promise<void> {
+  if (!(await mirrorAssets())) process.exit(1);
   const targets = regions.filter((r) => r.bbox);
   if (targets.length === 0) {
     console.log("no regions have a bbox; nothing to extract");

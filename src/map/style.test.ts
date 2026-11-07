@@ -39,11 +39,11 @@ describe("atlasLayers", () => {
 
 describe("atlasStyle", () => {
   it("wires the pmtiles source, glyphs and sprite", () => {
-    const s = atlasStyle({ pmtilesUrl: "https://example.test/basemap/tokyo.pmtiles", flavor: "light" });
+    const s = atlasStyle({ pmtilesUrl: "https://example.test/basemap/tokyo.pmtiles", flavor: "light", assetsOrigin: "https://example.test" });
     expect(s.version).toBe(8);
     expect((s.sources[SOURCE_ID] as { url: string }).url).toBe("pmtiles://https://example.test/basemap/tokyo.pmtiles");
-    expect(s.glyphs).toContain("{fontstack}/{range}.pbf");
-    expect(s.sprite).toBe("https://protomaps.github.io/basemaps-assets/sprites/v4/light");
+    expect(s.glyphs).toBe("https://example.test/fonts/{fontstack}/{range}.pbf");
+    expect(s.sprite).toBe("https://example.test/sprites/light");
     expect(s.layers.length).toBeGreaterThan(50);
   });
 });

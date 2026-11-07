@@ -6,6 +6,19 @@
 export const BASEMAP = {
   /** Protomaps planet build, YYYYMMDD. */
   build: "20261103",
+  /**
+   * Map assets mirrored into the site for offline use (M7): the glyph
+   * ranges the style's Latin labels need (Japanese comes from the device's
+   * own fonts) and the sprite sheets. Verified against
+   * src/config/assets-lock.json; PIN_ASSETS=1 rewrites the lock.
+   */
+  assets: {
+    base: "https://protomaps.github.io/basemaps-assets",
+    fonts: ["Noto Sans Regular", "Noto Sans Medium", "Noto Sans Italic"],
+    ranges: ["0-255", "256-511", "512-767", "768-1023"],
+    spriteVersion: "v4",
+    sprites: ["light", "dark"],
+  },
   /** Max tile zoom in the extract; MapLibre overzooms beyond it. */
   maxzoom: 15,
   /** The pmtiles CLI used to extract. Archives are pinned by SHA-256; unlisted platforms are refused. */

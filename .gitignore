@@ -8,6 +8,8 @@ Thumbs.db
 *.pmtiles
 # build-time CSV snapshots, written by npm run snapshot
 public/data/
-# basemap extracts and the pmtiles CLI, written by npm run basemap
+# basemap extracts, mirrored fonts and sprites, and the pmtiles CLI, written by npm run basemap
 public/basemap/
+public/fonts/
+public/sprites/
 .cache/

@@ -17,9 +17,13 @@ export const KEPT_POI_KINDS = ["station", "ferry_terminal", "aerodrome"] as cons
 /** Layer ids removed outright. */
 export const DROPPED_LAYERS = new Set(["buildings", "address_label"]);
 
-/** Protomaps' hosted assets for M3; M7 self-hosts copies of what's used. */
-export const GLYPHS_URL = "https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf";
-export const SPRITE_URL = "https://protomaps.github.io/basemaps-assets/sprites/v4";
+/**
+ * Glyphs and sprites come from the site itself (mirrored by
+ * scripts/build-basemap.ts), so the map works with no third-party host and
+ * the service worker can cache them. Paths under the given origin.
+ */
+export const GLYPHS_PATH = "/fonts/{fontstack}/{range}.pbf";
+export const SPRITES_PATH = "/sprites";
 
 export interface StyleOptions {
   /** Full URL of the PMTiles archive, e.g. `${origin}/basemap/tokyo.pmtiles`. */
@@ -27,6 +31,8 @@ export interface StyleOptions {
   flavor: Flavor;
   /** Label language; local names are the fallback. */
   lang?: string;
+  /** Origin the glyphs and sprites are served from (the site's). Defaults to no origin, i.e. root-relative paths. */
+  assetsOrigin?: string;
 }
 
 /** The basemap layers after the atlas rules. Pure; the map adds pins on top. */
@@ -47,8 +53,8 @@ export function atlasStyle(opts: StyleOptions): StyleSpecification {
   const flavor = namedFlavor(opts.flavor);
   return {
     version: 8,
-    glyphs: GLYPHS_URL,
-    sprite: `${SPRITE_URL}/${opts.flavor}`,
+    glyphs: `${opts.assetsOrigin ?? ""}${GLYPHS_PATH}`,
+    sprite: `${opts.assetsOrigin ?? ""}${SPRITES_PATH}/${opts.flavor}`,
     sources: {
       [SOURCE_ID]: {
         type: "vector",
