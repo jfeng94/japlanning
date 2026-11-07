@@ -763,6 +763,13 @@ button {
   z-index: 50;
 }
 
+.toast.has-action {
+  pointer-events: auto;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
 .toast.is-visible {
   opacity: 1;
   transform: translate(-50%, 0);
