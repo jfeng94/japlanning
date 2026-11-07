@@ -127,7 +127,7 @@ export function mountApp(root: HTMLElement): void {
     </main>
   `;
   const filterSheet = createSheet(root, "Filters", () => renderSheet());
-  const diagSheet = createSheet(root, "Diagnostics");
+  const diagSheet = createSheet(root, "Diagnostics", () => diagnostics.refreshCapabilities());
   const settingsSheet = createSheet(root, "Settings", () =>
     renderSettingsSheet(settingsSheet.body, {
       onChange: onSettingsChanged,

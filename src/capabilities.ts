@@ -50,10 +50,18 @@ async function probe(): Promise<Capability[]> {
   caps.push({ label: "Cache Storage", value: cache ? "present" : "missing", ok: cache });
 
   const persistApi = typeof navigator.storage?.persist === "function";
+  let persisted: boolean | undefined;
+  if (typeof navigator.storage?.persisted === "function") {
+    try {
+      persisted = await navigator.storage.persisted();
+    } catch {
+      /* leave unknown */
+    }
+  }
   caps.push({
-    label: "storage.persist()",
-    value: persistApi ? "present (not requested)" : "missing",
-    ok: persistApi,
+    label: "Persistent storage",
+    value: !persistApi ? "API missing" : persisted === undefined ? "state unknown" : persisted ? "granted" : "not granted yet (asked on the first map download)",
+    ok: persistApi && persisted !== false ? persistApi : null,
   });
 
   if (typeof navigator.storage?.estimate === "function") {

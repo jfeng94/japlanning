@@ -5,6 +5,8 @@ import { renderDataStatus } from "./data-status.ts";
 export interface Diagnostics {
   /** Re-render the data rows from the latest results. */
   update(results: LoadResult[], loading: boolean): void;
+  /** Re-probe the device (the storage estimate moves with every download), e.g. when the sheet opens. */
+  refreshCapabilities(): void;
 }
 
 /** The M1 data status and M0 capability panel, behind the ⓘ button. */
@@ -26,12 +28,14 @@ export function mountDiagnostics(body: HTMLElement, onRefresh: () => void): Diag
   const list = body.querySelector<HTMLElement>(".layer-list")!;
   const refresh = body.querySelector<HTMLButtonElement>(".refresh")!;
   refresh.addEventListener("click", onRefresh);
-  void renderCapabilities(body.querySelector<HTMLDListElement>("#cap-list")!);
+  const caps = body.querySelector<HTMLDListElement>("#cap-list")!;
+  void renderCapabilities(caps);
 
   return {
     update(results, loading) {
       refresh.disabled = loading;
       renderDataStatus(list, results, loading);
     },
+    refreshCapabilities: () => void renderCapabilities(caps),
   };
 }
