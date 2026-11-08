@@ -1,5 +1,5 @@
 import type { LoadResult } from "../data/types.ts";
-import { renderCapabilities } from "../capabilities.ts";
+import { renderCapabilities, type Capability } from "../capabilities.ts";
 import { renderDataStatus } from "./data-status.ts";
 
 export interface Diagnostics {
@@ -10,7 +10,7 @@ export interface Diagnostics {
 }
 
 /** The M1 data status and M0 capability panel, behind the ⓘ button. */
-export function mountDiagnostics(body: HTMLElement, onRefresh: () => void): Diagnostics {
+export function mountDiagnostics(body: HTMLElement, onRefresh: () => void, extraCaps?: () => Promise<Capability[]>): Diagnostics {
   body.innerHTML = `
     <section class="diag-data">
       <div class="data-head">
@@ -29,13 +29,13 @@ export function mountDiagnostics(body: HTMLElement, onRefresh: () => void): Diag
   const refresh = body.querySelector<HTMLButtonElement>(".refresh")!;
   refresh.addEventListener("click", onRefresh);
   const caps = body.querySelector<HTMLDListElement>("#cap-list")!;
-  void renderCapabilities(caps);
+  void renderCapabilities(caps, extraCaps);
 
   return {
     update(results, loading) {
       refresh.disabled = loading;
       renderDataStatus(list, results, loading);
     },
-    refreshCapabilities: () => void renderCapabilities(caps),
+    refreshCapabilities: () => void renderCapabilities(caps, extraCaps),
   };
 }

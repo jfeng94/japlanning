@@ -4,7 +4,7 @@
  * exist and, for storage, asks the browser for its quota estimate.
  */
 
-interface Capability {
+export interface Capability {
   label: string;
   value: string;
   ok: boolean | null; // null = informational, no pass/fail
@@ -68,8 +68,8 @@ async function probe(): Promise<Capability[]> {
     try {
       const { quota, usage } = await navigator.storage.estimate();
       caps.push({
-        label: "Storage estimate",
-        value: `${formatBytes(usage ?? 0)} used of ${formatBytes(quota ?? 0)}`,
+        label: "Browser storage estimate",
+        value: `${formatBytes(usage ?? 0)} used of ${formatBytes(quota ?? 0)} (WebKit may leave IndexedDB Blobs out; the app's own figure is below)`,
         ok: null,
       });
     } catch (e) {
@@ -86,8 +86,8 @@ async function probe(): Promise<Capability[]> {
   return caps;
 }
 
-export async function renderCapabilities(target: HTMLDListElement): Promise<void> {
-  const caps = await probe();
+export async function renderCapabilities(target: HTMLDListElement, extra?: () => Promise<Capability[]>): Promise<void> {
+  const caps = [...(await probe()), ...(extra ? await extra() : [])];
   target.replaceChildren(
     ...caps.flatMap(({ label, value, ok }) => {
       const dt = document.createElement("dt");

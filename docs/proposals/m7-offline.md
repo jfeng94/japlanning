@@ -188,3 +188,21 @@ Home Screen: roads, rail, station names in Japanese, pins, list, filters,
 cards and bookmarks. Also: the persistence line after the first download
 (installed apps should get "persisted"), and the update toast after the
 next deploy.
+
+### Addendum (2026-11-08): automatic downloads, the usage figure
+
+The phone pass passed. Two changes after it, both from Jerry:
+
+- **Downloads start by themselves.** On an online launch, once the data
+  is in, any region whose archive is missing or outdated downloads in the
+  background, current region first, one at a time, through one download
+  manager that the Settings buttons share. Manual was only ever a guard
+  against cellular surprises, and iOS gives no way to tell Wi-Fi from
+  cellular; a setting, "Download maps automatically" (default on), is
+  the opt-out. "Outdated" is the existing sidecar check, so a re-download
+  happens only when the Protomaps build or a bbox changes in config.
+- **The storage figure is ours.** WebKit's `storage.estimate()` reported
+  5 MB with 75 MB of archives stored: it leaves IndexedDB Blobs out. The
+  Offline section and Diagnostics now show what the app adds up itself
+  (archive bytes from the sidecars plus the worker's cache), with the
+  browser's estimate kept as a second line, labelled.

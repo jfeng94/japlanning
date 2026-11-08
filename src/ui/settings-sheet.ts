@@ -29,6 +29,15 @@ const FIELDS: Field<keyof Settings>[] = [
     ],
   },
   {
+    key: "autoDownloadMaps",
+    label: "Download maps automatically",
+    help: "On: each region's map (about 50 MB for Tokyo) downloads once on an online launch, and again only when a newer one is published. Off to wait for Wi-Fi and use the buttons below.",
+    options: [
+      [true, "On"],
+      [false, "Off"],
+    ],
+  },
+  {
     key: "sort",
     label: "List order",
     help: "Distance needs a location fix (tap the map's locate button); until there is one the list is by name.",

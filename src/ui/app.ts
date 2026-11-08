@@ -25,6 +25,8 @@ import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url
 import { createWatch, permissionState, type LocateError, type Position } from "../geo/locate.ts";
 import { basemapUrl, ensureProtocol, mountMap, watchFlavor } from "../map/map.ts";
 import { createIdbBasemapStore, registerStoredBasemaps } from "../offline/basemap.ts";
+import { createDownloadManager } from "../offline/downloads.ts";
+import { appUsage, formatMb } from "../offline/usage.ts";
 import { placesToPins, type PinRenderer } from "../map/pins.ts";
 import { createDomPinRenderer } from "../map/pins-dom.ts";
 import { createSdfPinRenderer } from "../map/pins-sdf.ts";
@@ -136,9 +138,10 @@ export function mountApp(root: HTMLElement): void {
         renderOfflineSection(container, {
           regions,
           basemaps,
+          downloads,
           urlFor: basemapUrl,
-          // A new or removed archive: re-point the protocol; the next tiles read (or stop reading) the Blob.
-          onChanged: (region) => void registerStoredBasemaps(ensureProtocol(), basemaps, [region], basemapUrl),
+          // Removed: the protocol keeps the old PMTiles until the next launch; new tiles fail over to the network now.
+          onRemoved: (region) => void registerStoredBasemaps(ensureProtocol(), basemaps, [region], basemapUrl),
           dataSynced: () => {
             if (results.length === 0) return undefined;
             const at = results.map((r) => r.fetchedAt).filter((d): d is Date => d !== undefined).sort((a, b) => b.getTime() - a.getTime())[0];
@@ -148,7 +151,10 @@ export function mountApp(root: HTMLElement): void {
         }),
     }),
   );
-  const diagnostics = mountDiagnostics(diagSheet.body, () => void reload());
+  const diagnostics = mountDiagnostics(diagSheet.body, () => void reload(), async () => {
+    const u = await appUsage(basemaps, regions);
+    return [{ label: "Stored by this app", value: `${formatMb(u.maps + u.shell)}: maps ${formatMb(u.maps)}${u.regions.length ? ` (${u.regions.join(", ")})` : ""}, app ${formatMb(u.shell)}`, ok: null }];
+  });
 
   const header = mountHeader(root, regions, {
     onRegion: (region) => filters.dispatch({ type: "setRegion", region }),
@@ -172,6 +178,24 @@ export function mountApp(root: HTMLElement): void {
 
   /** Offline basemaps (M7): downloaded whole, kept as Blobs in IndexedDB. */
   const basemaps = createIdbBasemapStore();
+  const downloads = createDownloadManager(
+    basemaps,
+    basemapUrl,
+    // Stored: point the protocol at the Blob; the next tiles read it.
+    (region) => void registerStoredBasemaps(ensureProtocol(), basemaps, [region], basemapUrl),
+    (region, message) => showToast(`${region.label} map download failed: ${message}`, 3000),
+  );
+  /** Online launch: fetch any region's map that is missing or outdated, current region first, one at a time. */
+  async function autoDownloadMaps(): Promise<void> {
+    if (!settings().autoDownloadMaps || !navigator.onLine) return;
+    const current = filters.get().region;
+    const ordered = [...regions].sort((a, b) => Number(b.id === current) - Number(a.id === current));
+    for (const region of ordered) {
+      if (!region.bbox) continue;
+      const status = await basemaps.status(region);
+      if (status.kind !== "ready") void downloads.start(region);
+    }
+  }
   const panel = mountPanel(root, (_h, px) => view.setBottomPadding(px));
   const view = mountMap(
     root.querySelector<HTMLElement>(".map-pane")!,
@@ -607,8 +631,14 @@ export function mountApp(root: HTMLElement): void {
       loading = false;
       diagnostics.update(results, false);
       render();
+      // Data is in; now the big files, once per launch, in the background.
+      if (!autoDownloadTried) {
+        autoDownloadTried = true;
+        void autoDownloadMaps();
+      }
     }
   }
+  let autoDownloadTried = false;
 
   /** First data: honour a place id from the URL, else fit the map to the results. */
   function onDataArrived(): void {

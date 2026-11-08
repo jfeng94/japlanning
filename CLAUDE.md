@@ -175,10 +175,14 @@ is used only as the **directions hand-off**.
    correctly. Keep tests for them.
 3. **PMTiles uses HTTP range requests**, which service-worker caching handles
    poorly. Done in M7 (2026-11-07): the worker passes `/basemap/` through;
-   each region's archive is downloaded whole from Settings → Offline, kept
+   each region's archive is downloaded whole, by default automatically on
+   an online launch when missing or outdated ("Download maps
+   automatically" in Settings, else by hand in Settings → Offline), kept
    as a Blob in IndexedDB with a build/bbox sidecar, and read through a
    Blob-backed pmtiles Source registered under the archive's URL.
    `navigator.storage.persist()` is asked before the first download.
+   WebKit's `storage.estimate()` does not count those Blobs; the app adds
+   up its own usage.
 4. **iOS storage eviction and partitioning.** WebKit may clear storage for
    sites that aren't used for a while; Home Screen web apps fare better. The
    installed app also has its own storage, separate from any browser tab. So:
