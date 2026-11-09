@@ -1,8 +1,8 @@
 # Filter pages and the area map
 
-Status: **decided, awaiting go-ahead** (2026-11-09, three rounds).
-Jerry's answers are folded in below; nothing is open but the slider's
-stops, which are proposed with numbers.
+Status: **Part 1 built** (2026-11-09); Parts 2 and 3 next. Decided in
+three rounds; Jerry's answers are folded in below. One change while
+building Part 1 is under "As built" at the end of Part 1.
 Jerry framed two sub-milestones: the filter pages in the strip, then the
 area map. The second splits in two here (agreed), because the area
 shapes are a data job of their own and are worth reviewing before any
@@ -92,9 +92,9 @@ in view.
   - Otherwise back to the list, at the height it had, with its scroll
     position kept. A card for a place that is no longer pinned would
     point at nothing on the map.
-- **Back on Android** walks page, then card, then list: opening a page
-  pushes a history entry above the card's. An iOS Home Screen app has no
-  back gesture.
+- **Back on Android** goes to the list, as it does from a card: a page
+  shares the card's one history entry (changed while building; see "As
+  built" below). An iOS Home Screen app has no back gesture.
 - **The map on the Filters page** behaves as usual: the results update
   live, and tapping a pin opens its card, which leaves the page.
 
@@ -179,6 +179,24 @@ Example: pick Shibuya and turn + Adjacent on. Harajuku, Omotesando,
 Aoyama, Ebisu and Tomigaya come in hatched. Pick Ginza: Nihonbashi comes
 in hatched too. Tap Ebisu: Ebisu goes out; Harajuku, Omotesando, Aoyama,
 Tomigaya and Nihonbashi become picks; + Adjacent turns off.
+
+### As built (Part 1)
+
+- **Back goes to the list, not page then card.** The proposal had a page
+  push its own history entry above the card's. The app already keeps one
+  entry for whatever covers the list (switching cards replaces it), so
+  Back always means "to the list"; pages follow that rule instead.
+  - It is simpler and avoids a race: Search has to close a page and focus
+    its field in the same tap, or iOS won't raise the keyboard.
+  - It only affects Android and desktop browsers; the iPhone's Home
+    Screen app has no Back.
+- **The slider** previews as you drag: its label and the map's circle
+  follow the thumb. The filter applies when you let go, so the list
+  doesn't redraw under your finger.
+- **A pin tapped under the Filters page** opens its card, and the page
+  gives way. Tapping the map elsewhere does nothing while a page is open,
+  so the card a page hides is never closed by a stray tap.
+- **Turning Location off** in Settings turns Nearby off with Here.
 
 ### The algebra, after Part 1
 
@@ -393,13 +411,13 @@ Proposed, with numbers above: the slider's stops, 500 m to 3 km.
 
 ## Done when
 
-- [ ] Filters and Area open in the strip at Half, with the live count and
+- [x] Filters and Area open in the strip at Half, with the live count and
       Clear in the upper right; each closes by its own button, another
       footer button or a region change, and returns to the card or the
       list it came from.
-- [ ] Nearby narrows to the slider's radius around you (1 km at first),
+- [x] Nearby narrows to the slider's radius around you (1 km at first),
       with the circle on the map, and says so while locating.
-- [ ] + Adjacent's added areas behave as in the table, and a link
+- [x] + Adjacent's added areas behave as in the table, and a link
       reproduces them.
 - [ ] Every Tokyo and Kyoto area has a shape, reviewed on the phone.
 - [ ] The Area page shows the whole city, locked, without basemap labels

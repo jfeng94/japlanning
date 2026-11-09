@@ -20,7 +20,7 @@ the UI. Each region has:
   are facts (the data's Area column, each with the ward its addresses
   name and its neighbours); merges fold raw areas into the filter chips
   and can change without touching the data; ward sections put the chips
-  under headings in the filter sheet.
+  under headings on the Area page.
 
 Offline basemaps are downloaded per region on demand from Settings →
 Offline, each with its own status (not on this device, downloading,
@@ -121,7 +121,7 @@ move to the column at its own pace.
 (several allowed: `Coffee; Bar`). Required there: a blank or unknown value
 warns, so the build fails, and an unknown value is dropped rather than
 becoming a category. The kinds are the layer's category chips in the
-filter sheet and show in the card's meta line ("Drinks · Coffee ·
+Filters page and show in the card's meta line ("Drinks · Coffee ·
 Shibuya · 160 m away"). A layer without `kinds` leaves any Kind column in
 the card's "Also in the sheet".
 
@@ -151,21 +151,31 @@ confirmation numbers, dates or prices. `hasHours: false`.
 
 ## Filter model
 
-Rewritten 2026-11-09 (`docs/proposals/filters-and-areas.md`). The filter
-state is one module (`src/filter/state.ts`) shared by the list, the map
-and the URL.
+Rewritten 2026-11-09 (`docs/proposals/filters-and-areas.md`, then
+`filter-pages-and-area-map.md`). The filter state is one module
+(`src/filter/state.ts`) shared by the list, the map and the URL.
 
 The **region** is the top-level switch: exactly one; it swaps the
-basemap, the areas and the layers, and resets the filters. Within it the
-sheet has three groups, top to bottom:
+basemap, the areas and the layers, and resets the filters. Within it,
+two pages open in the strip at Half from their footer buttons, with the
+live count and Clear (that page's selections) in their header:
 
-1. **Show only** (flags): Bookmarked (this device's bookmarks, kept
-   outside the filter state and passed in), Open now or Open at a day and
-   time, Key branches. Each one on narrows the results.
-2. **Area** (where): Here, the area chips under ward headings, and an
-   Include nearby areas switch.
-3. **Category** (what): each layer is a header chip followed by its kinds
-   (Drinks: Coffee · Tea · Bar). A layer without kinds is one chip.
+- **Filters**:
+  1. **Show only** (flags): Bookmarked (this device's bookmarks, kept
+     outside the filter state and passed in), Open now or Open at a day
+     and time, Nearby, Key branches. Each one on narrows the results.
+  2. **Category** (what): each layer is a header chip followed by its
+     kinds (Drinks: Coffee · Tea · Bar). A layer without kinds is one
+     chip.
+- **Area** (where): Here and + Adjacent, then the area chips under ward
+  headings. The page holds the strip at Half, since it is about the map.
+  Its button shows only in a region with areas.
+
+A page closes by its own button, another footer button (the other page,
+Search) or a region change. It returns to the card it hid if that place
+still matches, else to the list, at the height it had. A page shares the
+card's one history entry, so Back goes to the list, as it does from a
+card.
 
 Anything more specific (pour-over, kissaten, a branch, a street) is the
 search box's job. Pins are coloured by layer.
@@ -177,16 +187,26 @@ search box's job. Pins are coloured by layer.
   and kind, no area is everywhere.
 - A header (a layer, a ward heading) selects every chip under it, or
   clears them when they are all on. It is not a selection of its own.
-- **Filters do not cascade.** Nothing in the sheet appears, disappears,
+- **Filters do not cascade.** Nothing on a page appears, disappears,
   greys out or recounts because of another selection. The feedback is the
-  result count in the strip; an empty result says "Nothing matches these
-  filters" with Clear filters. Here depends on the position, not on other
-  chips, so it is the one chip whose label changes by itself.
-- **Include nearby** adds the chips next to everything chosen (the
-  selection and Here's chip): one hop on the area graph, with each merge
-  contracted to a single node. Chips pulled in by Here or Include nearby
-  get a dotted outline without becoming selected, so the count is
-  explainable.
+  result count in the page's header; an empty result says "Nothing
+  matches these filters" with Clear filters. Here and Nearby depend on
+  the position, not on other chips, so theirs are the only labels that
+  change by themselves.
+- **Nearby** keeps the places within a radius of the position: 1 km at
+  first, set on a slider (500 m, 1 km, 1.5 km, 2 km, 3 km) that appears
+  under the chip, with the walk it means. The last radius is remembered
+  on the device. A dashed circle on the map shows the reach. Without a
+  fix it narrows nothing.
+- **+ Adjacent** adds the chips next to everything picked (by hand, and
+  Here's): one hop on the area graph, with each merge contracted to a
+  single node. An area has three looks:
+  - **picked**: filled; a tap takes it out, and Here off if it was
+    Here's;
+  - **added** by + Adjacent: hatched, marked ∗; a tap takes it out and
+    freezes the other added areas as picks, with + Adjacent off;
+  - **out**: outlined; a tap picks it, and with + Adjacent on its
+    neighbours come in as added.
 - **Here** is the chip of the raw area whose centre (the centroid of its
   places) is nearest to the position, within 2 km and inside the region's
   bbox. Unresolved (no fix yet, or away from every area) it narrows
@@ -195,9 +215,9 @@ search box's job. Pins are coloured by layer.
 - **Search** matches the name, branch, raw area, area chip, kinds, notes,
   every facet value and the Japanese address, ignoring case and width.
 - The whole state serialises to the URL query string (`c`, `a`, `here`,
-  `nb`, `q`, `star`, `b`, `open`, `at`; `src/filter/url.ts`), so a
-  filtered view survives reload and can be shared. Here travels as "here",
-  not as where the sender stood.
+  `adj`, `q`, `star`, `b`, `open`, `near`, `at`; `src/filter/url.ts`), so a
+  filtered view survives reload and can be shared. Here and Nearby travel
+  as themselves, not as where the sender stood.
 
 ```ts
 interface FilterState {
@@ -205,7 +225,8 @@ interface FilterState {
   categories: Set<string>;   // "drinks/Coffee", or a layer id for a layer without kinds
   areas: Set<string>;        // area chips
   here: boolean;
-  nearby: boolean;
+  adjacent: boolean;         // + Adjacent
+  nearby?: number;           // Nearby's radius in metres; absent = off
   text: string;
   starredOnly: boolean;
   bookmarkedOnly: boolean;
@@ -217,8 +238,9 @@ interface FilterState {
 ```
 shown = places in the region
   ∩ (no categories ? all : ∪ selected categories)
-  ∩ (no areas and no Here ? all : area ∈ chosen ∪ (nearby ? their neighbours : ∅))
-  ∩ every flag that is on
+  ∩ (nothing picked and no Here ? all : area ∈ picked ∪ {Here's} ∪ (adjacent ? their neighbours : ∅))
+  ∩ (nearby and a fix ? within the radius of you : all)
+  ∩ every other flag that is on
   ∩ text match
 ```
 
