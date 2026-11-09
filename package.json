@@ -17,11 +17,13 @@
     "snapshot": "node scripts/snapshot-data.ts",
     "ids": "node scripts/check-ids.ts",
     "import": "node scripts/import-csv.ts",
-    "basemap": "node scripts/build-basemap.ts"
+    "basemap": "node scripts/build-basemap.ts",
+    "areas": "node scripts/build-areas.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "@types/papaparse": "^5.5.2",
+    "polygon-clipping": "^0.15.7",
     "typescript": "~5.9.3",
     "vite": "^8.3.5",
     "vitest": "^5.1.0"

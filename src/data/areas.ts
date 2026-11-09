@@ -1,4 +1,5 @@
 import { distanceM, inBbox, type LatLng } from "../geo/distance.ts";
+import { chipAt, type AreaShapes } from "./area-shapes.ts";
 import type { AreaConfig, Place, RegionConfig } from "./types.ts";
 
 /**
@@ -126,19 +127,21 @@ export function areaIndex(region: AreaSource): AreaIndex {
 export const HERE_MAX_M = 2000;
 
 /**
- * Here: the chip of the raw area whose centre is nearest to `at`. A
- * centre is the centroid of the area's places, so there are no
- * coordinates to maintain. Undefined outside the region's bbox or farther
- * than `maxM` from every centre. Near a border it may pick the other
- * side, which + Adjacent makes moot.
+ * Here: the chip whose shape you are standing in (public/areas, Part 2 of
+ * docs/proposals/filter-pages-and-area-map.md), which is what the map
+ * draws around the blue dot. Between shapes, or before they have loaded,
+ * the chip of the raw area whose centre (the centroid of its places) is
+ * nearest, within `maxM`. Undefined outside the region's bbox.
  */
 export function areaAt(
   index: Pick<AreaIndex, "groupOf">,
   places: readonly Pick<Place, "area" | "lat" | "lng">[],
   at: LatLng,
-  opts: { bbox?: readonly [number, number, number, number]; maxM?: number } = {},
+  opts: { bbox?: readonly [number, number, number, number]; maxM?: number; shapes?: AreaShapes } = {},
 ): string | undefined {
   if (opts.bbox && !inBbox(at, opts.bbox)) return undefined;
+  const inShape = opts.shapes ? chipAt(opts.shapes, at) : undefined;
+  if (inShape !== undefined) return inShape;
   const sums = new Map<string, { lat: number; lng: number; n: number }>();
   for (const p of places) {
     if (p.area === undefined) continue;

@@ -33,6 +33,19 @@ export interface AreaConfig {
   ward: string;
   /** Raw labels one hop away; the graph must be symmetric. */
   adjacent: string[];
+  /** Corrections to the generated shape (scripts/build-areas.ts); none for most areas. */
+  shape?: AreaShapeOverride;
+}
+
+export interface AreaShapeOverride {
+  /** [lng, lat] to measure blocks from, instead of the centroid of the area's places. */
+  centre?: [number, number];
+  /** How far in metres a block's centre may be and still join; 1000 by default. */
+  reachM?: number;
+  /** Census blocks always in this area, as e-Stat names them ("神宮前四丁目"). */
+  include?: string[];
+  /** Census blocks never in this area. */
+  exclude?: string[];
 }
 
 export interface AreaGroup {
