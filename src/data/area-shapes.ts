@@ -172,6 +172,71 @@ function lngLat(p: Position): LatLng {
   return { lng: p[0]!, lat: p[1]! };
 }
 
+/** [west, south, east, north] around every shape; undefined when there are none. */
+export function shapesBounds(shapes: AreaShapes): [number, number, number, number] | undefined {
+  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+  for (const f of shapes.features) {
+    for (const [outline] of polygonsOf(f.geometry)) {
+      for (const [lng, lat] of outline ?? []) {
+        w = Math.min(w, lng!);
+        e = Math.max(e, lng!);
+        s = Math.min(s, lat!);
+        n = Math.max(n, lat!);
+      }
+    }
+  }
+  return w <= e ? [w, s, e, n] : undefined;
+}
+
+/**
+ * The chip a tap lands on: the shape it is inside, else the nearest shape
+ * within `slackM`, since an area at city zoom is only 15 to 40 px across.
+ */
+export function nearestChip(shapes: AreaShapes, at: LatLng, slackM: number): string | undefined {
+  const inside = chipAt(shapes, at);
+  if (inside !== undefined) return inside;
+  let best: { chip: string; m: number } | undefined;
+  for (const f of shapes.features) {
+    const m = edgeDistanceM(at, f.geometry);
+    if (m <= slackM && (!best || m < best.m)) best = { chip: f.properties.chip, m };
+  }
+  return best?.chip;
+}
+
+/**
+ * Where a shape's name goes: inside its largest part, as far from the edges
+ * as a 16 × 16 search of its box finds. An area-weighted centre can fall
+ * outside a curved shape, and MapLibre would label every map tile's piece
+ * of a polygon separately, so the map gets one point per area instead.
+ */
+export function labelPoint(geometry: Polygon | MultiPolygon): LatLng {
+  const largest = polygonsOf(geometry).reduce((a, b) => (Math.abs(ringAreaM2(b[0] ?? [])) > Math.abs(ringAreaM2(a[0] ?? [])) ? b : a));
+  const part: Polygon = { type: "Polygon", coordinates: largest };
+  const outline = largest[0] ?? [];
+  let best = ringCentroid(outline);
+  let bestM = pointInShape(best, part) ? edgeDistanceM(best, part) : -1;
+  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+  for (const [lng, lat] of outline) {
+    w = Math.min(w, lng!);
+    e = Math.max(e, lng!);
+    s = Math.min(s, lat!);
+    n = Math.max(n, lat!);
+  }
+  const STEPS = 16;
+  for (let i = 0; i < STEPS; i++) {
+    for (let j = 0; j < STEPS; j++) {
+      const at = { lng: w + ((i + 0.5) / STEPS) * (e - w), lat: s + ((j + 0.5) / STEPS) * (n - s) };
+      if (!pointInShape(at, part)) continue;
+      const m = edgeDistanceM(at, part);
+      if (m > bestM) {
+        best = at;
+        bestM = m;
+      }
+    }
+  }
+  return best;
+}
+
 const loading = new Map<string, Promise<AreaShapes | undefined>>();
 
 /**

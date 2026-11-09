@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atlasLayers, atlasStyle, KEPT_POI_KINDS, SOURCE_ID } from "./style.ts";
+import { atlasLayers, atlasStyle, KEPT_POI_KINDS, QUIET_RAIL, quietHides, quietRailPaint, SOURCE_ID } from "./style.ts";
 
 type AnyLayer = { id: string; type: string; "source-layer"?: string; filter?: unknown };
 
@@ -34,6 +34,35 @@ describe("atlasLayers", () => {
     expect(dark.map((l) => l.id)).toEqual(light.map((l) => l.id));
     const bg = (f: AnyLayer[]) => (f.find((l) => l.type === "background") as { paint?: Record<string, unknown> }).paint?.["background-color"];
     expect(bg(dark)).not.toEqual(bg(light));
+  });
+});
+
+describe("the Area page's quiet basemap", () => {
+  const light = atlasLayers("light") as (AnyLayer & { source?: string })[];
+  const hidden = new Set(light.filter(quietHides).map((l) => l.id));
+
+  it("hides every label and every road", () => {
+    for (const l of light) {
+      if (l.type === "symbol") expect(hidden.has(l.id), l.id).toBe(true);
+      if (l.id.startsWith("roads_") && l.id !== QUIET_RAIL) expect(hidden.has(l.id), l.id).toBe(true);
+    }
+  });
+
+  it("keeps land, water, parks and the rail lines", () => {
+    for (const id of ["background", "earth", "water", "water_river", "landuse_park", "landuse_urban_green", QUIET_RAIL]) {
+      expect(light.some((l) => l.id === id), id).toBe(true);
+      expect(hidden.has(id), id).toBe(false);
+    }
+  });
+
+  it("leaves our own layers alone", () => {
+    expect(quietHides({ id: "pins-icon", type: "symbol", source: "pins" })).toBe(false);
+    expect(quietHides({ id: "areas-label", type: "symbol", source: "areas-labels" })).toBe(false);
+  });
+
+  it("restyles only paint the rail layer already has", () => {
+    const rail = light.find((l) => l.id === QUIET_RAIL) as { paint?: Record<string, unknown> };
+    for (const prop of Object.keys(quietRailPaint("light"))) expect(rail.paint?.[prop], prop).toBeDefined();
   });
 });
 

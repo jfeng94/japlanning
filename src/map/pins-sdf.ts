@@ -141,7 +141,9 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
     });
   };
 
+  let interactive = true;
   const onIconClick = (e: MapLayerMouseEvent) => {
+    if (!interactive) return;
     const id = e.features?.[0]?.properties?.["id"];
     if (typeof id === "string") selectCb(id);
   };
@@ -151,7 +153,7 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
     if (!map.getLayer(ICON_LAYER)) return selectCb(undefined);
     if (map.queryRenderedFeatures(e.point, { layers: [ICON_LAYER] }).length === 0) selectCb(undefined);
   };
-  const onEnter = () => (map.getCanvas().style.cursor = "pointer");
+  const onEnter = () => (map.getCanvas().style.cursor = interactive ? "pointer" : "");
   const onLeave = () => (map.getCanvas().style.cursor = "");
 
   view.onStyleLoad((m) => {
@@ -176,6 +178,10 @@ export function createSdfPinRenderer(view: MapView, colorsNow: () => { label: st
     },
     onSelect(cb) {
       selectCb = cb;
+    },
+    setInteractive(on) {
+      interactive = on;
+      if (!on) map.getCanvas().style.cursor = "";
     },
     destroy() {
       disposed = true;

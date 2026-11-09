@@ -1,14 +1,15 @@
+import { regionColours, type RegionColours } from "../config/area-colors.ts";
 import { layers } from "../config/layers.ts";
 import { pinRendererKind } from "../config/map.ts";
 import { areasOf, regions } from "../config/regions.ts";
 import { settings, updateSettings, type Settings } from "../config/settings.ts";
 import { createBookmarks, createIdbBookmarkStorage } from "../data/bookmarks.ts";
-import { loadAreaShapes, type AreaShapes } from "../data/area-shapes.ts";
+import { loadAreaShapes, nearestChip, shapesBounds, type AreaShapes } from "../data/area-shapes.ts";
 import { areaAt } from "../data/areas.ts";
 import { browserDeps } from "../data/browser.ts";
 import { loadAllLayersStaged } from "../data/load.ts";
 import type { LoadResult, Place, RegionId } from "../data/types.ts";
-import { applyFilters, sinkUnknownHours, tapArea, type ApplyOptions, type HoursInput } from "../filter/apply.ts";
+import { applyFilters, areaLook, sinkUnknownHours, tapArea, type ApplyOptions, type AreaLook, type HoursInput } from "../filter/apply.ts";
 import { inBbox, sortByDistance } from "../geo/distance.ts";
 import { formatRadius } from "../geo/nearby.ts";
 import { markFor, type Mark } from "../data/marks.ts";
@@ -19,7 +20,7 @@ import { createStore } from "../filter/store.ts";
 import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url.ts";
 import { createWatch, permissionState, type LocateError, type Position } from "../geo/locate.ts";
 import { basemapUrl, ensureProtocol, mountMap, watchFlavor } from "../map/map.ts";
-import { createAreaShapesLayer } from "../map/area-shapes-layer.ts";
+import { createAreaLayers, type AreaDrawing } from "../map/area-layers.ts";
 import { createNearbyCircle } from "../map/nearby-circle.ts";
 import { createIdbBasemapStore, registerStoredBasemaps } from "../offline/basemap.ts";
 import { createDownloadManager } from "../offline/downloads.ts";
@@ -46,6 +47,8 @@ import { showToast } from "./toast.ts";
 
 const REGION_KEY = "japlanning.region";
 const SELECTED_PARAM = "s";
+/** How far outside an area a tap on the Area page's map still counts as on it, in screen pixels. */
+const AREA_TAP_SLOP_PX = 12;
 
 interface UiState {
   selectedId?: string;
@@ -238,9 +241,18 @@ export function mountApp(root: HTMLElement): AppHandle {
   );
   view.setBottomPadding(panel.heightPx());
   const nearbyCircle = createNearbyCircle(view);
-  const areaShapesLayer = createAreaShapesLayer(view);
+  const areaLayers = createAreaLayers(view);
   let pins: PinRenderer = createPinRenderer();
   pins.onSelect(onPinSelect);
+  // A tap on the Area page's map picks or drops the area under it, as its chip does; the pins there are inert.
+  view.map.on("click", (e) => {
+    if (ui.get().page !== "area") return;
+    const regionShapes = shapes.get(filters.get().region);
+    if (!regionShapes) return;
+    const at = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+    const chip = nearestChip(regionShapes, at, AREA_TAP_SLOP_PX * metresPerPixel(view.map.getZoom(), at.lat));
+    if (chip) onAreaTap(chip);
+  });
 
   function onPinSelect(id: string | undefined): void {
     if (id === undefined) {
@@ -335,7 +347,7 @@ export function mountApp(root: HTMLElement): AppHandle {
     render(); // Here's label and the order toggle read the watch's state
   }
 
-  // ---- area shapes: Here goes by them; Settings can draw them for review ----
+  // ---- area shapes: Here goes by them; the Area page draws them (Settings can draw them on the normal map too) ----
   const shapes = new Map<RegionId, AreaShapes>();
   const shapesRequested = new Set<RegionId>();
   /** Fetch a region's shapes once, the first time it renders; Here uses nearest centres until they arrive. */
@@ -347,6 +359,64 @@ export function mountApp(root: HTMLElement): AppHandle {
       shapes.set(region, s);
       render();
     });
+  }
+
+  const colours = new Map<RegionId, RegionColours>();
+  /** A region's area colours (src/config/area-colors.ts), worked out once. */
+  function coloursOf(region: RegionId): RegionColours {
+    let c = colours.get(region);
+    if (!c) {
+      c = regionColours(areasOf(region));
+      colours.set(region, c);
+    }
+    return c;
+  }
+
+  /** An area chip, or its shape on the map, tapped: tapArea's outcome for the current state. */
+  function onAreaTap(chip: string): void {
+    const now = filters.get();
+    filters.dispatch(tapArea(now, chip, applyOpts(now)));
+  }
+
+  /** The last drawing handed to the map, reused while nothing in it changes, so renders don't re-send the shapes. */
+  let lastDrawing: { key: string; drawing: AreaDrawing } | undefined;
+  function areaDrawing(state: FilterState, here: PositionChip, regionShapes: AreaShapes): AreaDrawing {
+    const areas = areasOf(state.region);
+    const opts = { hereGroup: here.group, areas };
+    const looks = new Map<string, AreaLook>(areas.chips.map((c) => [c.label, areaLook(state, c.label, opts)]));
+    const key = `${state.region}|${[...looks].filter(([, l]) => l !== "out").join(",")}`;
+    if (lastDrawing?.key === key && lastDrawing.drawing.shapes === regionShapes) return lastDrawing.drawing;
+    const drawing = { shapes: regionShapes, looks, colours: coloursOf(state.region).chips };
+    lastDrawing = { key, drawing };
+    return drawing;
+  }
+
+  // ---- the Area page's map (docs/proposals/filter-pages-and-area-map.md, Part 3) ----
+  /** Whether the map is in the Area page's mode. It follows the page however the page opened or closed. */
+  let areaMapOn = false;
+  function syncAreaMap(on: boolean, region: RegionId): void {
+    if (on === areaMapOn) return;
+    areaMapOn = on;
+    view.setAreaMode(on ? areaBounds(region) : undefined);
+  }
+
+  /** The whole city as far as our places go: the area shapes, or before they load the places, or the basemap's box. */
+  function areaBounds(region: RegionId): [number, number, number, number] | undefined {
+    const regionShapes = shapes.get(region);
+    const fromShapes = regionShapes ? shapesBounds(regionShapes) : undefined;
+    if (fromShapes) return fromShapes;
+    const inRegion = places.filter((p) => p.region === region);
+    if (inRegion.length === 0) return regions.find((r) => r.id === region)?.bbox;
+    const lngs = inRegion.map((p) => p.lng);
+    const lats = inRegion.map((p) => p.lat);
+    return [Math.min(...lngs), Math.min(...lats), Math.max(...lngs), Math.max(...lats)];
+  }
+
+  /** The Area page's pins: bookmarks, and layers kept for reference (lodging), whatever the filters say. */
+  function areaMapPlaces(state: FilterState): Place[] {
+    const keep = new Set(layersInRegion(layers, state.region).filter((l) => l.onAreaMap).map((l) => l.id));
+    const marked = bookmarks.all();
+    return sortByName(places.filter((p) => p.region === state.region && (marked.has(p.id) || keep.has(p.layerId))));
   }
 
   // ---- Here ----
@@ -624,6 +694,8 @@ export function mountApp(root: HTMLElement): AppHandle {
     if (page === undefined) return openPage(target);
     history.replaceState({ ...(history.state as HistoryState), p: target }, "", location.href);
     ui.dispatch({ type: "openPage", page: target });
+    // The Filters page can be dragged to Full; the Area page keeps the map in view at Half.
+    if (target === "area") panel.setHeight("half");
     panel.lockHeight(target === "area");
   }
 
@@ -678,13 +750,11 @@ export function mountApp(root: HTMLElement): AppHandle {
       layers: layersInRegion(layers, state.region),
       areas: areasOf(state.region),
       ...(settings().location ? { here, nearby: nearbyChip(state) } : {}),
+      colours: coloursOf(state.region),
       onHere,
       onNearby,
       onRadius,
-      onAreaTap: (chip) => {
-        const now = filters.get();
-        filters.dispatch(tapArea(now, chip, applyOpts(now)));
-      },
+      onAreaTap,
       canClear: hasGroupSelection(state, page),
       onClear: () => filters.dispatch({ type: "clearGroup", group: page }),
       dispatch: filters.dispatch,
@@ -716,9 +786,14 @@ export function mountApp(root: HTMLElement): AppHandle {
     }
     // A region without areas (Hakone today) has no Area page; no special case.
     areaButton.hidden = areasOf(state.region).chips.length === 0;
-    nearbyCircle.set(state.nearby !== undefined ? position : undefined, previewRadius ?? state.nearby);
+    // The Area page drives the map: the whole city, locked and quiet, with the areas in their chips' colours.
+    // Nearby's circle belongs to the Filters page and stays off it.
+    const areaMap = page === "area";
+    nearbyCircle.set(!areaMap && state.nearby !== undefined ? position : undefined, previewRadius ?? state.nearby);
     ensureShapes(state.region);
-    areaShapesLayer.set(settings().showAreaShapes ? shapes.get(state.region) : undefined);
+    const regionShapes = shapes.get(state.region);
+    areaLayers.set(regionShapes && (areaMap || settings().showAreaShapes) ? areaDrawing(state, here, regionShapes) : undefined);
+    syncAreaMap(areaMap, state.region);
 
     const total = places.filter((p) => p.region === state.region).length;
     const matching = applyFilters(places, state, applyOpts(state, here));
@@ -800,8 +875,13 @@ export function mountApp(root: HTMLElement): AppHandle {
     }
     shownDetailId = selected?.id;
 
-    pins.update(placesToPins(shown, regionLayers, marksFor(shown)));
-    pins.setSelected(selectedId);
+    // On the Area page the pins are a reference, not the results: bookmarks (and lodging), and taps go to the areas.
+    // Its question is where, not when, so a bookmark there wears the bookmark badge even when the shop is closed.
+    const pinned = areaMap ? areaMapPlaces(state) : shown;
+    const pinMarks = areaMap ? new Map(pinned.filter((p) => bookmarks.has(p.id)).map((p) => [p.id, "bookmark" as const])) : marksFor(pinned);
+    pins.update(placesToPins(pinned, regionLayers, pinMarks));
+    pins.setSelected(areaMap ? undefined : selectedId);
+    pins.setInteractive(!areaMap);
     panel.relayout(); // the strip's height depends on what the summary shows
   }
 
@@ -829,6 +909,7 @@ export function mountApp(root: HTMLElement): AppHandle {
   }
 
   function fitToResults(): void {
+    if (areaMapOn) return; // the Area page holds the camera (data arriving late must not move it)
     const state = filters.get();
     const shown = applyFilters(places, state, applyOpts(state));
     view.fitPoints(shown.map((p) => [p.lng, p.lat]));
@@ -1019,6 +1100,11 @@ function regionLabel(id: RegionId): string {
 function countLabel(shown: number, total: number): string {
   if (total === 0) return "";
   return `${shown} place${shown === 1 ? "" : "s"}`;
+}
+
+/** Metres one screen pixel covers at a zoom and latitude (MapLibre draws the world 512 px wide at zoom 0). */
+function metresPerPixel(zoom: number, lat: number): number {
+  return (40_075_016.686 * Math.cos((lat * Math.PI) / 180)) / (512 * 2 ** zoom);
 }
 
 function note(text: string): HTMLParagraphElement {

@@ -60,7 +60,16 @@ export interface AreaSection {
   label: string;
   /** Wards as written in addresses, e.g. ["千代田区", "中央区", "港区"]. */
   wards: string[];
+  /**
+   * The section's colour on the Area page and its map; its chips take
+   * shades of it (src/config/area-colors.ts). Absent: the next hue no
+   * section names, in rainbow order.
+   */
+  hue?: AreaHue;
 }
+
+/** The section hues: the rainbow, ROYGBIV, plus magenta for an eighth. */
+export type AreaHue = "red" | "orange" | "yellow" | "green" | "blue" | "indigo" | "violet" | "magenta";
 
 export interface FacetConfig {
   /** Exact header text in the sheet, e.g. "Specialty". */
@@ -98,6 +107,12 @@ export interface LayerConfig {
   facets: FacetConfig[];
   /** Facet columns shown as chips on a list row. Defaults to the first two facets. */
   rowFacets?: string[];
+  /**
+   * Its pins stay on the Area page's map, whatever the filters say, beside
+   * the bookmarks: a reference for reading the city, like where you sleep.
+   * Meant for lodging.
+   */
+  onAreaMap?: boolean;
 }
 
 /** One row of a sheet after parsing. Blank cells become undefined, never "". */

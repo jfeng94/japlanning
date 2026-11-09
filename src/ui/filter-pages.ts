@@ -1,3 +1,4 @@
+import type { AreaColour, RegionColours } from "../config/area-colors.ts";
 import type { AreaIndex } from "../data/areas.ts";
 import type { LayerConfig } from "../data/types.ts";
 import { areaLook } from "../filter/apply.ts";
@@ -33,6 +34,8 @@ export interface PageContext {
   layers: LayerConfig[];
   /** The region's areas. */
   areas: AreaIndex;
+  /** Their colours, shared with the map, so each chip is the legend for its shape. */
+  colours?: RegionColours;
   /** Here and Nearby, offered while the Location setting is on; undefined hides them. */
   here?: PositionChip;
   nearby?: PositionChip;
@@ -119,16 +122,21 @@ export function renderFiltersPage(body: HTMLElement, state: FilterState, ctx: Pa
 
 /**
  * Here and + Adjacent, then the chips under their ward headings (a
- * heading picks or clears its chips). Each chip shows its area's look:
- * picked (filled), added by + Adjacent (hatched, marked ∗), or out.
+ * heading picks or clears its chips). Each chip shows its area's look in
+ * its area's colour, as the map draws it: outlined when out, filled when
+ * picked, hatched (and marked ∗) when added by + Adjacent.
  */
 export function renderAreaPage(body: HTMLElement, state: FilterState, ctx: PageContext): void {
   body.replaceChildren(clearRow("area", ctx));
   const { areas, dispatch } = ctx;
   const lookOpts = { hereGroup: ctx.here?.group, areas };
+  const colourOf = (label: string | undefined): AreaColour | undefined => (label === undefined ? undefined : ctx.colours?.chips.get(label));
 
   const top: HTMLElement[] = [];
-  if (ctx.here) top.push(chip(ctx.here.label, { pressed: state.here, className: "here-chip", onClick: () => ctx.onHere(!state.here) }));
+  if (ctx.here) {
+    // Here takes the colour of the area it resolves to, and stays neutral until it does.
+    top.push(tint(chip(ctx.here.label, { pressed: state.here, className: "here-chip", onClick: () => ctx.onHere(!state.here) }), colourOf(ctx.here.group)));
+  }
   top.push(chip("+ Adjacent", { pressed: state.adjacent, onClick: () => dispatch({ type: "setAdjacent", value: !state.adjacent }) }));
   body.append(row(top, "area-tools"));
 
@@ -139,7 +147,14 @@ export function renderAreaPage(body: HTMLElement, state: FilterState, ctx: PageC
       const heading = document.createElement("button");
       heading.type = "button";
       heading.className = "area-heading";
-      heading.textContent = s.label;
+      const swatch = ctx.colours?.sections.get(s.label);
+      if (swatch) {
+        const dot = document.createElement("span");
+        dot.className = "area-swatch";
+        dot.style.background = swatch.fill;
+        heading.append(dot);
+      }
+      heading.append(s.label);
       heading.setAttribute("aria-pressed", String(all));
       heading.setAttribute("aria-label", `${all ? "Clear" : "Pick"} every area in ${s.label}`);
       heading.addEventListener("click", () => dispatch({ type: "setAreas", areas: labels, on: !all }));
@@ -155,7 +170,7 @@ export function renderAreaPage(body: HTMLElement, state: FilterState, ctx: PageC
             onClick: () => ctx.onAreaTap(c.label),
           });
           if (look === "added") b.setAttribute("aria-label", `${c.label}, added by + Adjacent`);
-          return b;
+          return tint(b, colourOf(c.label));
         }),
       ),
     );
@@ -268,6 +283,22 @@ function openAtRow(state: FilterState, dispatch: (a: FilterAction) => void): HTM
   wrap.append(title, date, time);
   if (at) wrap.append(chip("Now", { className: "clear", onClick: () => dispatch({ type: "setOpenAt", value: undefined }) }));
   return wrap;
+}
+
+/**
+ * Colour a chip as its area (the CSS in .chip.area-chip reads these): the
+ * outline per theme, the fill when picked, the stripes when added. Without
+ * a colour the chip stays neutral.
+ */
+function tint(b: HTMLButtonElement, colour: AreaColour | undefined): HTMLButtonElement {
+  if (!colour) return b;
+  b.classList.add("area-chip");
+  b.style.setProperty("--area-fill", colour.fill);
+  b.style.setProperty("--area-on", colour.on);
+  b.style.setProperty("--area-hatch", colour.hatch);
+  b.style.setProperty("--area-line-light", colour.line.light);
+  b.style.setProperty("--area-line-dark", colour.line.dark);
+  return b;
 }
 
 /** A titled section; with chips, its first row. */

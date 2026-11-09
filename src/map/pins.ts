@@ -24,6 +24,8 @@ export interface PinRenderer {
   setSelected(id?: string): void;
   /** `undefined` means a tap on empty map. */
   onSelect(cb: (id?: string) => void): void;
+  /** Off: pins ignore taps, which fall through to the map (the Area page's pins are only for reference). */
+  setInteractive(on: boolean): void;
   destroy(): void;
 }
 

@@ -98,10 +98,14 @@ export function createDomPinRenderer(view: MapView): PinRenderer {
     onSelect(cb) {
       selectCb = cb;
     },
+    setInteractive(on) {
+      // CSS takes the pins out of hit-testing, so a tap reaches the map under them.
+      container.classList.toggle("pins-inert", !on);
+    },
     destroy() {
       map.off("zoom", updateLabelVisibility);
       map.off("click", onMapClick);
-      container.classList.remove("show-pin-labels");
+      container.classList.remove("show-pin-labels", "pins-inert");
       for (const entry of entries.values()) entry.marker.remove();
       entries.clear();
     },

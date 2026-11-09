@@ -81,7 +81,7 @@ const FIELDS: Field<keyof Settings>[] = [
   {
     key: "showAreaShapes",
     label: "Area shapes on the map",
-    help: "Draws each area's shape, made from the census, over the map, to check them before the Area map uses them. Here already goes by them.",
+    help: "Draws the areas on the normal map too, as the Area page does, to check their shapes. The shapes are made from the census; Here goes by them.",
     options: [
       [false, "Off"],
       [true, "On"],

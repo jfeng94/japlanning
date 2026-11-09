@@ -4,6 +4,7 @@ import {
   ScaleControl,
   setWorkerUrl,
   type IControl,
+  type LngLat,
   type LngLatBoundsLike,
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -16,7 +17,7 @@ import { Protocol } from "pmtiles";
 setWorkerUrl(workerUrl);
 import type { RegionConfig } from "../data/types.ts";
 import { createLocateControl, type LocateControl } from "./locate-control.ts";
-import { atlasStyle, type Flavor } from "./style.ts";
+import { atlasLayers, atlasStyle, QUIET_RAIL, quietHides, quietRailPaint, type Flavor } from "./style.ts";
 
 /** Japan, for regions that have no basemap extract yet. */
 const JAPAN_BOUNDS: LngLatBoundsLike = [
@@ -55,8 +56,22 @@ export interface MapView {
   focus(lng: number, lat: number, minZoom?: number): void;
   /** Fit the given points with a margin, honouring the bottom padding. */
   fitPoints(points: [number, number][]): void;
+  /**
+   * The Area page's map (docs/proposals/filter-pages-and-area-map.md, Part
+   * 3): ease to fit these bounds ([west, south, east, north]) above the
+   * panel, turn off pan, zoom and rotate, quiet the basemap and hide the
+   * fit and locate buttons. Undefined puts everything back, and the camera
+   * where it was.
+   */
+  setAreaMode(bounds: readonly [number, number, number, number] | undefined): void;
   destroy(): void;
 }
+
+type PaintProperty = Parameters<MapLibreMap["setPaintProperty"]>[1];
+type PaintValue = Parameters<MapLibreMap["setPaintProperty"]>[2];
+
+/** Room around the areas: the scale bar sits in the top-left corner. */
+const AREA_PADDING = { top: 40, right: 12, bottom: 12, left: 12 };
 
 export interface MapCallbacks {
   /** The fit-to-results button. */
@@ -103,6 +118,7 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
   let styled = false;
   map.on("style.load", () => {
     if (!styled) return; // the empty placeholder style
+    if (areaMode) quietBasemap(true); // a new style (the theme changed) arrives with everything showing
     for (const cb of styleLoadCallbacks) cb(map);
   });
   void (callbacks.prepareBasemaps?.(proto) ?? Promise.resolve()).finally(() => {
@@ -131,11 +147,77 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
     map.setPadding(padding);
   }
 
+  // ---- the Area page's map ----
+  type Gesture = { enable(): void; disable(): void; isEnabled(): boolean };
+  const gestures = (): Gesture[] => [
+    map.dragPan,
+    map.scrollZoom,
+    map.boxZoom,
+    map.dragRotate,
+    map.keyboard,
+    map.doubleClickZoom,
+    map.touchZoomRotate,
+    map.touchPitch,
+  ];
+  let areaMode: { camera: { center: LngLat; zoom: number; bearing: number; pitch: number }; disabled: Gesture[] } | undefined;
+
+  /**
+   * Camera moves wait for the end of the current task. The app changes the
+   * panel's height in the same tap that opens or closes the Area page, and
+   * that sets the map's padding, which is a jump: it would cancel an ease
+   * already under way. Queued, the ease starts from the new padding.
+   */
+  let queued: ReturnType<typeof setTimeout> | undefined;
+  const afterThisTask = (move: () => void): void => {
+    if (queued !== undefined) clearTimeout(queued);
+    queued = setTimeout(() => {
+      queued = undefined;
+      move();
+    }, 0);
+  };
+
+  /** Hide the basemap's labels and roads and restyle its rail lines, or put them back as the style has them. */
+  function quietBasemap(on: boolean): void {
+    for (const layer of atlasLayers(currentFlavor)) {
+      if (!map.getLayer(layer.id)) continue; // a region with no basemap yet, or the style still loading
+      if (quietHides(layer)) {
+        map.setLayoutProperty(layer.id, "visibility", on ? "none" : "visible");
+      } else if (layer.id === QUIET_RAIL) {
+        const quiet = quietRailPaint(currentFlavor);
+        const paint = on ? quiet : ((layer as { paint?: Record<string, unknown> }).paint ?? {});
+        for (const prop of Object.keys(quiet) as PaintProperty[]) map.setPaintProperty(layer.id, prop, paint[prop] as PaintValue);
+      }
+    }
+  }
+
   return {
     map,
     locate,
+    setAreaMode(bounds) {
+      if (bounds) {
+        if (!areaMode) {
+          const disabled = gestures().filter((g) => g.isEnabled());
+          areaMode = { camera: { center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() }, disabled };
+          for (const g of disabled) g.disable();
+          container.classList.add("is-area-map");
+          quietBasemap(true);
+        }
+        const [w, s, e, n] = bounds;
+        afterThisTask(() => map.fitBounds([[w, s], [e, n]], { padding: AREA_PADDING, bearing: 0, pitch: 0, duration: 450 }));
+      } else if (areaMode) {
+        const { camera, disabled } = areaMode;
+        areaMode = undefined;
+        for (const g of disabled) g.enable();
+        container.classList.remove("is-area-map");
+        quietBasemap(false);
+        afterThisTask(() => map.easeTo({ ...camera, duration: 450 }));
+      }
+    },
     setRegion(next) {
       if (next.id === currentRegion.id) return;
+      // A camera move still queued (the Area page closing as the region changes) belongs to the old region.
+      if (queued !== undefined) clearTimeout(queued);
+      queued = undefined;
       currentRegion = next;
       map.setStyle(styleFor(next, currentFlavor));
       fitRegion(next.bbox ?? JAPAN_BOUNDS);

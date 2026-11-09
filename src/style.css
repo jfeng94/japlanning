@@ -965,6 +965,27 @@ button {
   display: none;
 }
 
+/* The Area page's map holds its camera, so fit and locate step aside; the blue dot stays. */
+.is-area-map .fit-button,
+.is-area-map .locate-button {
+  display: none;
+}
+
+/*
+ * The locked map takes no gestures at all. MapLibre sets touch-action only
+ * while its own pan and zoom are on; with them off the browser would scroll
+ * or pinch-zoom the page instead. Taps still arrive as clicks.
+ */
+.is-area-map .maplibregl-canvas-container,
+.is-area-map .maplibregl-canvas {
+  touch-action: none;
+}
+
+/* The Area page's pins are for reference: a tap goes through them to the area underneath. */
+.pins-inert .dom-pin {
+  pointer-events: none;
+}
+
 /*
  * Locate states: idle (no fix) and ready (fix, not following) hollow in the
  * text colour; waiting pulses; locked (following) filled blue. Blue means
@@ -1291,10 +1312,49 @@ button {
   gap: 0.4rem;
 }
 
-/* An area added by + Adjacent: hatched like its shape will be on the map, and marked ∗ in its label. */
+/* An area added by + Adjacent: hatched like its shape on the map, and marked ∗ in its label. */
 .chip.is-added {
   border-color: var(--fg);
   background: repeating-linear-gradient(135deg, var(--hatch) 0 2px, transparent 2px 7px);
+}
+
+/*
+ * An area chip in its area's colour, the legend for its shape on the map:
+ * outlined when out, filled when picked, hatched with a dashed edge when
+ * added. The chip carries its colours as custom properties (filter-pages.ts);
+ * the outline is darker than the fill in light mode and lighter in dark.
+ */
+.chip.area-chip {
+  --area-line: var(--area-line-light);
+  border: 1.5px solid var(--area-line);
+}
+
+@media (prefers-color-scheme: dark) {
+  .chip.area-chip {
+    --area-line: var(--area-line-dark);
+  }
+}
+
+.chip.area-chip[aria-pressed="true"] {
+  background: var(--area-fill);
+  border-color: var(--area-line);
+  color: var(--area-on);
+}
+
+.chip.area-chip.is-added {
+  border-style: dashed;
+  border-color: var(--area-line);
+  background: repeating-linear-gradient(135deg, var(--area-hatch) 0 2px, transparent 2px 7px);
+}
+
+/* A section's hue, beside its heading. */
+.area-swatch {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  vertical-align: 0.02em;
 }
 
 /* A layer's header chip in Category: selects or clears all of its kinds. */

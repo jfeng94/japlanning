@@ -1,6 +1,6 @@
 import { distanceM, inBbox, type LatLng } from "../geo/distance.ts";
 import { chipAt, type AreaShapes } from "./area-shapes.ts";
-import type { AreaConfig, Place, RegionConfig } from "./types.ts";
+import type { AreaConfig, AreaHue, Place, RegionConfig } from "./types.ts";
 
 /**
  * Areas in three layers (docs/proposals/filters-and-areas.md):
@@ -25,6 +25,8 @@ export interface AreaChip {
 export interface AreaSectionView {
   /** The heading; undefined for a region shown as one flat list. */
   label?: string;
+  /** The hue its config names, if any (src/config/area-colors.ts picks one otherwise). */
+  hue?: AreaHue;
   /** Alphabetical. */
   chips: AreaChip[];
 }
@@ -89,7 +91,7 @@ export function areaIndex(region: AreaSource): AreaIndex {
   if (region.areaSections && region.areaSections.length > 0) {
     const sectionOfWard = new Map<string, number>();
     region.areaSections.forEach((s, i) => s.wards.forEach((w) => sectionOfWard.set(w, i)));
-    const views: AreaSectionView[] = region.areaSections.map((s) => ({ label: s.label, chips: [] }));
+    const views: AreaSectionView[] = region.areaSections.map((s) => ({ label: s.label, ...(s.hue ? { hue: s.hue } : {}), chips: [] }));
     for (const c of chips) {
       let i = sectionOfWard.get(c.ward);
       if (i === undefined) {

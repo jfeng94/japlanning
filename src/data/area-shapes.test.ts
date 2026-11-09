@@ -9,11 +9,14 @@ import {
   distanceToShapeM,
   edgeDistanceM,
   gapBetweenM,
+  labelPoint,
+  nearestChip,
   pointInRing,
   pointInShape,
   polygonsOf,
   ringAreaM2,
   ringCentroid,
+  shapesBounds,
   simplifyRing,
   type AreaShapes,
 } from "./area-shapes.ts";
@@ -157,5 +160,38 @@ describe.each(Object.entries(generated) as [RegionId, AreaShapes][])("%s's gener
       .filter((p) => areaAt(index, places, p, { ...(region_.bbox ? { bbox: region_.bbox } : {}), shapes }) !== p.areaGroup);
     expect(wrong.map((p) => p.name)).toEqual([]);
     expect(chipAt(shapes, { lat: 0, lng: 0 })).toBeUndefined();
+  });
+
+  it("each get a label point inside, away from the edge", () => {
+    for (const f of shapes.features) {
+      const at = labelPoint(f.geometry);
+      expect(pointInShape(at, f.geometry), f.properties.chip).toBe(true);
+      expect(edgeDistanceM(at, f.geometry), f.properties.chip).toBeGreaterThan(40);
+    }
+  });
+
+  it("take a tap just outside an area as that area, and a tap far from any as none", () => {
+    for (const f of shapes.features) {
+      const at = labelPoint(f.geometry);
+      expect(nearestChip(shapes, at, 0)).toBe(f.properties.chip);
+    }
+    // Just past an outline vertex, away from the centre: within slack it's that area, without slack nothing.
+    const f = shapes.features[0]!;
+    const [outline] = polygonsOf(f.geometry)[0]!;
+    const centre = labelPoint(f.geometry);
+    const v = outline![0]!;
+    const out = { lng: v[0]! + (v[0]! - centre.lng) * 0.02, lat: v[1]! + (v[1]! - centre.lat) * 0.02 };
+    if (chipAt(shapes, out) === undefined) {
+      expect(nearestChip(shapes, out, 150)).toBe(f.properties.chip);
+      expect(nearestChip(shapes, out, 0)).toBeUndefined();
+    }
+    expect(nearestChip(shapes, { lat: 0, lng: 0 }, 500)).toBeUndefined();
+  });
+
+  it("fit in their bounds, which hold every place in the region", () => {
+    const [w, s, e, n] = shapesBounds(shapes)!;
+    for (const p of places.filter((p) => p.region === region)) {
+      expect(p.lng >= w && p.lng <= e && p.lat >= s && p.lat <= n, p.name).toBe(true);
+    }
   });
 });

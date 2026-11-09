@@ -66,12 +66,13 @@ export const regions: RegionConfig[] = [
       { label: "Tamachi · Takanawa", areas: ["Tamachi", "Takanawa"] },
       { label: "Jiyugaoka · Yakumo", areas: ["Jiyugaoka", "Yakumo"] },
     ],
+    // Each section's hue colours its chips and shapes on the Area page (indigo, violet and magenta are spare).
     areaSections: [
-      { label: "Central", wards: ["千代田区", "中央区", "港区"] },
-      { label: "Shibuya", wards: ["渋谷区"] },
-      { label: "Shinjuku", wards: ["新宿区"] },
-      { label: "Meguro · Setagaya", wards: ["目黒区", "世田谷区"] },
-      { label: "East", wards: ["台東区", "墨田区", "江東区"] },
+      { label: "Central", wards: ["千代田区", "中央区", "港区"], hue: "red" },
+      { label: "Shibuya", wards: ["渋谷区"], hue: "orange" },
+      { label: "Shinjuku", wards: ["新宿区"], hue: "yellow" },
+      { label: "Meguro · Setagaya", wards: ["目黒区", "世田谷区"], hue: "green" },
+      { label: "East", wards: ["台東区", "墨田区", "江東区"], hue: "blue" },
     ],
     bbox: [139.6, 35.58, 139.85, 35.75],
   },

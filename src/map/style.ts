@@ -49,6 +49,32 @@ export function atlasLayers(flavor: Flavor, lang = "en"): LayerSpecification[] {
   return out;
 }
 
+/**
+ * The Area page's quiet basemap (docs/proposals/filter-pages-and-area-map.md,
+ * Part 3): every basemap label and every road hides, so the area names are
+ * the only text; land, water, parks and the rail lines stay.
+ */
+export const QUIET_RAIL = "roads_rail";
+
+export function quietHides(layer: { id: string; type: string; source?: unknown }): boolean {
+  if (layer.source !== SOURCE_ID) return false;
+  return layer.type === "symbol" || (layer.id.startsWith("roads_") && layer.id !== QUIET_RAIL);
+}
+
+/**
+ * The rail lines restyled to read at city zoom, where Protomaps' faint
+ * dotted line is under a pixel wide: solid, a little heavier, grey enough
+ * to sit under the areas' colours. Trains are how people get between areas.
+ */
+export function quietRailPaint(flavor: Flavor): Record<string, unknown> {
+  return {
+    "line-color": flavor === "light" ? "#8d979b" : "#5d636c",
+    "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.8, 13, 1.4],
+    "line-opacity": 0.9,
+    "line-dasharray": [1, 0],
+  };
+}
+
 export function atlasStyle(opts: StyleOptions): StyleSpecification {
   const flavor = namedFlavor(opts.flavor);
   return {
