@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import drinksCsv from "../../data/drinks.csv?raw";
-import kyotoShapesText from "../../public/areas/kyoto.geojson?raw";
-import tokyoShapesText from "../../public/areas/tokyo.geojson?raw";
-import { layers } from "../config/layers.ts";
-import { areasOf, regionById, regionOptions } from "../config/regions.ts";
+import { areasOf, regionById, regions } from "../config/regions.ts";
 import {
   chipAt,
   distanceToShapeM,
@@ -21,7 +17,7 @@ import {
   type AreaShapes,
 } from "./area-shapes.ts";
 import { areaAt } from "./areas.ts";
-import { parseLayerCsv } from "./parse.ts";
+import { repoPlaces } from "./repo-data.testing.ts";
 import type { Polygon } from "geojson";
 import type { RegionId } from "./types.ts";
 
@@ -93,19 +89,28 @@ describe("the shape helpers", () => {
   });
 });
 
-const drinks = layers.find((l) => l.id === "drinks")!;
-const { places } = parseLayerCsv(drinksCsv, drinks, regionOptions());
-const generated: Partial<Record<RegionId, AreaShapes>> = {
-  tokyo: JSON.parse(tokyoShapesText) as AreaShapes,
-  kyoto: JSON.parse(kyotoShapesText) as AreaShapes,
-};
+/** Every layer's places: an area's shape must hold them all. */
+const places = repoPlaces;
+const shapeFiles = import.meta.glob("../../public/areas/*.geojson", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
+/** Every region with areas has its shapes generated (npm run areas). */
+const generated: Partial<Record<RegionId, AreaShapes>> = Object.fromEntries(
+  regions
+    .filter((r) => r.areas.length > 0)
+    .map((r) => {
+      const text = shapeFiles[`../../public/areas/${r.id}.geojson`];
+      if (text === undefined) throw new Error(`public/areas/${r.id}.geojson is missing: run npm run areas`);
+      return [r.id, JSON.parse(text) as AreaShapes];
+    }),
+);
 
 /**
  * Pairs whose shapes touch but that the config doesn't list as neighbours,
  * waiting for Jerry's call (docs/proposals/filter-pages-and-area-map.md).
  * A new pair failing the test means the shapes and the graph disagree.
+ * (Hatagaya – Tomigaya and Shibuya – Yoyogi left the list on 2026-11-09:
+ * they no longer touch in the shapes rebuilt around the new places.)
  */
-const AWAITING_DECISION = new Set(["Aoyama – Harajuku", "Hatagaya – Tomigaya", "Shibuya – Yoyogi"]);
+const AWAITING_DECISION = new Set(["Aoyama – Harajuku"]);
 
 describe.each(Object.entries(generated) as [RegionId, AreaShapes][])("%s's generated shapes (public/areas)", (region, shapes) => {
   const index = areasOf(region);
@@ -175,16 +180,21 @@ describe.each(Object.entries(generated) as [RegionId, AreaShapes][])("%s's gener
       const at = labelPoint(f.geometry);
       expect(nearestChip(shapes, at, 0)).toBe(f.properties.chip);
     }
-    // Just past an outline vertex, away from the centre: within slack it's that area, without slack nothing.
-    const f = shapes.features[0]!;
-    const [outline] = polygonsOf(f.geometry)[0]!;
-    const centre = labelPoint(f.geometry);
-    const v = outline![0]!;
-    const out = { lng: v[0]! + (v[0]! - centre.lng) * 0.02, lat: v[1]! + (v[1]! - centre.lat) * 0.02 };
-    if (chipAt(shapes, out) === undefined) {
-      expect(nearestChip(shapes, out, 150)).toBe(f.properties.chip);
+    // Just past an outline vertex that faces open ground (no other shape within 300 m), away from the
+    // centre: within slack it's that area, without slack nothing.
+    const others = (f: (typeof shapes.features)[number]) => shapes.features.filter((g) => g !== f);
+    let checked = 0;
+    for (const f of shapes.features) {
+      const [outline] = polygonsOf(f.geometry)[0]!;
+      const centre = labelPoint(f.geometry);
+      const v = outline![0]!;
+      const out = { lng: v[0]! + (v[0]! - centre.lng) * 0.02, lat: v[1]! + (v[1]! - centre.lat) * 0.02 };
+      if (chipAt(shapes, out) !== undefined || others(f).some((g) => edgeDistanceM(out, g.geometry) < 300)) continue;
+      expect(nearestChip(shapes, out, 150), f.properties.chip).toBe(f.properties.chip);
       expect(nearestChip(shapes, out, 0)).toBeUndefined();
+      checked++;
     }
+    expect(checked).toBeGreaterThan(0);
     expect(nearestChip(shapes, { lat: 0, lng: 0 }, 500)).toBeUndefined();
   });
 
