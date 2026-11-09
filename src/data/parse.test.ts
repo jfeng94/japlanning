@@ -6,6 +6,7 @@ import { areasOf, regionById, regionOptions } from "../config/regions.ts";
 import { inBbox } from "../geo/distance.ts";
 import { areaAt, areaIndex, wardFromAddress } from "./areas.ts";
 import { ParseError, parseLayerCsv, slug, splitMulti } from "./parse.ts";
+import { repoData } from "./repo-data.testing.ts";
 import type { LayerConfig, LayerId } from "./types.ts";
 
 const coffee = layers.find((l) => l.id === "drinks")!;
@@ -31,16 +32,14 @@ const minimal: LayerConfig = {
 
 const csv = (lines: string[]) => lines.join("\n") + "\n";
 
-describe("drinks data (the repo file, so every test run validates it)", () => {
-  const { places, warnings } = parseLayerCsv(drinksCsv, coffee, regionOptions());
-
-  it("parses every row with no warnings", () => {
-    expect(places).toHaveLength(74);
-    expect(warnings).toEqual([]);
+describe.each(repoData.map((d) => [d.layer.id, d] as const))("%s data (the repo file, so every test run validates it)", (_id, { result }) => {
+  it("parses every row with no warnings, icons included", () => {
+    expect(result.places.length).toBeGreaterThan(0);
+    expect(result.warnings).toEqual([]);
   });
 
   it("puts every place inside its region's map box, which is all the offline map covers (else grow the bbox; docs/design/adding-places.md)", () => {
-    const outside = places
+    const outside = result.places
       .filter((p) => {
         const bbox = regionById(p.region).bbox;
         return bbox !== undefined && !inBbox(p, bbox);
@@ -48,15 +47,20 @@ describe("drinks data (the repo file, so every test run validates it)", () => {
       .map((p) => `${p.name}${p.branch ? ` ${p.branch}` : ""} (${p.region})`);
     expect(outside).toEqual([]);
   });
+});
+
+describe("drinks data", () => {
+  const { places } = parseLayerCsv(drinksCsv, coffee, regionOptions());
 
   it("matches the profile of the data (update these when rows change on purpose)", () => {
+    expect(places).toHaveLength(117);
     expect(places.filter((p) => p.starred)).toHaveLength(12);
-    expect(places.filter((p) => p.addressApproximate)).toHaveLength(11);
-    expect(places.filter((p) => p.hoursOsm === undefined)).toHaveLength(19);
-    expect(places.filter((p) => p.lastVerified === undefined)).toHaveLength(33);
-    expect(places.filter((p) => p.facets["Format"]!.length === 0)).toHaveLength(4);
-    expect(places.filter((p) => p.facets["Reservation"]!.length === 0)).toHaveLength(40);
-    expect(places.filter((p) => p.region === "kyoto")).toHaveLength(13);
+    expect(places.filter((p) => p.addressApproximate)).toHaveLength(30);
+    expect(places.filter((p) => p.hoursOsm === undefined)).toHaveLength(52);
+    expect(places.filter((p) => p.lastVerified === undefined)).toHaveLength(75);
+    expect(places.filter((p) => p.facets["Format"]!.length === 0)).toHaveLength(47);
+    expect(places.filter((p) => p.facets["Reservation"]!.length === 0)).toHaveLength(78);
+    expect(places.filter((p) => p.region === "kyoto")).toHaveLength(29);
   });
 
   it("reads the key branch from the Key column, the id from ID and the branch from Branch", () => {
@@ -91,8 +95,9 @@ describe("drinks data (the repo file, so every test run validates it)", () => {
 
   it("gives every place its kind (the category chips select on it)", () => {
     expect(places.filter((p) => p.kinds.length === 0).map((p) => p.name)).toEqual([]);
-    expect(places.filter((p) => p.kinds.includes("Coffee"))).toHaveLength(57);
+    expect(places.filter((p) => p.kinds.includes("Coffee"))).toHaveLength(74);
     expect(places.filter((p) => p.kinds.includes("Tea"))).toHaveLength(17);
+    expect(places.filter((p) => p.kinds.includes("Bar"))).toHaveLength(26);
   });
 
   it("Here picks the expected area at a few landmarks", () => {
@@ -403,7 +408,7 @@ describe("Region column (a layer without a fixed region)", () => {
   });
 
   it("skips a row with a blank or unknown region, with a warning on the Region column", () => {
-    const { places, warnings } = parseLayerCsv(csv([header, "A,35.6,139.7,,", "B,35.6,139.7,atlantis,", "C,35.6,139.7,hakone,"]), spanning, regionOptions());
+    const { places, warnings } = parseLayerCsv(csv([header, "A,35.6,139.7,,", "B,35.6,139.7,atlantis,", "C,35.6,139.7,hakone,Gora"]), spanning, regionOptions());
     expect(places.map((p) => p.name)).toEqual(["C"]);
     expect(warnings.map((w) => [w.row, w.column])).toEqual([[1, "Region"], [2, "Region"]]);
   });
