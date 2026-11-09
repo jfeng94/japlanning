@@ -7,7 +7,7 @@ import bookmarkIcon from "./icons/bookmark.webp";
 import centerIcon from "./icons/center.webp";
 import directionsIcon from "./icons/directions.webp";
 import linkIcon from "./icons/link.webp";
-import shareIcon from "./icons/share.webp";
+import copyLinkIcon from "./icons/copy-link.webp";
 import starIcon from "./icons/star.webp";
 import { directionsUrl, linkLabel, shareUrl } from "./links.ts";
 import { showToast } from "./toast.ts";
@@ -46,7 +46,7 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   const actions = document.createElement("div");
   actions.className = "detail-actions";
   // Share copies the place's link, nothing else: no OS share sheet, no name prefix.
-  actions.append(iconButton("Copy link to this place", shareIcon, () => copyToClipboard(shareUrl(place, h.origin), "Link copied")));
+  actions.append(iconButton("Copy link to this place", copyLinkIcon, () => copyToClipboard(shareUrl(place, h.origin), "Link copied")));
   // Always present so the row keeps its shape; greyed and inert when the sheet has no link.
   if (place.link) {
     actions.append(iconAnchor(linkLabel(place.link), linkIcon, place.link));
