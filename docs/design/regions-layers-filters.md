@@ -157,8 +157,10 @@ Rewritten 2026-11-09 (`docs/proposals/filters-and-areas.md`, then
 
 The **region** is the top-level switch: exactly one; it swaps the
 basemap, the areas and the layers, and resets the filters. Within it,
-two pages open in the strip at Half from their footer buttons, with the
-live count and Clear (that page's selections) in their header:
+two pages open in the strip at Half from their footer buttons. A page's
+header has the live count and an X that closes it; Clear (that page's
+selections) sits at the top of the page, greyed when there's nothing to
+clear:
 
 - **Filters**:
   1. **Show only** (flags): Bookmarked (this device's bookmarks, kept
@@ -171,8 +173,8 @@ live count and Clear (that page's selections) in their header:
   headings. The page holds the strip at Half, since it is about the map.
   Its button shows only in a region with areas.
 
-A page closes by its own button, another footer button (the other page,
-Search) or a region change. It returns to the card it hid if that place
+A page closes by its X, its own button, another footer button (the
+other page, Search) or a region change. It returns to the card it hid if that place
 still matches, else to the list, at the height it had. A page shares the
 card's one history entry, so Back goes to the list, as it does from a
 card.

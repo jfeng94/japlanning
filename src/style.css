@@ -608,12 +608,34 @@ button {
   display: none;
 }
 
-/* A filter page's header: its name and the live count, Clear in the upper right. */
+/* A filter page's header: its name and the live count, an X in the upper right that closes it. */
 .strip-page {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.page-close {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  margin-right: -0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+}
+
+/* The top of a page's body: Clear, on its own line, greyed when there is nothing to clear. */
+.page-top {
+  display: flex;
+  justify-content: flex-end;
+  margin: -0.35rem 0 0.15rem;
 }
 
 .page-title {
@@ -637,6 +659,11 @@ button {
   font: inherit;
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+.page-clear:disabled {
+  color: var(--muted);
+  opacity: 0.5;
 }
 
 .body-page {

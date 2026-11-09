@@ -662,6 +662,8 @@ export function mountApp(root: HTMLElement): void {
         const now = filters.get();
         filters.dispatch(tapArea(now, chip, applyOpts(now)));
       },
+      canClear: hasGroupSelection(state, page),
+      onClear: () => filters.dispatch({ type: "clearGroup", group: page }),
       dispatch: filters.dispatch,
     };
     if (page === "filters") renderFiltersPage(pageBody, state, ctx);
@@ -714,7 +716,7 @@ export function mountApp(root: HTMLElement): void {
       here.label,
     );
     if (page !== undefined) {
-      renderPageStrip(pageStrip, page, count, hasGroupSelection(state, page), () => filters.dispatch({ type: "clearGroup", group: page }));
+      renderPageStrip(pageStrip, page, count, () => closePage());
       renderPage(page, state, here);
     }
     renderStatus(status, results, loading);

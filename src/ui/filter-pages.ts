@@ -18,6 +18,8 @@ export type FilterPage = "filters" | "area";
 
 export const PAGE_TITLES: Record<FilterPage, string> = { filters: "Filters", area: "Area" };
 
+const CLOSE_ICON = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+
 /** A chip the app labels from the position: Here and Nearby. */
 export interface PositionChip {
   /** "Here · Shibuya", "Nearby · 1 km", "… · locating…". */
@@ -40,32 +42,53 @@ export interface PageContext {
   onRadius(metres: number, final: boolean): void;
   /** An area chip tapped; the app applies tapArea's outcome. */
   onAreaTap(chip: string): void;
+  /** Whether the page has anything to clear, and Clear itself (that page's selections only). */
+  canClear: boolean;
+  onClear(): void;
   dispatch(action: FilterAction): void;
 }
 
-/** The page's header in the strip: its name and the live count, with Clear in the upper right. */
-export function renderPageStrip(strip: HTMLElement, page: FilterPage, count: string, canClear: boolean, onClear: () => void): void {
+/** The page's header in the strip: its name and the live count, with an X in the upper right that closes it. */
+export function renderPageStrip(strip: HTMLElement, page: FilterPage, count: string, onClose: () => void): void {
   const title = document.createElement("p");
   title.className = "page-title";
   const n = document.createElement("span");
   n.className = "page-count";
   n.textContent = count;
   title.append(PAGE_TITLES[page], " ", n);
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "page-close";
+  close.innerHTML = CLOSE_ICON;
+  close.setAttribute("aria-label", `Close ${PAGE_TITLES[page]}`);
+  close.addEventListener("click", onClose);
+  strip.replaceChildren(title, close);
+}
+
+/**
+ * The top of a page's body: Clear, for that page's selections. Always in
+ * its place, greyed when there is nothing to clear, so the first selection
+ * doesn't push the chips down under the finger.
+ */
+function clearRow(page: FilterPage, ctx: PageContext): HTMLElement {
+  const wrap = document.createElement("div");
+  wrap.className = "page-top";
   const clear = document.createElement("button");
   clear.type = "button";
   clear.className = "page-clear";
   clear.textContent = "Clear";
-  clear.hidden = !canClear;
-  clear.setAttribute("aria-label", `Clear the ${PAGE_TITLES[page]} page`);
-  clear.addEventListener("click", onClear);
-  strip.replaceChildren(title, clear);
+  clear.disabled = !ctx.canClear;
+  clear.setAttribute("aria-label", `Clear ${PAGE_TITLES[page]}`);
+  clear.addEventListener("click", ctx.onClear);
+  wrap.append(clear);
+  return wrap;
 }
 
 /** Show only (each one on narrows the results), then Category. */
 export function renderFiltersPage(body: HTMLElement, state: FilterState, ctx: PageContext): void {
   // Mid-drag on the radius slider: a rebuild would take the thumb from under the finger.
   if (body.dataset["sliding"] === "1") return;
-  body.replaceChildren();
+  body.replaceChildren(clearRow("filters", ctx));
   const { dispatch } = ctx;
   const at = tokyoWallClock(state.openAt);
   const flags = [
@@ -100,7 +123,7 @@ export function renderFiltersPage(body: HTMLElement, state: FilterState, ctx: Pa
  * picked (filled), added by + Adjacent (hatched, marked ∗), or out.
  */
 export function renderAreaPage(body: HTMLElement, state: FilterState, ctx: PageContext): void {
-  body.replaceChildren();
+  body.replaceChildren(clearRow("area", ctx));
   const { areas, dispatch } = ctx;
   const lookOpts = { hereGroup: ctx.here?.group, areas };
 

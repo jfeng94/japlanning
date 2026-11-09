@@ -77,12 +77,17 @@ in view.
 - **Opening** a page puts the strip at Half and hides any open card,
   which comes back when the page closes.
 - **The page's header** shows its name and the live result count, with
-  **Clear** in the upper right (decided). Clear clears that page's
-  selections. It replaces "Clear all filters"; the empty state's Clear
+  an **X** in the upper right that closes the page (decided; Clear sat
+  there first and read oddly in a header).
+- **Clear** sits at the top of the page's body and clears that page's
+  selections. It is always in its place, greyed when there is nothing to
+  clear, so a first selection doesn't push the chips down under the
+  finger. It replaces "Clear all filters"; the empty state's Clear
   filters stays.
 - **The Area page stays at Half** and its content scrolls (decided).
   Full would hide the map, which is the point of the page.
-- **Leaving** happens in three ways, with no Done:
+- **Leaving** happens in four ways, with no Done:
+  - tap the X in the page's header;
   - tap the page's button again;
   - tap another footer button (the other page, or Search);
   - change region.
@@ -346,7 +351,8 @@ Decided (2026-11-09):
 3. The Area page keeps the strip at Half; the page scrolls.
 4. Leaving restores the camera. It returns to the open card if its place
    still matches, else to the list.
-5. Clear sits in the upper right of the page header.
+5. An X in the page header closes the page; Clear sits at the top of the
+   page's body.
 6. The Area button shows whenever the region has areas; no special case.
 7. In area mode the basemap hides its labels and roads but keeps the
    rail lines; our labels show.
@@ -412,9 +418,9 @@ Proposed, with numbers above: the slider's stops, 500 m to 3 km.
 ## Done when
 
 - [x] Filters and Area open in the strip at Half, with the live count and
-      Clear in the upper right; each closes by its own button, another
-      footer button or a region change, and returns to the card or the
-      list it came from.
+      an X that closes them, and Clear at the top of the page; each also
+      closes by its own button, another footer button or a region change,
+      and returns to the card or the list it came from.
 - [x] Nearby narrows to the slider's radius around you (1 km at first),
       with the circle on the map, and says so while locating.
 - [x] + Adjacent's added areas behave as in the table, and a link
