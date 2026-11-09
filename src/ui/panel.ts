@@ -114,15 +114,22 @@ export function mountPanel(root: HTMLElement, onHeightChange?: (h: PanelHeight, 
     startHeight = el.getBoundingClientRect().height;
     velocity = 0;
     moved = false;
-    drag.setPointerCapture(e.pointerId);
     el.classList.add("is-dragging");
   });
 
-  drag.addEventListener("pointermove", (e) => {
+  // On the window, like the release below: until the drag captures the pointer, a fast
+  // mouse can leave the strip in its very first move, and that move has to start the drag.
+  window.addEventListener("pointermove", (e) => {
     if (e.pointerId !== pointerId) return;
     const dy = startY - e.clientY; // up is positive
-    if (!moved && Math.abs(dy) > TAP_SLOP_PX) moved = true;
-    if (!moved) return;
+    if (!moved) {
+      if (Math.abs(dy) <= TAP_SLOP_PX) return;
+      // A drag after all: from here the panel owns the pointer, even off the strip. Not
+      // before: Chromium sends the click of a captured pointer to the capturing element,
+      // so a tap on one of the strip's buttons (Bookmark, a page's X) would never reach it.
+      moved = true;
+      drag.setPointerCapture(e.pointerId);
+    }
     const dt = Math.max(1, e.timeStamp - lastT);
     velocity = (lastY - e.clientY) / dt; // px per ms, up positive
     lastY = e.clientY;
@@ -140,16 +147,19 @@ export function mountPanel(root: HTMLElement, onHeightChange?: (h: PanelHeight, 
       // A tap: the handle cycles; the strip (not its buttons) opens from strip height.
       el.dataset["height"] = height;
       el.style.height = `${px[height]()}px`;
-      const onButton = (e.target as HTMLElement).closest("button, a");
-      if (e.target === handle || handle.contains(e.target as Node)) apply(NEXT[height]);
+      const target = e.target instanceof Element ? e.target : null;
+      const onButton = target?.closest("button, a");
+      if (target && handle.contains(target)) apply(NEXT[height]);
       else if (height === "strip" && !onButton) apply("half");
       return;
     }
     const current = el.getBoundingClientRect().height;
     apply(snapTarget(current, velocity));
   };
-  drag.addEventListener("pointerup", end);
-  drag.addEventListener("pointercancel", end);
+  // On the window too: until a drag captures the pointer, a press that slides off the
+  // strip ends somewhere else, and the panel must still hear it.
+  window.addEventListener("pointerup", end);
+  window.addEventListener("pointercancel", end);
   // Taps are handled on pointerup; swallow the synthetic click so the handle doesn't cycle twice.
   handle.addEventListener("click", (e) => e.preventDefault());
 

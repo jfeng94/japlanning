@@ -26,6 +26,16 @@ last child, always on screen, with the safe-area inset below it. At the
 "strip" height the content is hidden and the header sits directly on the
 footer; at half and full the content scrolls between them.
 
+**Taps and drags on the header** (fixed 2026-11-09): a press becomes a
+drag once it moves 6 px, and only then does the panel capture the
+pointer. It used to capture on the press itself, and Chromium sends the
+click of a captured pointer to the capturing element, so in desktop and
+Android Chrome the header's buttons (Directions, Copy link, Bookmark, a
+page's X) never got their clicks. WebKit targets taps by what is under
+the finger, so the iPhone never showed it. Moves and releases are heard
+on the window, so a press that leaves the header before it is a drag
+still ends cleanly.
+
 ### Footer, always
 
 - **Search**, pinned right. Opens the search field in the top bar (as
