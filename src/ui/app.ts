@@ -792,7 +792,7 @@ export function mountApp(root: HTMLElement): AppHandle {
     nearbyCircle.set(!areaMap && state.nearby !== undefined ? position : undefined, previewRadius ?? state.nearby);
     ensureShapes(state.region);
     const regionShapes = shapes.get(state.region);
-    areaLayers.set(regionShapes && (areaMap || settings().showAreaShapes) ? areaDrawing(state, here, regionShapes) : undefined);
+    areaLayers.set(regionShapes && areaMap ? areaDrawing(state, here, regionShapes) : undefined);
     syncAreaMap(areaMap, state.region);
 
     const total = places.filter((p) => p.region === state.region).length;

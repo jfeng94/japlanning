@@ -78,15 +78,6 @@ const FIELDS: Field<keyof Settings>[] = [
       [20, "Never"],
     ],
   },
-  {
-    key: "showAreaShapes",
-    label: "Area shapes on the map",
-    help: "Draws the areas on the normal map too, as the Area page does, to check their shapes. The shapes are made from the census; Here goes by them.",
-    options: [
-      [false, "Off"],
-      [true, "On"],
-    ],
-  },
 ];
 
 export interface SettingsSheetHandlers {

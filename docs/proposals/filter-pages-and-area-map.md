@@ -276,7 +276,8 @@ shown = places in the region
   - outlines are simplified to 8 m, and slivers under 1,500 m² dropped.
 - **The review switch is in Settings** ("Area shapes on the map"),
   rather than Diagnostics, because a setting is saved on the device and
-  survives relaunches during the review. It gives each shape a colour so
+  survives relaunches during the review. (Removed after Part 3, whose
+  Area page shows the shapes.) It gives each shape a colour so
   that neighbours tell apart; Part 3 brings the section colours.
 - **Here goes by the shapes.** Between shapes it falls back to the
   nearest centre within 2 km: Daikanyama, between the Shibuya and
@@ -407,8 +408,10 @@ stay the main control.
   MapLibre that is a jump that cancels an ease under way. The fit and the
   return are queued until the tap's work is done. The fit also straightens
   a rotated map; the return puts the rotation back.
-- **Settings → Area shapes on the map** now draws the same colours and
-  looks on the normal map, where the pins still take taps.
+- **The shapes show only on the Area page** (Jerry, 2026-11-09). The
+  Settings switch that drew them on the normal map for Part 2's review
+  is gone; the Area page serves that review now. A device that had it
+  on simply forgets it (unknown settings are dropped when read).
 
 ## Icons (2026-11-09)
 

@@ -190,8 +190,7 @@ clear:
     bookmark badge, and they ignore taps;
   - leaving puts the camera back where it was.
 
-  Settings → Area shapes on the map draws the same areas on the normal
-  map, for checking the shapes.
+  The shapes show only there, never on the normal map.
 
 A page closes by its X, its own button, another footer button (the
 other page, Search) or a region change. It returns to the card it hid if that place

@@ -10,8 +10,7 @@ import type { Flavor } from "./style.ts";
  * The areas on the map (docs/proposals/filter-pages-and-area-map.md, Part
  * 3), in the looks of their chips: picked areas filled, areas added by
  * + Adjacent hatched with a dashed edge, the rest outlined; each in its
- * chip's colour, with its name. Drawn on the Area page, and on the normal
- * map while Settings → Area shapes on the map is on.
+ * chip's colour, with its name. Drawn only while the Area page is open.
  *
  * Added before the pins, so the pins draw on top; re-added, with the
  * hatch images, after every style load (a theme switch loads a new style).
