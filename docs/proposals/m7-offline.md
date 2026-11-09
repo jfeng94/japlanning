@@ -206,3 +206,10 @@ The phone pass passed. Two changes after it, both from Jerry:
   Offline section and Diagnostics now show what the app adds up itself
   (archive bytes from the sidecars plus the worker's cache), with the
   browser's estimate kept as a second line, labelled.
+
+### Addendum (2026-11-09): the update as a button
+
+The "Update ready" toast interrupted whatever Jerry was doing. A waiting
+update now shows as a button with a blue up arrow, beside Settings in the
+header, and nowhere else. It stays until tapped. The tap tells the new
+worker to take over and the page reloads on it, as the toast's tap did.

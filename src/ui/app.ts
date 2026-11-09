@@ -80,7 +80,13 @@ function uiReduce(state: UiState, action: UiAction): UiState {
 /** Our history entries: a card (s) and/or a filter page (p) over the list, always one entry, so Back means "to the list". */
 type HistoryState = { s?: string; p?: FilterPage } | null;
 
-export function mountApp(root: HTMLElement): void {
+/** What the rest of the page (the service worker's registration) can ask of the app. */
+export interface AppHandle {
+  /** A new build is waiting: offer it as the header's update button. */
+  offerUpdate(apply: () => void): void;
+}
+
+export function mountApp(root: HTMLElement): AppHandle {
   const ctx: UrlContext = { regions, layers, defaultRegion: regions[0]!.id };
   const startParams = new URLSearchParams(location.search);
   const filters = createStore(initialState(startParams, ctx), reduce);
@@ -928,6 +934,8 @@ export function mountApp(root: HTMLElement): void {
     const q = params.toString();
     return q ? `${location.pathname}?${q}` : location.pathname;
   }
+
+  return { offerUpdate: (apply) => header.offerUpdate(apply) };
 }
 
 function initialState(params: URLSearchParams, ctx: UrlContext): FilterState {

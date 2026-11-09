@@ -1,12 +1,11 @@
-import { showToast } from "../ui/toast.ts";
-
 /**
  * Register the service worker (built sites only: the dev server has no
  * sw.js, and caching there would hide edits) and surface updates. When a
- * new worker has installed and is waiting, a toast offers the reload; the
- * tap tells the worker to take over, and the page reloads once it has.
+ * new worker has installed and is waiting, `onUpdateReady` gets the way
+ * to apply it (the header's update button); applying tells the worker to
+ * take over, and the page reloads once it has.
  */
-export function registerServiceWorker(): void {
+export function registerServiceWorker(onUpdateReady: (apply: () => void) => void): void {
   if (!("serviceWorker" in navigator) || !import.meta.env.PROD) return;
 
   let reloading = false;
@@ -19,11 +18,7 @@ export function registerServiceWorker(): void {
   void navigator.serviceWorker
     .register("/sw.js")
     .then((reg) => {
-      const offer = (worker: ServiceWorker) => {
-        showToast("Update ready. Tap to reload.", 8000, {
-          onClick: () => worker.postMessage({ type: "SKIP_WAITING" }),
-        });
-      };
+      const offer = (worker: ServiceWorker) => onUpdateReady(() => worker.postMessage({ type: "SKIP_WAITING" }));
       // Already waiting from an earlier visit.
       if (reg.waiting && navigator.serviceWorker.controller) offer(reg.waiting);
       reg.addEventListener("updatefound", () => {

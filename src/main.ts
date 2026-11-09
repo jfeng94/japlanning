@@ -5,8 +5,8 @@ import { mountApp } from "./ui/app.ts";
 const app = document.querySelector<HTMLElement>("#app");
 if (!app) throw new Error("#app missing from index.html");
 
-mountApp(app);
-registerServiceWorker();
+const ui = mountApp(app);
+registerServiceWorker(ui.offerUpdate);
 
 // iOS ignores user-scalable=no in some contexts; its proprietary gesture
 // events are the reliable hook. Pinches that start on the map stay the

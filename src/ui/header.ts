@@ -1,5 +1,6 @@
 import type { RegionConfig, RegionId } from "../data/types.ts";
 import settingsIcon from "./icons/settings.webp";
+import updateIcon from "./icons/update.webp";
 import { parseSharedLink } from "./links.ts";
 import { createMenu } from "./menu.ts";
 
@@ -25,6 +26,8 @@ export interface Header {
   update(state: HeaderState): void;
   /** Expand the search field across the top bar (the strip's search button calls this). */
   openSearch(): void;
+  /** A new build is installed and waiting: show the update button beside Settings; a tap applies it. */
+  offerUpdate(apply: () => void): void;
 }
 
 export const CHEVRON_LEFT = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -32,10 +35,10 @@ export const CHEVRON_RIGHT = `<svg viewBox="0 0 24 24" width="20" height="20" ar
 export const SEARCH_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
 
 /**
- * One row: region menu and Settings. Search and Filters live in the panel
- * strip, near the thumb; the search field itself still expands across
- * this row and collapses on Cancel. Layers are chosen in the filter
- * sheet; the strip shows what's selected.
+ * One row: the region menu, then (only while a new build is waiting) the
+ * update button, then Settings. Search and the filter pages live in the
+ * panel's footer, near the thumb; the search field itself still expands
+ * across this row and collapses on Cancel.
  */
 export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: HeaderHandlers): Header {
   const el = document.createElement("header");
@@ -44,6 +47,7 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
     <div class="topbar-main">
       <button type="button" class="menu-button region-button"><span class="label"></span><span class="caret">▾</span></button>
       <span class="spacer"></span>
+      <button type="button" class="icon-button update-button" aria-label="Update ready. Tap to reload." title="Update ready" hidden><img alt="" draggable="false"></button>
       <button type="button" class="icon-button settings-button" aria-label="Settings"><img alt="" draggable="false"></button>
     </div>
     <div class="topbar-search" hidden>
@@ -57,11 +61,20 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
   const regionButton = $(".region-button");
   const regionLabel = $(".region-button .label");
   const settingsButton = $(".settings-button");
+  const updateButton = $<HTMLButtonElement>(".update-button");
   const mainRow = $(".topbar-main");
   const searchRow = $(".topbar-search");
   const input = $<HTMLInputElement>(".search");
 
   $<HTMLImageElement>(".settings-button img").src = settingsIcon;
+  $<HTMLImageElement>(".update-button img").src = updateIcon;
+
+  // The update waits here until it's wanted, instead of a toast that interrupts.
+  let applyUpdate: (() => void) | undefined;
+  updateButton.addEventListener("click", () => {
+    updateButton.disabled = true; // one tap: the page reloads once the new build takes over
+    applyUpdate?.();
+  });
 
   let current: HeaderState | undefined;
 
@@ -116,6 +129,11 @@ export function mountHeader(root: HTMLElement, regions: RegionConfig[], h: Heade
     openSearch() {
       showSearch(true);
       h.onSearchOpen?.();
+    },
+    offerUpdate(apply) {
+      applyUpdate = apply;
+      updateButton.disabled = false;
+      updateButton.hidden = false;
     },
   };
 }
