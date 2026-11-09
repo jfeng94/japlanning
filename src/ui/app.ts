@@ -1,25 +1,18 @@
 import { layers } from "../config/layers.ts";
 import { pinRendererKind } from "../config/map.ts";
-import { regions } from "../config/regions.ts";
+import { areasOf, regions } from "../config/regions.ts";
 import { settings, updateSettings, type Settings } from "../config/settings.ts";
 import { createBookmarks, createIdbBookmarkStorage } from "../data/bookmarks.ts";
+import { areaAt } from "../data/areas.ts";
 import { browserDeps } from "../data/browser.ts";
 import { loadAllLayersStaged } from "../data/load.ts";
 import type { LoadResult, Place, RegionId } from "../data/types.ts";
-import { applyFilters, sinkUnknownHours, type HoursInput } from "../filter/apply.ts";
-import { sortByDistance } from "../geo/distance.ts";
+import { applyFilters, sinkUnknownHours, type ApplyOptions, type HoursInput } from "../filter/apply.ts";
+import { inBbox, sortByDistance } from "../geo/distance.ts";
 import { markFor, type Mark } from "../data/marks.ts";
 import { evaluateAll, type HoursState } from "../hours/evaluate-all.ts";
 import { loadParser, tokyoNow, tokyoWallClock, type OpeningHoursCtor } from "../hours/open.ts";
-import {
-  defaultState,
-  effectiveLayers,
-  hasActiveFilters,
-  layersInRegion,
-  reduce,
-  type FilterAction,
-  type FilterState,
-} from "../filter/state.ts";
+import { defaultState, hasActiveFilters, layersInPlay, layersInRegion, reduce, type FilterState } from "../filter/state.ts";
 import { createStore } from "../filter/store.ts";
 import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url.ts";
 import { createWatch, permissionState, type LocateError, type Position } from "../geo/locate.ts";
@@ -33,7 +26,7 @@ import { createSdfPinRenderer } from "../map/pins-sdf.ts";
 import { chip } from "./chips.ts";
 import { renderDetail, renderDetailStrip } from "./detail.ts";
 import { mountDiagnostics } from "./diagnostics.ts";
-import { renderFilterSheet } from "./filter-sheet.ts";
+import { renderFilterSheet, type HereChip } from "./filter-sheet.ts";
 import { renderFilterSummary } from "./filter-summary.ts";
 import { CHEVRON_LEFT, mountHeader, SEARCH_ICON } from "./header.ts";
 import filtersIcon from "./icons/filters.webp";
@@ -62,7 +55,7 @@ function uiReduce(state: UiState, action: UiAction): UiState {
 export function mountApp(root: HTMLElement): void {
   const ctx: UrlContext = { regions, layers, defaultRegion: regions[0]!.id };
   const startParams = new URLSearchParams(location.search);
-  const filters = createStore(initialState(startParams, ctx), (s: FilterState, a: FilterAction) => reduce(s, a, layers));
+  const filters = createStore(initialState(startParams, ctx), reduce);
   const ui = createStore<UiState, UiAction>({}, uiReduce);
   const bookmarks = createBookmarks(createIdbBookmarkStorage());
 
@@ -260,6 +253,8 @@ export function mountApp(root: HTMLElement): void {
     } else {
       watch.stop();
       dropPosition();
+      // Here has nothing to go on without the position; its chip is hidden too.
+      if (filters.get().here) filters.dispatch({ type: "setHere", value: false });
     }
   }
   applyLocationSetting(settings().location);
@@ -299,6 +294,59 @@ export function mountApp(root: HTMLElement): void {
       timeout: "No location fix yet. Try again, ideally outdoors.",
     };
     showToast(text[kind], 3000);
+    render(); // Here's label and the order toggle read the watch's state
+  }
+
+  // ---- Here ----
+  /** Here as the sheet and the tags label it, and the area chip it stands for when it resolves to one. */
+  function hereChip(state: FilterState): HereChip {
+    if (!position) {
+      if (!state.here) return { label: "Here" };
+      return { label: watch.active ? "Here · locating…" : "Here · no location" };
+    }
+    const region = regions.find((r) => r.id === state.region)!;
+    const regionPlaces = places.filter((p) => p.region === region.id);
+    const group = areaAt(areasOf(region.id), regionPlaces, position, region.bbox ? { bbox: region.bbox } : {});
+    if (group) return { label: `Here · ${group}`, group };
+    return { label: region.bbox && !inBbox(position, region.bbox) ? `Here · outside ${region.label}` : "Here · no area nearby" };
+  }
+
+  /** The Here chip: turning it on with no fix starts locating (the permission prompt, if any, comes here). */
+  function onHere(on: boolean): void {
+    if (on && position === undefined) watch.start();
+    filters.dispatch({ type: "setHere", value: on });
+  }
+
+  /** Everything applyFilters needs beyond the state. */
+  function applyOpts(state: FilterState, here: HereChip = hereChip(state)): ApplyOptions {
+    return {
+      bookmarks: bookmarks.all(),
+      hours: hoursInput(),
+      areas: areasOf(state.region),
+      ...(state.here && here.group !== undefined ? { hereGroup: here.group } : {}),
+    };
+  }
+
+  // ---- list order (the footer toggle) ----
+  /** The order the list is in: Nearest needs a fix; while one is on the way it reads "Nearest…" and stays A–Z. */
+  function orderShown(): "name" | "distance" | "waiting" {
+    if (settings().sort !== "distance") return "name";
+    if (position) return "distance";
+    return settings().location && watch.active ? "waiting" : "name";
+  }
+
+  /** A–Z ⇄ Nearest. Writes the sort setting, so the choice persists across launches. */
+  function toggleOrder(): void {
+    if (orderShown() !== "name") {
+      updateSettings({ sort: "name" });
+    } else if (!settings().location) {
+      showToast("Turn on Location in Settings to sort by distance.", 3000);
+      return;
+    } else {
+      updateSettings({ sort: "distance" });
+      if (position === undefined) watch.start();
+    }
+    render();
   }
 
   /** No fix any more: distances go, and a distance-ordered list falls back to names. */
@@ -318,13 +366,15 @@ export function mountApp(root: HTMLElement): void {
   );
   const detailStrip = el("div", "strip-detail");
   // The footer is pinned to the bottom of the screen at every height: Search
-  // and Filters on the right always; Back on the left and Prev/Next in the
-  // middle while a card is open (docs/proposals/strip-footer.md).
+  // and Filters on the right always; on the left the list order toggle in
+  // list mode, Back in card mode; Prev/Next in the middle while a card is
+  // open (docs/proposals/strip-footer.md, filters-and-areas.md).
   panel.footer.innerHTML = `
-    <div class="footer-left footer-detail">
+    <div class="footer-left">
       <button type="button" class="icon-button back-button" aria-label="Back to the list">${CHEVRON_LEFT}</button>
+      <button type="button" class="order-toggle"></button>
     </div>
-    <div class="footer-middle footer-detail">
+    <div class="footer-middle">
       <button type="button" class="arrow-button prev-button" aria-label="Previous place"><img alt="" draggable="false" src="${prevIcon}"></button>
       <button type="button" class="arrow-button next-button" aria-label="Next place"><img alt="" draggable="false" src="${nextIcon}"></button>
     </div>
@@ -337,6 +387,8 @@ export function mountApp(root: HTMLElement): void {
   const backButton = panel.footer.querySelector<HTMLButtonElement>(".back-button")!;
   const prevButton = panel.footer.querySelector<HTMLButtonElement>(".prev-button")!;
   const nextButton = panel.footer.querySelector<HTMLButtonElement>(".next-button")!;
+  const orderToggle = panel.footer.querySelector<HTMLButtonElement>(".order-toggle")!;
+  orderToggle.addEventListener("click", toggleOrder);
   searchToggle.addEventListener("click", () => header.openSearch());
   filtersButton.addEventListener("click", filterSheet.open);
   backButton.addEventListener("click", () => deselect());
@@ -375,11 +427,9 @@ export function mountApp(root: HTMLElement): void {
   /** Make sure `place` is in the current results: right region, and no filter or layer selection excluding it. */
   function revealPlace(place: Place): void {
     if (place.region !== filters.get().region) filters.dispatch({ type: "setRegion", region: place.region });
-    const visible = applyFilters(places, filters.get(), { bookmarks: bookmarks.all(), hours: hoursInput() }).some((p) => p.id === place.id);
-    if (!visible) {
-      filters.dispatch({ type: "clearFilters" });
-      filters.dispatch({ type: "setLayers", layers: [] });
-    }
+    const state = filters.get();
+    const visible = applyFilters(places, state, applyOpts(state)).some((p) => p.id === place.id);
+    if (!visible) filters.dispatch({ type: "clearFilters" });
   }
 
   /** The list as last rendered, in order, for Prev/Next. */
@@ -451,28 +501,22 @@ export function mountApp(root: HTMLElement): void {
 
   // ---- rendering ----
 
-  function renderSheet(): void {
+  function renderSheet(here: HereChip = hereChip(filters.get())): void {
     const state = filters.get();
     renderFilterSheet(filterSheet.body, state, {
-      region: regions.find((r) => r.id === state.region)!,
       layers: layersInRegion(layers, state.region),
-      places,
-      bookmarks: bookmarks.all(),
-      hours: hoursInput(),
+      areas: areasOf(state.region),
+      ...(settings().location ? { here } : {}),
+      onHere,
       dispatch: filters.dispatch,
-      sort: settings().sort,
-      hasPosition: position !== undefined,
-      onSort: (sort) => {
-        updateSettings({ sort });
-        render();
-      },
     });
   }
 
   function render(): void {
     const state = filters.get();
     const regionLayers = layersInRegion(layers, state.region);
-    if (filterSheet.isOpen()) renderSheet();
+    const here = hereChip(state);
+    if (filterSheet.isOpen()) renderSheet(here);
 
     header.update({
       region: regions.find((r) => r.id === state.region)!,
@@ -483,11 +527,12 @@ export function mountApp(root: HTMLElement): void {
     filtersButton.querySelector<HTMLElement>(".dot")!.hidden = !filtersActive;
     filtersButton.classList.toggle("is-active", filtersActive);
 
-    const layersOn = effectiveLayers(state, regionLayers.map((l) => l.id));
-    const total = places.filter((p) => p.region === state.region && layersOn.has(p.layerId)).length;
-    const matching = applyFilters(places, state, { bookmarks: bookmarks.all(), hours: hoursInput() });
-    const byDistance = settings().sort === "distance" && position !== undefined;
-    const sorted = byDistance && position ? sortByDistance(matching, position) : sortByName(matching);
+    const total = places.filter((p) => p.region === state.region).length;
+    const matching = applyFilters(places, state, applyOpts(state, here));
+    const order = orderShown();
+    orderToggle.textContent = order === "distance" ? "Nearest" : order === "waiting" ? "Nearest…" : "A–Z";
+    orderToggle.setAttribute("aria-label", `List order: ${order === "name" ? "A to Z" : "nearest first"}. Tap to switch.`);
+    const sorted = order === "distance" && position ? sortByDistance(matching, position) : sortByName(matching);
     const shown = state.openNow ? sinkUnknownHours(sorted, hoursInput()) : sorted;
     const selectedId = ui.get().selectedId;
     const selected = selectedId ? shown.find((p) => p.id === selectedId) : undefined;
@@ -500,12 +545,12 @@ export function mountApp(root: HTMLElement): void {
       state,
       regionLayers,
       loading && places.length === 0 ? "Loading…" : countLabel(shown.length, total),
-      byDistance,
+      here.label,
     );
     renderStatus(status, results, loading);
     renderList(placeList, shown, {
       layers: regionLayers,
-      showLayer: layersOn.size > 1,
+      showLayer: layersInPlay(state, regionLayers).length > 1,
       selectedId,
       marks: marksFor(shown),
       flashId,
@@ -586,7 +631,8 @@ export function mountApp(root: HTMLElement): void {
   }
 
   function fitToResults(): void {
-    const shown = applyFilters(places, filters.get(), { bookmarks: bookmarks.all(), hours: hoursInput() });
+    const state = filters.get();
+    const shown = applyFilters(places, state, applyOpts(state));
     view.fitPoints(shown.map((p) => [p.lng, p.lat]));
   }
 
@@ -602,7 +648,10 @@ export function mountApp(root: HTMLElement): void {
         note(places.length === 0 ? "No data loaded. Check Diagnostics." : `No places in ${regionLabel(state.region)} yet. Add rows with Region = ${state.region} to the data file.`),
       );
     } else if (shown === 0) {
-      target.append(note("Nothing matches these filters."));
+      const noBookmarks = state.bookmarkedOnly && !places.some((p) => p.region === state.region && bookmarks.has(p.id));
+      target.append(
+        note(noBookmarks ? `No bookmarks in ${regionLabel(state.region)} yet. Bookmark a place from its card.` : "Nothing matches these filters."),
+      );
       if (hasActiveFilters(state)) {
         target.append(chip("Clear filters", { onClick: () => filters.dispatch({ type: "clearFilters" }) }));
       }
@@ -705,7 +754,7 @@ export function mountApp(root: HTMLElement): void {
 
 function initialState(params: URLSearchParams, ctx: UrlContext): FilterState {
   if ([...params.keys()].some((k) => k !== SELECTED_PARAM && k !== "pins")) return fromSearchParams(params, ctx);
-  return defaultState(rememberedRegion() ?? ctx.defaultRegion, ctx.layers);
+  return defaultState(rememberedRegion() ?? ctx.defaultRegion);
 }
 
 function rememberedRegion(): RegionId | undefined {

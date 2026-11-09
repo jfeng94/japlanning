@@ -1,4 +1,5 @@
-import type { AreaConfig, RegionConfig } from "./types.ts";
+import { distanceM, inBbox, type LatLng } from "../geo/distance.ts";
+import type { AreaConfig, Place, RegionConfig } from "./types.ts";
 
 /**
  * Areas in three layers (docs/proposals/filters-and-areas.md):
@@ -119,6 +120,38 @@ export function areaIndex(region: AreaSource): AreaIndex {
       return out;
     },
   };
+}
+
+/** How far from an area's centre Here still counts as in it. */
+export const HERE_MAX_M = 2000;
+
+/**
+ * Here: the chip of the raw area whose centre is nearest to `at`. A
+ * centre is the centroid of the area's places, so there are no
+ * coordinates to maintain. Undefined outside the region's bbox or farther
+ * than `maxM` from every centre. Near a border it may pick the other
+ * side, which Include nearby makes moot.
+ */
+export function areaAt(
+  index: Pick<AreaIndex, "groupOf">,
+  places: readonly Pick<Place, "area" | "lat" | "lng">[],
+  at: LatLng,
+  opts: { bbox?: readonly [number, number, number, number]; maxM?: number } = {},
+): string | undefined {
+  if (opts.bbox && !inBbox(at, opts.bbox)) return undefined;
+  const sums = new Map<string, { lat: number; lng: number; n: number }>();
+  for (const p of places) {
+    if (p.area === undefined) continue;
+    const s = sums.get(p.area) ?? { lat: 0, lng: 0, n: 0 };
+    sums.set(p.area, { lat: s.lat + p.lat, lng: s.lng + p.lng, n: s.n + 1 });
+  }
+  let best: { area: string; m: number } | undefined;
+  for (const [area, s] of sums) {
+    const m = distanceM(at, { lat: s.lat / s.n, lng: s.lng / s.n });
+    if (!best || m < best.m) best = { area, m };
+  }
+  if (!best || best.m > (opts.maxM ?? HERE_MAX_M)) return undefined;
+  return index.groupOf(best.area);
 }
 
 /** Everything wrong with a region's area config, for the tests; empty when it is sound. */

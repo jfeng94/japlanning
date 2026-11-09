@@ -1,196 +1,148 @@
-import type { SortKey } from "../config/settings.ts";
-import type { LayerConfig, Place, RegionConfig } from "../data/types.ts";
-import { areaIndex } from "../data/areas.ts";
-import { facetCounts, neighborhoodCounts, openNowCounts, scopedFacetValues, type HoursInput } from "../filter/apply.ts";
+import type { AreaIndex } from "../data/areas.ts";
+import type { LayerConfig } from "../data/types.ts";
+import { areaScope } from "../filter/apply.ts";
+import { categoriesOf, hasActiveFilters, type FilterAction, type FilterState } from "../filter/state.ts";
 import { clock, DAY, tokyoNow, tokyoWallClock, wallClockString } from "../hours/open.ts";
-import {
-  activeFacetLayer,
-  effectiveLayers,
-  getSelection,
-  hasActiveFilters,
-  type FilterAction,
-  type FilterState,
-} from "../filter/state.ts";
 import { chip } from "./chips.ts";
 
+/** The Here chip as the app resolves it from the position. */
+export interface HereChip {
+  /** "Here", "Here · Shibuya", "Here · locating…", "Here · outside Tokyo". */
+  label: string;
+  /** The area chip Here stands for, when it resolves to one. */
+  group?: string;
+}
+
 export interface FilterSheetContext {
-  region: RegionConfig;
   /** The region's layers. */
   layers: LayerConfig[];
-  places: Place[];
-  /** This device's bookmarked place ids. */
-  bookmarks: ReadonlySet<string>;
-  /** Evaluated hours, once the open-now filter is on and the parser has loaded. */
-  hours?: HoursInput;
+  /** The region's areas. */
+  areas: AreaIndex;
+  /** Offered while the Location setting is on; undefined hides it. */
+  here?: HereChip;
+  /** Here tapped; the app starts locating when it has no fix. */
+  onHere: (on: boolean) => void;
   dispatch: (action: FilterAction) => void;
-  /** List order (a setting, not filter state) and whether distance order is possible yet. */
-  sort: SortKey;
-  hasPosition: boolean;
-  onSort: (sort: SortKey) => void;
 }
 
 /**
- * Rebuild the filter sheet body for a state. Area chips, the
- * starred toggle, then one section per facet of the active layer with a
- * count on every value and an include-unknown checkbox. Cheap enough to
- * rebuild on every change at this data size.
+ * The filter sheet: flags, areas, categories (docs/proposals/filters-and-areas.md).
+ * Filters do not cascade: nothing here appears, disappears, greys out or
+ * recounts because of another selection. The feedback is the result count
+ * in the strip. Rebuilt on every change, which is cheap at this size.
  */
 export function renderFilterSheet(body: HTMLElement, state: FilterState, ctx: FilterSheetContext): void {
-  const { region, places, dispatch, bookmarks } = ctx;
-  const opts = { bookmarks, hours: ctx.hours };
+  const { dispatch } = ctx;
   body.replaceChildren();
 
-  const regionLayerIds = ctx.layers.map((l) => l.id);
-  if (ctx.layers.length > 0) {
-    const sec = section(
-      "Layers",
-      ctx.layers.map((l) =>
-        chip(l.label, {
-          pressed: state.layers.has(l.id),
-          color: l.color,
-          count: places.filter((p) => p.layerId === l.id).length,
-          onClick: () => dispatch({ type: "toggleLayer", layer: l.id }),
-        }),
-      ),
-    );
-    if (state.layers.size === 0 && ctx.layers.length > 1) sec.append(note("None picked: all layers show."));
-    body.append(sec);
-  }
+  // Flags: each one on narrows the results.
+  const at = tokyoWallClock(state.openAt);
+  const flags = section("Show only", [
+    chip("Bookmarked", {
+      pressed: state.bookmarkedOnly,
+      onClick: () => dispatch({ type: "setBookmarkedOnly", value: !state.bookmarkedOnly }),
+    }),
+    chip(at ? `Open ${DAY[at.getDay()]} ${clock(at)}` : "Open now", {
+      pressed: state.openNow,
+      onClick: () => dispatch({ type: "setOpenNow", value: !state.openNow }),
+    }),
+    chip("Key branches", {
+      pressed: state.starredOnly,
+      onClick: () => dispatch({ type: "setStarredOnly", value: !state.starredOnly }),
+    }),
+  ]);
+  if (state.openNow) flags.append(openAtRow(state, dispatch));
+  body.append(flags);
 
-  // Areas: the chips (merged raw areas) under ward headings; Kyoto is one flat list.
-  const areas = areaIndex(region);
-  if (areas.chips.length > 0) {
-    const counts = neighborhoodCounts(places, state, areas.chips.map((c) => c.label), opts);
-    const sec = document.createElement("section");
-    sec.className = "filter-section";
-    const h = document.createElement("h3");
-    h.textContent = "Area";
-    sec.append(h);
-    for (const group of areas.sections) {
-      if (group.label) {
-        const heading = document.createElement("p");
-        heading.className = "area-heading";
-        heading.textContent = group.label;
-        sec.append(heading);
-      }
-      const row = document.createElement("div");
-      row.className = "chip-row";
-      row.append(
-        ...group.chips.map((c) =>
-          chip(c.label, {
-            pressed: state.neighborhoods.has(c.label),
-            count: counts.get(c.label) ?? 0,
-            disabled: (counts.get(c.label) ?? 0) === 0 && !state.neighborhoods.has(c.label),
-            onClick: () => dispatch({ type: "toggleNeighborhood", neighborhood: c.label }),
-          }),
-        ),
-      );
-      sec.append(row);
-    }
-    body.append(sec);
-  }
-
-  // Sort: a preference rather than a filter, but it belongs with "what am I looking at".
-  const byDistance = ctx.sort === "distance" && ctx.hasPosition;
-  body.append(
-    section("Sort", [
-      chip("Name", { pressed: !byDistance, onClick: () => ctx.onSort("name") }),
-      chip(ctx.hasPosition ? "Distance" : "Distance · locate first", {
-        pressed: byDistance,
-        disabled: !ctx.hasPosition,
-        onClick: () => ctx.onSort("distance"),
-      }),
-    ]),
-  );
-
-  const bookmarkedInRegion = places.filter((p) => p.region === region.id && bookmarks.has(p.id)).length;
-  body.append(
-    section("Flags", [
-      chip("★ Key branches only", {
-        pressed: state.starredOnly,
-        onClick: () => dispatch({ type: "setStarredOnly", value: !state.starredOnly }),
-      }),
-      chip(bookmarkedInRegion === 0 && !state.bookmarkedOnly ? "Bookmarked only · none yet" : "Bookmarked only", {
-        pressed: state.bookmarkedOnly,
-        count: bookmarkedInRegion,
-        disabled: bookmarkedInRegion === 0 && !state.bookmarkedOnly,
-        onClick: () => dispatch({ type: "setBookmarkedOnly", value: !state.bookmarkedOnly }),
-      }),
-      openNowChip(state, places, opts, dispatch),
-    ]),
-  );
-  if (state.openNow) body.append(openNowDetails(state, places, opts, dispatch));
-
-  const activeId = activeFacetLayer(state, regionLayerIds);
-  const layer = ctx.layers.find((l) => l.id === activeId);
-  if (layer) {
-    const counts = facetCounts(places, state, layer, opts);
-    for (const facet of layer.facets) {
-      const count = counts.get(facet.column);
-      if (!count) continue;
-      const sel = getSelection(state, layer.id, facet.column);
-      // A scoped facet (Specialty by Kind) offers only the values the chosen kinds actually have.
-      const inScope = scopedFacetValues(places, state, layer, facet);
-      const offered = [...count.values].filter(([value]) => !inScope || inScope.has(value) || sel.values.has(value));
-      const chips = offered.map(([value, n]) =>
-        chip(value, {
-          pressed: sel.values.has(value),
-          count: n,
-          disabled: n === 0 && !sel.values.has(value),
-          onClick: () => dispatch({ type: "toggleFacetValue", layer: layer.id, column: facet.column, value }),
-        }),
-      );
-      const sec = section(facet.label ?? facet.column, chips);
-      if (count.unknown > 0 || !sel.includeUnknown) {
-        sec.append(
-          unknownToggle(count.unknown, sel.includeUnknown, (value) =>
-            dispatch({ type: "setIncludeUnknown", layer: layer.id, column: facet.column, value }),
-          ),
-        );
-      }
-      body.append(sec);
-    }
-  } else if (effectiveLayers(state, regionLayerIds).size > 1) {
-    body.append(note("Pick a single layer to filter by its details."));
-  }
+  if (ctx.areas.chips.length > 0) body.append(areaSection(state, ctx));
+  if (ctx.layers.length > 0) body.append(categorySection(state, ctx));
 
   if (hasActiveFilters(state)) {
-    const clear = chip("Clear all filters", { className: "clear", onClick: () => dispatch({ type: "clearFilters" }) });
     const wrap = document.createElement("div");
     wrap.className = "sheet-actions";
-    wrap.append(clear);
+    wrap.append(chip("Clear all filters", { className: "clear", onClick: () => dispatch({ type: "clearFilters" }) }));
     body.append(wrap);
   }
 }
 
-type Opts = { bookmarks: ReadonlySet<string>; hours?: HoursInput };
+/**
+ * Here, then the chips under their ward headings (a heading selects or
+ * clears its chips), then Include nearby. A chip that Here or Include
+ * nearby pulls in gets a dotted outline without becoming selected, so the
+ * result count is explainable.
+ */
+function areaSection(state: FilterState, ctx: FilterSheetContext): HTMLElement {
+  const { areas, dispatch } = ctx;
+  const sec = section("Area");
+  const scope = areaScope(state, { hereGroup: ctx.here?.group, areas });
+  const pulled = (label: string) => !state.areas.has(label) && (scope?.chosen.has(label) || scope?.nearby.has(label)) === true;
 
-function openNowChip(state: FilterState, places: Place[], opts: Opts, dispatch: (a: FilterAction) => void): HTMLElement {
-  const at = tokyoWallClock(state.openAt);
-  const label = at ? `Open ${DAY[at.getDay()]} ${clock(at)}` : "Open now";
-  const counts = opts.hours ? openNowCounts(places, state, opts) : undefined;
-  return chip(label, {
-    pressed: state.openNow,
-    ...(counts ? { count: counts.open } : {}),
-    onClick: () => dispatch({ type: "setOpenNow", value: !state.openNow }),
-  });
+  if (ctx.here) {
+    sec.append(row([chip(ctx.here.label, { pressed: state.here, className: "here-chip", onClick: () => ctx.onHere(!state.here) })]));
+  }
+  for (const s of areas.sections) {
+    const labels = s.chips.map((c) => c.label);
+    if (s.label) {
+      const all = labels.every((l) => state.areas.has(l));
+      const heading = document.createElement("button");
+      heading.type = "button";
+      heading.className = "area-heading";
+      heading.textContent = s.label;
+      heading.setAttribute("aria-pressed", String(all));
+      heading.setAttribute("aria-label", `${all ? "Clear" : "Select"} every area in ${s.label}`);
+      heading.addEventListener("click", () => dispatch({ type: "setAreas", areas: labels, on: !all }));
+      sec.append(heading);
+    }
+    sec.append(
+      row(
+        s.chips.map((c) =>
+          chip(c.label, {
+            pressed: state.areas.has(c.label),
+            ...(pulled(c.label) ? { className: "is-pulled" } : {}),
+            onClick: () => dispatch({ type: "toggleArea", area: c.label }),
+          }),
+        ),
+      ),
+    );
+  }
+  sec.append(switchRow("Include nearby areas", state.nearby, (value) => dispatch({ type: "setNearby", value })));
+  return sec;
 }
 
-/** Under the Open now chip: the unknown-hours toggle and the "open at" pickers. */
-function openNowDetails(state: FilterState, places: Place[], opts: Opts, dispatch: (a: FilterAction) => void): HTMLElement {
-  const wrap = document.createElement("div");
-  wrap.className = "open-now-details";
+/** One row per layer: its header chip (every kind on or off), then a chip per kind. */
+function categorySection(state: FilterState, ctx: FilterSheetContext): HTMLElement {
+  const { dispatch } = ctx;
+  const sec = section("Category");
+  for (const layer of ctx.layers) {
+    const own = categoriesOf(layer);
+    const all = own.every((c) => state.categories.has(c));
+    const chips = [
+      chip(layer.label, {
+        pressed: all,
+        color: layer.color,
+        className: "category-header",
+        onClick: () => dispatch({ type: "setCategories", categories: own, on: !all }),
+      }),
+    ];
+    for (const kind of layer.kinds ?? []) {
+      const category = `${layer.id}/${kind}`;
+      chips.push(
+        chip(kind, {
+          pressed: state.categories.has(category),
+          onClick: () => dispatch({ type: "toggleCategory", category }),
+        }),
+      );
+    }
+    sec.append(row(chips));
+  }
+  return sec;
+}
 
-  const counts = opts.hours ? openNowCounts(places, state, opts) : undefined;
-  wrap.append(
-    unknownToggle(counts?.unknown ?? 0, state.includeUnknownHours, (value) => dispatch({ type: "setIncludeUnknownHours", value }), "Include unknown hours"),
-  );
-  if (!opts.hours) wrap.append(note("Checking hours…"));
-
-  // "Open at…": the phone's own date and time pickers; one empty half is filled from Tokyo's current time.
+/** Under Open now: the phone's own date and time pickers; one empty half is filled from Tokyo's current time. */
+function openAtRow(state: FilterState, dispatch: (a: FilterAction) => void): HTMLElement {
   const at = tokyoWallClock(state.openAt);
-  const row = document.createElement("div");
-  row.className = "open-at";
+  const wrap = document.createElement("div");
+  wrap.className = "open-at";
   const title = document.createElement("span");
   title.className = "open-at-label";
   title.textContent = "Open at";
@@ -206,53 +158,50 @@ function openNowDetails(state: FilterState, places: Place[], opts: Opts, dispatc
     time.value = s.slice(11, 16);
   }
   const commit = () => {
-    const now = wallClockString(tokyoNow());
-    const d = date.value || now.slice(0, 10);
-    const t = time.value || now.slice(11, 16);
     if (!date.value && !time.value) return;
-    dispatch({ type: "setOpenAt", value: `${d}T${t}` });
+    const now = wallClockString(tokyoNow());
+    dispatch({ type: "setOpenAt", value: `${date.value || now.slice(0, 10)}T${time.value || now.slice(11, 16)}` });
   };
   date.addEventListener("change", commit);
   time.addEventListener("change", commit);
-  row.append(title, date, time);
-  if (at) {
-    row.append(
-      chip("Now", {
-        className: "clear",
-        onClick: () => dispatch({ type: "setOpenAt", value: undefined }),
-      }),
-    );
-  }
-  wrap.append(row);
+  wrap.append(title, date, time);
+  if (at) wrap.append(chip("Now", { className: "clear", onClick: () => dispatch({ type: "setOpenAt", value: undefined }) }));
   return wrap;
 }
 
-function section(title: string, chips: HTMLElement[]): HTMLElement {
+/** A titled section; with chips, its first row. */
+function section(title: string, chips?: HTMLElement[]): HTMLElement {
   const sec = document.createElement("section");
   sec.className = "filter-section";
   const h = document.createElement("h3");
   h.textContent = title;
-  const row = document.createElement("div");
-  row.className = "chip-row";
-  row.append(...chips);
-  sec.append(h, row);
+  sec.append(h);
+  if (chips) sec.append(row(chips));
   return sec;
 }
 
-function unknownToggle(n: number, checked: boolean, onChange: (value: boolean) => void, text = "Include unknown"): HTMLLabelElement {
-  const label = document.createElement("label");
-  label.className = "unknown-toggle";
-  const input = document.createElement("input");
-  input.type = "checkbox";
-  input.checked = checked;
-  input.addEventListener("change", () => onChange(input.checked));
-  label.append(input, ` ${text} (${n})`);
-  return label;
+function row(chips: HTMLElement[]): HTMLElement {
+  const r = document.createElement("div");
+  r.className = "chip-row";
+  r.append(...chips);
+  return r;
 }
 
-function note(text: string): HTMLParagraphElement {
-  const p = document.createElement("p");
-  p.className = "note";
-  p.textContent = text;
-  return p;
+/** A labelled on/off switch: a real checkbox (keyboard, VoiceOver) drawn as a track and knob. */
+function switchRow(text: string, checked: boolean, onChange: (value: boolean) => void): HTMLLabelElement {
+  const label = document.createElement("label");
+  label.className = "switch-row";
+  const span = document.createElement("span");
+  span.textContent = text;
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.className = "switch-input";
+  input.setAttribute("role", "switch");
+  input.checked = checked;
+  input.addEventListener("change", () => onChange(input.checked));
+  const track = document.createElement("span");
+  track.className = "switch";
+  track.setAttribute("aria-hidden", "true");
+  label.append(span, input, track);
+  return label;
 }

@@ -21,6 +21,9 @@ const REQUIRED_COLUMNS = ["Name", "Latitude", "Longitude"] as const;
 /** The sheet's stable integer id column; optional per sheet, required per row once present. */
 export const ID_COLUMN = "ID";
 
+/** A layer with `kinds` reads them from this column; one without leaves it in `extra`. */
+const KIND_COLUMN = "Kind";
+
 /** Core optional columns, by header text. */
 const COL = {
   id: ID_COLUMN,
@@ -80,10 +83,12 @@ export function parseLayerCsv(
   }));
 
   const facetColumns = new Set(layer.facets.map((f) => f.column));
+  const kinds = layer.kinds;
   const knownColumns = new Set<string>([
     ...REQUIRED_COLUMNS,
     ...Object.values(COL),
     ...facetColumns,
+    ...(kinds ? [KIND_COLUMN] : []),
   ]);
   const extraColumns = headers.filter((h) => h !== "" && !knownColumns.has(h));
   const icons = options.icons ? new Set(options.icons) : undefined;
@@ -200,6 +205,17 @@ export function parseLayerCsv(
       }
     }
 
+    // Kind: required for a layer with kinds; the category chips select on it.
+    let placeKinds: string[] = [];
+    if (kinds) {
+      const raw = splitMulti(cell(KIND_COLUMN));
+      if (raw.length === 0) warn(`${name}: Kind is blank`, KIND_COLUMN);
+      for (const k of raw) {
+        if (!kinds.includes(k)) warn(`${name}: Kind "${k}" is not one of ${kinds.join(", ")}`, KIND_COLUMN);
+      }
+      placeKinds = kinds.filter((k) => raw.includes(k));
+    }
+
     let icon = cell(COL.icon);
     if (icon && icons && !icons.has(icon)) {
       warn(`${name}: Icon "${icon}" is not a known icon; using the layer default`, COL.icon);
@@ -242,6 +258,7 @@ export function parseLayerCsv(
       notes: cell(COL.notes),
       lastVerified,
       icon,
+      kinds: placeKinds,
       facets,
       extra,
     });

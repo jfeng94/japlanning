@@ -56,13 +56,6 @@ export interface FacetConfig {
   label?: string;
   /** Ordered. Values in the sheet but not listed here still render, after these. */
   values: string[];
-  /**
-   * Another facet column whose selection scopes this one: a value is
-   * offered only when some row matching that selection holds it (Specialty
-   * scoped by Kind shows coffee specialties for Coffee, tea ones for Tea).
-   * No selection there means every value. A selected value is always kept.
-   */
-  scopeBy?: string;
 }
 
 export interface LayerConfig {
@@ -82,6 +75,13 @@ export interface LayerConfig {
   icon: string;
   /** Whether rows carry hours and take part in "open now". */
   hasHours: boolean;
+  /**
+   * The layer's kinds, from its Kind column (required when set: a blank or
+   * unknown value fails the build). They are the category chips under the
+   * layer's header in the filter sheet. Absent: the layer is one category.
+   */
+  kinds?: string[];
+  /** Columns shown on the row and the card, and matched by search; not filters (docs/proposals/filters-and-areas.md). */
   facets: FacetConfig[];
   /** Facet columns shown as chips on a list row. Defaults to the first two facets. */
   rowFacets?: string[];
@@ -117,13 +117,15 @@ export interface Place {
   link?: string;
   /** Japanese address with any leading ~ stripped. */
   address?: string;
-  /** True when the sheet marked the address with a leading ~ (neighborhood-level only). */
+  /** True when the sheet marked the address with a leading ~ (area-level only). */
   addressApproximate: boolean;
   notes?: string;
   /** YYYY-MM-DD, only when the cell parsed as one. */
   lastVerified?: string;
   /** Icon id from the sheet's Icon column, when set and known; else the layer's default applies. */
   icon?: string;
+  /** Its kinds (the Kind column), in the layer's order; [] for a layer without kinds. */
+  kinds: string[];
   /** Facet column -> values. Always an array; [] means unknown. */
   facets: Record<string, string[]>;
   /** Non-blank cells in columns the layer config doesn't know about. */

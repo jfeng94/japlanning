@@ -1,117 +1,114 @@
 import { describe, expect, it } from "vitest";
-import type { LayerId } from "../data/types.ts";
 import {
-  activeFacetLayer,
+  categoriesOf,
   defaultState,
-  effectiveLayers,
-  getSelection,
   hasActiveFilters,
+  layersInPlay,
+  layersInRegion,
   reduce,
+  type FilterAction,
   type FilterState,
 } from "./state.ts";
-import { allLayers } from "./testing.ts";
+import { allLayers, coffee, kyotoFood, lodging } from "./testing.ts";
 
-const TEA = "tokyo-tea" as LayerId;
-const r = (s: FilterState, a: Parameters<typeof reduce>[1]) => reduce(s, a, allLayers);
+const run = (...actions: FilterAction[]): FilterState => actions.reduce((s, a) => reduce(s, a), defaultState("tokyo"));
+const COFFEE = "drinks/Coffee";
+const TEA = "drinks/Tea";
 
 describe("defaultState", () => {
-  it("selects no layers (which means all) and nothing else", () => {
-    const s = defaultState("tokyo", allLayers);
-    expect(s.layers.size).toBe(0);
-    expect([...effectiveLayers(s, ["drinks", TEA])]).toEqual(["drinks", "tokyo-tea"]);
-    expect(s.text).toBe("");
-    expect(s.neighborhoods.size).toBe(0);
-    expect(s.starredOnly).toBe(false);
-    expect(s.facets).toEqual({});
+  it("selects nothing, which means everything", () => {
+    const s = defaultState("tokyo");
+    expect(s.categories.size).toBe(0);
+    expect(s.areas.size).toBe(0);
+    expect([s.here, s.nearby, s.starredOnly, s.bookmarkedOnly, s.openNow, s.text, s.openAt]).toEqual([false, false, false, false, false, "", undefined]);
     expect(hasActiveFilters(s)).toBe(false);
   });
+});
 
-  it("a region with one layer has that layer's facets active by default", () => {
-    expect(activeFacetLayer(defaultState("kyoto", allLayers), ["kyoto-food" as LayerId])).toBe("kyoto-food");
-    expect(activeFacetLayer(defaultState("hakone", allLayers), [])).toBeUndefined();
+describe("categories", () => {
+  it("a layer with kinds has a chip per kind; one without is a chip of its own", () => {
+    expect(categoriesOf(coffee)).toEqual(["drinks/Coffee", "drinks/Tea", "drinks/Bar"]);
+    expect(categoriesOf(lodging)).toEqual(["tokyo-lodging"]);
+  });
+
+  it("layersInPlay: every layer when none is selected, else those with a selection", () => {
+    const tokyo = layersInRegion(allLayers, "tokyo");
+    expect(layersInPlay(run(), tokyo)).toEqual([coffee, lodging]);
+    expect(layersInPlay(run({ type: "toggleCategory", category: TEA }), tokyo)).toEqual([coffee]);
+    expect(layersInPlay(run({ type: "toggleCategory", category: "tokyo-lodging" }), tokyo)).toEqual([lodging]);
+    expect(layersInRegion(allLayers, "kyoto")).toEqual([kyotoFood]);
   });
 });
 
 describe("reduce", () => {
-  it("setRegion resets everything for the new region", () => {
-    let s = defaultState("tokyo", allLayers);
-    s = r(s, { type: "setText", text: "x" });
-    s = r(s, { type: "toggleLayer", layer: TEA });
-    s = r(s, { type: "setRegion", region: "kyoto" });
-    expect(s.region).toBe("kyoto");
-    expect(s.layers.size).toBe(0);
-    expect(s.text).toBe("");
+  it("setRegion resets everything for the new region; the same region keeps identity", () => {
+    const s = run({ type: "setText", text: "x" }, { type: "toggleCategory", category: TEA }, { type: "toggleArea", area: "Central" });
+    const kyoto = reduce(s, { type: "setRegion", region: "kyoto" });
+    expect(kyoto).toEqual(defaultState("kyoto"));
+    expect(reduce(s, { type: "setRegion", region: "tokyo" })).toBe(s);
   });
 
-  it("setRegion to the same region is a no-op that keeps identity", () => {
-    const s = defaultState("tokyo", allLayers);
-    expect(r(s, { type: "setRegion", region: "tokyo" })).toBe(s);
+  it("toggleCategory adds and removes without mutating the old state", () => {
+    const s0 = run();
+    const s1 = reduce(s0, { type: "toggleCategory", category: COFFEE });
+    expect([...s1.categories]).toEqual([COFFEE]);
+    expect(s0.categories.size).toBe(0);
+    expect(reduce(s1, { type: "toggleCategory", category: COFFEE }).categories.size).toBe(0);
   });
 
-  it("toggleLayer adds and removes without mutating the old state", () => {
-    const s0 = defaultState("tokyo", allLayers);
-    const s1 = r(s0, { type: "toggleLayer", layer: TEA });
-    expect([...s1.layers]).toEqual(["tokyo-tea"]);
-    expect(s0.layers.size).toBe(0);
-    expect(r(s1, { type: "toggleLayer", layer: TEA }).layers.size).toBe(0);
+  it("setCategories turns a layer's chips all on or all off, leaving other layers alone", () => {
+    const all = categoriesOf(coffee);
+    const on = run({ type: "toggleCategory", category: "tokyo-lodging" }, { type: "toggleCategory", category: TEA }, { type: "setCategories", categories: all, on: true });
+    expect([...on.categories].sort()).toEqual(["drinks/Bar", "drinks/Coffee", "drinks/Tea", "tokyo-lodging"]);
+    expect([...reduce(on, { type: "setCategories", categories: all, on: false }).categories]).toEqual(["tokyo-lodging"]);
   });
 
-  it("activeFacetLayer is set only with exactly one layer in play", () => {
-    const ids: LayerId[] = ["drinks", TEA];
-    const none = defaultState("tokyo", allLayers); // none selected = both in play
-    expect(activeFacetLayer(none, ids)).toBeUndefined();
-    const one = r(none, { type: "toggleLayer", layer: "drinks" });
-    expect(activeFacetLayer(one, ids)).toBe("drinks");
-    const two = r(one, { type: "toggleLayer", layer: TEA });
-    expect(activeFacetLayer(two, ids)).toBeUndefined();
+  it("toggleArea and setAreas (a ward heading) work the same way", () => {
+    const s = run({ type: "toggleArea", area: "East" }, { type: "setAreas", areas: ["Central", "Shibuya"], on: true });
+    expect([...s.areas]).toEqual(["East", "Central", "Shibuya"]);
+    expect([...reduce(s, { type: "setAreas", areas: ["Central", "Shibuya"], on: false }).areas]).toEqual(["East"]);
+    expect(reduce(s, { type: "toggleArea", area: "East" }).areas.has("East")).toBe(false);
   });
 
-  it("toggleFacetValue builds and tears down selections", () => {
-    let s = defaultState("tokyo", allLayers);
-    s = r(s, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" });
-    s = r(s, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Café" });
-    expect([...getSelection(s, "drinks", "Format").values]).toEqual(["Stand", "Café"]);
+  it("Here narrows; Include nearby alone narrows nothing, so it is not an active filter", () => {
+    expect(hasActiveFilters(run({ type: "setHere", value: true }))).toBe(true);
+    const nearby = run({ type: "setNearby", value: true });
+    expect(nearby.nearby).toBe(true);
+    expect(hasActiveFilters(nearby)).toBe(false);
+  });
+
+  it("every other selection counts as active", () => {
+    const actions: FilterAction[] = [
+      { type: "toggleCategory", category: COFFEE },
+      { type: "toggleArea", area: "East" },
+      { type: "setText", text: "x" },
+      { type: "setStarredOnly", value: true },
+      { type: "setBookmarkedOnly", value: true },
+      { type: "setOpenNow", value: true },
+      { type: "setOpenAt", value: "2026-11-10T10:00" },
+    ];
+    for (const a of actions) expect(hasActiveFilters(run(a))).toBe(true);
+  });
+
+  it("setOpenAt undefined removes the key", () => {
+    const s = run({ type: "setOpenAt", value: "2026-11-10T10:00" }, { type: "setOpenAt", value: undefined });
+    expect("openAt" in s).toBe(false);
+  });
+
+  it("clearFilters is the default state of the same region", () => {
+    const s = run(
+      { type: "setRegion", region: "kyoto" },
+      { type: "toggleCategory", category: "kyoto-food" },
+      { type: "setText", text: "x" },
+      { type: "toggleArea", area: "Gion" },
+      { type: "setHere", value: true },
+      { type: "setNearby", value: true },
+      { type: "setStarredOnly", value: true },
+      { type: "setBookmarkedOnly", value: true },
+      { type: "setOpenNow", value: true },
+      { type: "setOpenAt", value: "2026-11-10T10:00" },
+    );
     expect(hasActiveFilters(s)).toBe(true);
-
-    s = r(s, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" });
-    s = r(s, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Café" });
-    expect(s.facets).toEqual({});
-    expect(hasActiveFilters(s)).toBe(false);
-  });
-
-  it("setIncludeUnknown false is a non-default selection on its own", () => {
-    let s = defaultState("tokyo", allLayers);
-    s = r(s, { type: "setIncludeUnknown", layer: "drinks", column: "Format", value: false });
-    expect(getSelection(s, "drinks", "Format").includeUnknown).toBe(false);
-    expect(hasActiveFilters(s)).toBe(true);
-    s = r(s, { type: "setIncludeUnknown", layer: "drinks", column: "Format", value: true });
-    expect(s.facets).toEqual({});
-  });
-
-  it("facet selections survive the layer being deselected", () => {
-    const ids: LayerId[] = ["drinks", TEA];
-    let s = defaultState("tokyo", allLayers);
-    s = r(s, { type: "toggleLayer", layer: "drinks" }); // coffee only
-    s = r(s, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" });
-    s = r(s, { type: "toggleLayer", layer: TEA }); // both
-    expect(activeFacetLayer(s, ids)).toBeUndefined();
-    expect(getSelection(s, "drinks", "Format").values.has("Stand")).toBe(true);
-    s = r(s, { type: "toggleLayer", layer: TEA }); // coffee only again
-    expect(activeFacetLayer(s, ids)).toBe("drinks");
-  });
-
-  it("clearFilters keeps region and layers", () => {
-    let s = defaultState("tokyo", allLayers);
-    s = r(s, { type: "toggleLayer", layer: TEA });
-    s = r(s, { type: "setText", text: "x" });
-    s = r(s, { type: "toggleNeighborhood", neighborhood: "Central" });
-    s = r(s, { type: "setStarredOnly", value: true });
-    s = r(s, { type: "setBookmarkedOnly", value: true });
-    expect(hasActiveFilters(s)).toBe(true);
-    s = r(s, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" });
-    s = r(s, { type: "clearFilters" });
-    expect(s.region).toBe("tokyo");
-    expect([...s.layers]).toEqual(["tokyo-tea"]);
-    expect(hasActiveFilters(s)).toBe(false);
+    expect(reduce(s, { type: "clearFilters" })).toEqual(defaultState("kyoto"));
   });
 });

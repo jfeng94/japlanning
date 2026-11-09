@@ -1,51 +1,49 @@
-import type { LayerConfig, LayerId, RegionId } from "../data/types.ts";
+import type { LayerConfig, RegionId } from "../data/types.ts";
 
 /**
  * Filter state and its transitions. Pure: no DOM, no storage. The list,
  * the map and the URL all derive from one FilterState.
- * See docs/design/regions-layers-filters.md.
+ *
+ * Three groups, each a union inside and ANDed together
+ * (docs/proposals/filters-and-areas.md): categories (what), areas
+ * (where), flags (narrow). None selected in a group means everything.
+ * Nothing here depends on another selection: filters do not cascade.
  */
-
-export interface FacetSelection {
-  /** Selected values; empty means "any". OR'd within the facet. */
-  values: Set<string>;
-  /** Whether rows with a blank cell pass this facet. Default true. */
-  includeUnknown: boolean;
-}
-
 export interface FilterState {
   region: RegionId;
-  /** Selected layers; empty means every layer in the region, like an empty neighborhood selection means any. */
-  layers: Set<LayerId>;
+  /** Category chips: "layer/Kind" for a layer with kinds, the bare layer id for one without. Empty = every category. */
+  categories: Set<string>;
+  /** Area chips (src/data/areas.ts). Empty, with Here off, = everywhere. */
+  areas: Set<string>;
+  /** Add the area chip you are in (resolved from the position by the app). */
+  here: boolean;
+  /** Add the chips next to everything chosen (one hop on the area graph). */
+  nearby: boolean;
   text: string;
-  /** Selected area chips (src/data/areas.ts); empty means "any". Renamed in the filter rewrite (docs/proposals/filters-and-areas.md). */
-  neighborhoods: Set<string>;
   starredOnly: boolean;
   /** Only the device's bookmarked places (the set itself lives outside this state). */
   bookmarkedOnly: boolean;
-  /** Only places open (at `openAt`, else now) in Tokyo time; layers without hours are untouched. */
+  /** Only places open (at `openAt`, else now) in Tokyo time; unknown hours stay in, sunk to the end. */
   openNow: boolean;
-  /** With openNow: whether places with blank or unparsable hours pass. Default true. */
-  includeUnknownHours: boolean;
   /** "YYYY-MM-DDTHH:MM" Tokyo wall clock to evaluate at instead of now. */
   openAt?: string;
-  /** layer id -> facet column -> selection. Absent means the default selection. */
-  facets: Record<string, Record<string, FacetSelection>>;
 }
 
 export type FilterAction =
   | { type: "setRegion"; region: RegionId }
-  | { type: "toggleLayer"; layer: LayerId }
-  | { type: "setLayers"; layers: LayerId[] }
+  | { type: "toggleCategory"; category: string }
+  /** A layer header: every one of its kinds on, or all off. */
+  | { type: "setCategories"; categories: string[]; on: boolean }
+  | { type: "toggleArea"; area: string }
+  /** A ward heading: every chip under it on, or all off. */
+  | { type: "setAreas"; areas: string[]; on: boolean }
+  | { type: "setHere"; value: boolean }
+  | { type: "setNearby"; value: boolean }
   | { type: "setText"; text: string }
-  | { type: "toggleNeighborhood"; neighborhood: string }
   | { type: "setStarredOnly"; value: boolean }
   | { type: "setBookmarkedOnly"; value: boolean }
   | { type: "setOpenNow"; value: boolean }
-  | { type: "setIncludeUnknownHours"; value: boolean }
   | { type: "setOpenAt"; value: string | undefined }
-  | { type: "toggleFacetValue"; layer: LayerId; column: string; value: string }
-  | { type: "setIncludeUnknown"; layer: LayerId; column: string; value: boolean }
   | { type: "clearFilters" };
 
 export function layersInRegion(layers: LayerConfig[], region: RegionId): LayerConfig[] {
@@ -53,109 +51,81 @@ export function layersInRegion(layers: LayerConfig[], region: RegionId): LayerCo
   return layers.filter((l) => l.region === undefined || l.region === region);
 }
 
-/** Nothing selected: every layer in the region shows. `layers` is unused but kept so callers needn't change when the rule does. */
-export function defaultState(region: RegionId, _layers: LayerConfig[]): FilterState {
+/** A layer's category chips: one per kind ("drinks/Coffee"), or the layer itself when it has none. */
+export function categoriesOf(layer: LayerConfig): string[] {
+  return layer.kinds && layer.kinds.length > 0 ? layer.kinds.map((k) => `${layer.id}/${k}`) : [layer.id];
+}
+
+/** The layers with anything selected, or every layer when no category is. */
+export function layersInPlay(state: FilterState, layers: LayerConfig[]): LayerConfig[] {
+  if (state.categories.size === 0) return layers;
+  return layers.filter((l) => state.categories.has(l.id) || categoriesOf(l).some((c) => state.categories.has(c)));
+}
+
+/** Nothing selected: everything in the region shows. */
+export function defaultState(region: RegionId): FilterState {
   return {
     region,
-    layers: new Set(),
+    categories: new Set(),
+    areas: new Set(),
+    here: false,
+    nearby: false,
     text: "",
-    neighborhoods: new Set(),
     starredOnly: false,
     bookmarkedOnly: false,
     openNow: false,
-    includeUnknownHours: true,
-    facets: {},
   };
 }
 
-export function defaultSelection(): FacetSelection {
-  return { values: new Set(), includeUnknown: true };
-}
-
-export function isDefaultSelection(sel: FacetSelection): boolean {
-  return sel.values.size === 0 && sel.includeUnknown;
-}
-
-export function getSelection(state: FilterState, layer: LayerId, column: string): FacetSelection {
-  return state.facets[layer]?.[column] ?? defaultSelection();
-}
-
-/** The layers in play: the selection, or every layer in the region when nothing is selected. */
-export function effectiveLayers(state: FilterState, regionLayerIds: Iterable<LayerId>): Set<LayerId> {
-  return state.layers.size > 0 ? state.layers : new Set(regionLayerIds);
-}
-
-/** The layer whose facets apply: exactly one in play, otherwise none. */
-export function activeFacetLayer(state: FilterState, regionLayerIds: Iterable<LayerId>): LayerId | undefined {
-  const on = effectiveLayers(state, regionLayerIds);
-  return on.size === 1 ? [...on][0] : undefined;
-}
-
-/** True when anything beyond region and layers is set. Drives the Clear button. */
+/**
+ * True when anything narrows the results. Drives the Filters dot and the
+ * Clear buttons. Include nearby alone narrows nothing, so it doesn't count.
+ */
 export function hasActiveFilters(state: FilterState): boolean {
   return (
+    state.categories.size > 0 ||
+    state.areas.size > 0 ||
+    state.here ||
     state.text !== "" ||
-    state.neighborhoods.size > 0 ||
     state.starredOnly ||
     state.bookmarkedOnly ||
     state.openNow ||
-    state.openAt !== undefined ||
-    Object.keys(state.facets).length > 0
+    state.openAt !== undefined
   );
 }
 
-export function reduce(state: FilterState, action: FilterAction, layers: LayerConfig[]): FilterState {
+export function reduce(state: FilterState, action: FilterAction): FilterState {
   switch (action.type) {
     case "setRegion":
-      return action.region === state.region ? state : defaultState(action.region, layers);
-    case "toggleLayer":
-      return { ...state, layers: toggled(state.layers, action.layer) };
-    case "setLayers":
-      return { ...state, layers: new Set(action.layers) };
+      return action.region === state.region ? state : defaultState(action.region);
+    case "toggleCategory":
+      return { ...state, categories: toggled(state.categories, action.category) };
+    case "setCategories":
+      return { ...state, categories: withAll(state.categories, action.categories, action.on) };
+    case "toggleArea":
+      return { ...state, areas: toggled(state.areas, action.area) };
+    case "setAreas":
+      return { ...state, areas: withAll(state.areas, action.areas, action.on) };
+    case "setHere":
+      return { ...state, here: action.value };
+    case "setNearby":
+      return { ...state, nearby: action.value };
     case "setText":
       return { ...state, text: action.text };
-    case "toggleNeighborhood":
-      return { ...state, neighborhoods: toggled(state.neighborhoods, action.neighborhood) };
     case "setStarredOnly":
       return { ...state, starredOnly: action.value };
     case "setBookmarkedOnly":
       return { ...state, bookmarkedOnly: action.value };
     case "setOpenNow":
       return { ...state, openNow: action.value };
-    case "setIncludeUnknownHours":
-      return { ...state, includeUnknownHours: action.value };
     case "setOpenAt": {
       const next = { ...state };
       if (action.value === undefined) delete next.openAt;
       else next.openAt = action.value;
       return next;
     }
-    case "toggleFacetValue": {
-      const sel = getSelection(state, action.layer, action.column);
-      return withSelection(state, action.layer, action.column, {
-        values: toggled(sel.values, action.value),
-        includeUnknown: sel.includeUnknown,
-      });
-    }
-    case "setIncludeUnknown": {
-      const sel = getSelection(state, action.layer, action.column);
-      return withSelection(state, action.layer, action.column, {
-        values: sel.values,
-        includeUnknown: action.value,
-      });
-    }
     case "clearFilters":
-      return {
-        ...state,
-        openAt: undefined,
-        text: "",
-        neighborhoods: new Set(),
-        starredOnly: false,
-        bookmarkedOnly: false,
-        openNow: false,
-        includeUnknownHours: true,
-        facets: {},
-      };
+      return defaultState(state.region);
   }
 }
 
@@ -166,14 +136,11 @@ function toggled<T>(set: Set<T>, item: T): Set<T> {
   return next;
 }
 
-/** Return a state with one facet selection replaced; default selections are removed, not stored. */
-function withSelection(state: FilterState, layer: LayerId, column: string, sel: FacetSelection): FilterState {
-  const layerFacets = { ...(state.facets[layer] ?? {}) };
-  if (isDefaultSelection(sel)) delete layerFacets[column];
-  else layerFacets[column] = sel;
-
-  const facets = { ...state.facets };
-  if (Object.keys(layerFacets).length === 0) delete facets[layer];
-  else facets[layer] = layerFacets;
-  return { ...state, facets };
+function withAll<T>(set: Set<T>, items: T[], on: boolean): Set<T> {
+  const next = new Set(set);
+  for (const item of items) {
+    if (on) next.add(item);
+    else next.delete(item);
+  }
+  return next;
 }

@@ -1,116 +1,102 @@
 import { describe, expect, it } from "vitest";
-import type { LayerId, RegionConfig } from "../data/types.ts";
+import type { RegionConfig } from "../data/types.ts";
 import { defaultState, reduce, type FilterAction, type FilterState } from "./state.ts";
-import { allLayers, NEIGHBORHOODS } from "./testing.ts";
+import { allLayers, AREAS } from "./testing.ts";
 import { fromSearchParams, toSearchParams, type UrlContext } from "./url.ts";
 
+/** Tokyo with Tsukiji merged into the Central chip, so raw labels in links can be checked. */
 const regions: RegionConfig[] = [
-  { id: "tokyo", label: "Tokyo", areas: NEIGHBORHOODS.map((label) => ({ label, ward: "x", adjacent: [] })) },
-  { id: "kyoto", label: "Kyoto", areas: [{ label: "Gion", ward: "y", adjacent: [] }] },
+  {
+    id: "tokyo",
+    label: "Tokyo",
+    areas: [...AREAS, { label: "Tsukiji", ward: "中央区", adjacent: [] }],
+    areaGroups: [{ label: "Central", areas: ["Central", "Tsukiji"] }],
+  },
+  { id: "kyoto", label: "Kyoto", areas: [{ label: "Gion", ward: "東山区", adjacent: [] }] },
   { id: "hakone", label: "Hakone", areas: [] },
 ];
 const ctx: UrlContext = { regions, layers: allLayers, defaultRegion: "tokyo" };
-const TEA = "tokyo-tea" as LayerId;
 
-function state(...actions: FilterAction[]): FilterState {
-  return actions.reduce((s, a) => reduce(s, a, allLayers), defaultState("tokyo", allLayers));
-}
+const run = (...actions: FilterAction[]): FilterState => actions.reduce((s, a) => reduce(s, a), defaultState("tokyo"));
 const roundTrip = (s: FilterState) => fromSearchParams(new URLSearchParams(toSearchParams(s, ctx)), ctx);
-const query = (s: FilterState) => toSearchParams(s, ctx).toString();
+const query = (s: FilterState) => decodeURIComponent(toSearchParams(s, ctx).toString());
+const parse = (q: string) => fromSearchParams(new URLSearchParams(q), ctx);
+const cat = (category: string): FilterAction => ({ type: "toggleCategory", category });
 
 describe("toSearchParams", () => {
-  it("default state is an empty query", () => {
-    expect(query(state())).toBe("");
+  it("the default state is an empty query", () => {
+    expect(query(run())).toBe("");
   });
 
   it("writes only what differs from the default", () => {
-    expect(query(state({ type: "setText", text: "glitch" }))).toBe("q=glitch");
-    expect(query(state({ type: "toggleLayer", layer: TEA }))).toBe("l=tokyo-tea");
-    expect(query(state({ type: "setRegion", region: "kyoto" }))).toBe("r=kyoto");
-    expect(query(state({ type: "setStarredOnly", value: true }))).toBe("star=1");
-    expect(query(state({ type: "setBookmarkedOnly", value: true }))).toBe("b=1");
-    expect(fromSearchParams(new URLSearchParams("b=1"), ctx).bookmarkedOnly).toBe(true);
-    expect(query(state({ type: "setOpenNow", value: true }, { type: "setIncludeUnknownHours", value: false }, { type: "setOpenAt", value: "2026-11-10T10:00" }))).toBe(
-      "open=1&hu=0&at=2026-11-10T10%3A00",
-    );
-    const back = fromSearchParams(new URLSearchParams("open=1&hu=0&at=2026-11-10T10:00"), ctx);
-    expect([back.openNow, back.includeUnknownHours, back.openAt]).toEqual([true, false, "2026-11-10T10:00"]);
-    expect(fromSearchParams(new URLSearchParams("at=tomorrow"), ctx).openAt).toBeUndefined();
+    expect(query(run({ type: "setText", text: "glitch" }))).toBe("q=glitch");
+    expect(query(run({ type: "setRegion", region: "kyoto" }))).toBe("r=kyoto");
+    expect(query(run({ type: "toggleArea", area: "Central" }, { type: "toggleArea", area: "East" }))).toBe("a=Central&a=East");
+    expect(query(run({ type: "setHere", value: true }, { type: "setNearby", value: true }))).toBe("here=1&nb=1");
+    expect(query(run({ type: "setStarredOnly", value: true }, { type: "setBookmarkedOnly", value: true }))).toBe("star=1&b=1");
+    expect(query(run({ type: "setOpenNow", value: true }, { type: "setOpenAt", value: "2026-11-10T10:00" }))).toBe("open=1&at=2026-11-10T10:00");
   });
 
-  it("encodes facet selections and unknown toggles per facet", () => {
-    const s = state(
-      { type: "toggleLayer", layer: TEA },
-      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" },
-      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Café" },
-      { type: "setIncludeUnknown", layer: "drinks", column: "Specialty", value: false },
-    );
-    const p = toSearchParams(s, ctx);
-    expect(p.getAll("f")).toEqual(["drinks/Format=Stand|Caf%C3%A9"]);
-    expect(p.getAll("u")).toEqual(["drinks/Specialty"]);
+  it("writes a layer whose kinds are all on as the layer, anything else chip by chip", () => {
+    expect(query(run(cat("drinks/Coffee")))).toBe("c=drinks/Coffee");
+    expect(query(run(cat("drinks/Coffee"), cat("drinks/Tea")))).toBe("c=drinks/Coffee&c=drinks/Tea");
+    expect(query(run(cat("drinks/Coffee"), cat("drinks/Tea"), cat("drinks/Bar")))).toBe("c=drinks");
+    expect(query(run(cat("tokyo-lodging"), cat("drinks/Tea")))).toBe("c=tokyo-lodging&c=drinks/Tea");
   });
 });
 
 describe("round trip", () => {
   it("restores a fully loaded state", () => {
-    const s = state(
-      { type: "toggleLayer", layer: TEA },
+    const s = run(
+      cat("drinks/Coffee"),
+      cat("tokyo-lodging"),
       { type: "setText", text: "café & stand" },
-      { type: "toggleNeighborhood", neighborhood: "Central" },
-      { type: "toggleNeighborhood", neighborhood: "East" },
+      { type: "toggleArea", area: "Central" },
+      { type: "toggleArea", area: "East" },
+      { type: "setHere", value: true },
+      { type: "setNearby", value: true },
       { type: "setStarredOnly", value: true },
       { type: "setBookmarkedOnly", value: true },
       { type: "setOpenNow", value: true },
-      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Café" },
-      { type: "toggleFacetValue", layer: "drinks", column: "Specialty", value: "Pour-over" },
-      { type: "setIncludeUnknown", layer: "drinks", column: "Specialty", value: false },
+      { type: "setOpenAt", value: "2026-11-10T10:00" },
     );
     expect(roundTrip(s)).toEqual(s);
   });
 
-  it("restores another region", () => {
-    const s = state({ type: "setRegion", region: "kyoto" });
-    const back = roundTrip(s);
-    expect(back.region).toBe("kyoto");
-    expect(back.layers.size).toBe(0);
+  it("restores every kind of a layer from the layer alone", () => {
+    const s = run(cat("drinks/Coffee"), cat("drinks/Tea"), cat("drinks/Bar"));
+    expect(roundTrip(s)).toEqual(s);
   });
 
-  it("survives Japanese and separator-like characters in values", () => {
-    const s = state(
-      { type: "toggleLayer", layer: TEA },
-      { type: "setText", text: "神保町 / ｶﾌｪ" },
-      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Light roast / Nordic" },
-      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "A|B=C&D" },
+  it("restores another region", () => {
+    expect(roundTrip(run({ type: "setRegion", region: "kyoto" }, { type: "toggleArea", area: "Gion" }))).toEqual(
+      run({ type: "setRegion", region: "kyoto" }, { type: "toggleArea", area: "Gion" }),
     );
+  });
+
+  it("survives Japanese and separator-like characters in the search", () => {
+    const s = run({ type: "setText", text: "神保町 / ｶﾌｪ & a=b" });
     expect(roundTrip(s)).toEqual(s);
   });
 });
 
 describe("fromSearchParams drops what it doesn't recognise", () => {
-  const parse = (q: string) => fromSearchParams(new URLSearchParams(q), ctx);
-
-  it("unknown region falls back to the default", () => {
+  it("an unknown region falls back to the default", () => {
     expect(parse("r=osaka").region).toBe("tokyo");
   });
 
-  it("unknown or wrong-region layers are dropped; all-unknown leaves none selected (= all)", () => {
-    expect([...parse("l=drinks,kyoto-food,bogus").layers]).toEqual(["drinks"]);
-    expect(parse("l=bogus").layers.size).toBe(0);
+  it("unknown layers and kinds, and layers of another region, are dropped", () => {
+    expect([...parse("c=drinks/Juice&c=bogus&c=kyoto-food&c=drinks/Tea").categories]).toEqual(["drinks/Tea"]);
+    expect(parse("c=bogus").categories.size).toBe(0);
   });
 
-  it("unknown neighborhoods are dropped", () => {
-    expect([...parse("n=Central&n=Atlantis").neighborhoods]).toEqual(["Central"]);
+  it("a raw area becomes its chip, step 1's n= still reads, unknown areas drop", () => {
+    expect([...parse("a=Tsukiji").areas]).toEqual(["Central"]);
+    expect([...parse("n=East&a=Atlantis").areas]).toEqual(["East"]);
+    expect([...parse("r=kyoto&a=East").areas]).toEqual([]);
   });
 
-  it("unknown layers and columns in facets are dropped, leaving no selection", () => {
-    expect(parse("f=bogus/Format=Stand").facets).toEqual({});
-    expect(parse("f=drinks/Bogus=Stand").facets).toEqual({});
-    expect(parse("u=drinks/Bogus").facets).toEqual({});
-    expect(parse("f=drinks/Format").facets).toEqual({});
-    expect(parse("f=drinks/Format=").facets).toEqual({});
-  });
-
-  it("malformed percent-encoding does not throw", () => {
-    expect(parse("f=drinks/Format=%E0%A4%A").facets).toEqual({});
+  it("a malformed open-at time is ignored", () => {
+    expect(parse("at=tomorrow").openAt).toBeUndefined();
   });
 });

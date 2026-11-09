@@ -2,10 +2,8 @@
 
 export interface ChipOptions {
   pressed?: boolean;
-  count?: number;
   /** A colour swatch dot before the label (layer chips). */
   color?: string;
-  disabled?: boolean;
   onClick?: () => void;
   className?: string;
 }
@@ -15,7 +13,6 @@ export function chip(label: string, opts: ChipOptions = {}): HTMLButtonElement {
   b.type = "button";
   b.className = `chip${opts.className ? ` ${opts.className}` : ""}`;
   if (opts.pressed !== undefined) b.setAttribute("aria-pressed", String(opts.pressed));
-  if (opts.disabled) b.disabled = true;
   if (opts.color) {
     const dot = document.createElement("span");
     dot.className = "chip-dot";
@@ -25,12 +22,6 @@ export function chip(label: string, opts: ChipOptions = {}): HTMLButtonElement {
   const text = document.createElement("span");
   text.textContent = label;
   b.append(text);
-  if (opts.count !== undefined) {
-    const n = document.createElement("span");
-    n.className = "chip-count";
-    n.textContent = String(opts.count);
-    b.append(n);
-  }
   if (opts.onClick) b.addEventListener("click", opts.onClick);
   return b;
 }

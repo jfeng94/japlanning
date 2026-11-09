@@ -1,54 +1,76 @@
 import { describe, expect, it } from "vitest";
-import type { LayerConfig, LayerId } from "../data/types.ts";
-import { applyFilters, facetCounts, matchesFacet, neighborhoodCounts, normalise, openNowCounts, scopedFacetValues, sinkUnknownHours, type HoursInput } from "./apply.ts";
+import { areaIndex } from "../data/areas.ts";
+import { applyFilters, areaScope, matchesCategories, normalise, sinkUnknownHours, type ApplyOptions, type HoursInput } from "./apply.ts";
 import { defaultState, reduce, type FilterAction, type FilterState } from "./state.ts";
-import { allLayers, coffee, NEIGHBORHOODS, place, samplePlaces } from "./testing.ts";
+import { AREAS, place, samplePlaces } from "./testing.ts";
 
-const TEA = "tokyo-tea" as LayerId;
 const places = samplePlaces();
-const names = (s: FilterState) => applyFilters(places, s).map((p) => p.name);
-
-function state(...actions: FilterAction[]): FilterState {
-  return actions.reduce((s, a) => reduce(s, a, allLayers), defaultState("tokyo", allLayers));
-}
-const coffeeOnly: FilterAction = { type: "setLayers", layers: ["drinks"] };
+const areas = areaIndex({ areas: AREAS });
+const names = (s: FilterState, opts: ApplyOptions = {}) => applyFilters(places, s, { areas, ...opts }).map((p) => p.name);
+const run = (...actions: FilterAction[]): FilterState => actions.reduce((s, a) => reduce(s, a), defaultState("tokyo"));
+const cat = (category: string): FilterAction => ({ type: "toggleCategory", category });
+const area = (a: string): FilterAction => ({ type: "toggleArea", area: a });
+const NEARBY: FilterAction = { type: "setNearby", value: true };
+const HERE: FilterAction = { type: "setHere", value: true };
+const ALL_TOKYO = ["Glitch", "Fuglen", "Bear Pond", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo", "Hotel"];
 
 describe("applyFilters", () => {
-  it("default state (no layers picked) shows every place in the region, none from other regions", () => {
-    expect(names(state())).toEqual(["Glitch", "Fuglen", "Bear Pond", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo"]);
+  it("nothing selected shows every place in the region, none from other regions", () => {
+    expect(names(run())).toEqual(ALL_TOKYO);
   });
 
-  it("layer membership; clearing the selection is back to all", () => {
-    expect(names(state(coffeeOnly))).not.toContain("Ippodo");
-    expect(names(state({ type: "setLayers", layers: [TEA] }))).toEqual(["Ippodo"]);
-    expect(names(state({ type: "setLayers", layers: [TEA] }, { type: "setLayers", layers: [] }))).toHaveLength(6);
+  it("categories are a union, across kinds and across layers; a place of two kinds matches either", () => {
+    expect(names(run(cat("drinks/Coffee")))).toEqual(["Glitch", "Fuglen", "Bear Pond", "Unknown Kissa", "ＧＬＩＴＣＨ annex"]);
+    expect(names(run(cat("drinks/Tea")))).toEqual(["Ippodo"]);
+    expect(names(run(cat("drinks/Bar")))).toEqual(["Fuglen"]);
+    expect(names(run(cat("drinks/Tea"), cat("drinks/Bar")))).toEqual(["Fuglen", "Ippodo"]);
+    expect(names(run(cat("tokyo-lodging")))).toEqual(["Hotel"]);
+    expect(names(run(cat("drinks/Tea"), cat("tokyo-lodging")))).toEqual(["Ippodo", "Hotel"]);
   });
 
-  it("text search is case- and width-insensitive over name, neighborhood and notes", () => {
-    expect(names(state({ type: "setText", text: "glitch" }))).toEqual(["Glitch", "ＧＬＩＴＣＨ annex"]);
-    expect(names(state({ type: "setText", text: "ｇｌｉｔｃｈ" }))).toEqual(["Glitch", "ＧＬＩＴＣＨ annex"]);
-    expect(names(state({ type: "setText", text: "shibuya" }))).toEqual(["Fuglen", "Bear Pond"]);
-    expect(names(state({ type: "setText", text: "light roast" }))).toEqual(["Glitch"]);
-    expect(names(state({ type: "setText", text: "   " }))).toHaveLength(6);
+  it("areas are a union; none selected means everywhere", () => {
+    expect(names(run(area("Central")))).toEqual(["Glitch", "ＧＬＩＴＣＨ annex", "Ippodo"]);
+    expect(names(run(area("Central"), area("East")))).toEqual(["Glitch", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo"]);
   });
 
-  it("starred only", () => {
-    expect(names(state({ type: "setStarredOnly", value: true }))).toEqual(["Glitch"]);
+  it("Include nearby adds the neighbouring chips of everything chosen, and nothing on its own", () => {
+    expect(names(run(area("East"), NEARBY))).toEqual(["Glitch", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo"]);
+    expect(names(run(area("Shibuya"), NEARBY))).toEqual(["Glitch", "Fuglen", "Bear Pond", "ＧＬＩＴＣＨ annex", "Ippodo", "Hotel"]);
+    expect(names(run(NEARBY))).toEqual(ALL_TOKYO);
+  });
+
+  it("Here adds its chip; unresolved, it keeps everything; off, a resolved chip is ignored", () => {
+    expect(names(run(HERE), { hereGroup: "Shibuya" })).toEqual(["Fuglen", "Bear Pond", "Hotel"]);
+    expect(names(run(HERE))).toEqual(ALL_TOKYO);
+    expect(names(run(HERE, area("East")), { hereGroup: "Shibuya" })).toEqual(["Fuglen", "Bear Pond", "Unknown Kissa", "Hotel"]);
+    expect(names(run(HERE, area("East")))).toEqual(["Unknown Kissa"]);
+    expect(names(run(), { hereGroup: "Shibuya" })).toEqual(ALL_TOKYO);
+    expect(names(run(HERE, NEARBY), { hereGroup: "East" })).toEqual(["Glitch", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo"]);
+  });
+
+  it("groups AND together: Coffee + Tea in Shibuya and nearby", () => {
+    expect(names(run(cat("drinks/Coffee"), cat("drinks/Tea"), area("Shibuya"), NEARBY))).toEqual([
+      "Glitch",
+      "Fuglen",
+      "Bear Pond",
+      "ＧＬＩＴＣＨ annex",
+      "Ippodo",
+    ]);
+  });
+
+  it("key branches only", () => {
+    expect(names(run({ type: "setStarredOnly", value: true }))).toEqual(["Glitch"]);
   });
 
   it("bookmarked only uses the device's set; no set means nothing", () => {
     const on: FilterAction = { type: "setBookmarkedOnly", value: true };
     const ids = places.filter((p) => p.name === "Fuglen" || p.name === "Ippodo").map((p) => p.id);
-    expect(applyFilters(places, state(on), { bookmarks: new Set(ids) }).map((p) => p.name)).toEqual(["Fuglen", "Ippodo"]);
-    expect(applyFilters(places, state(on)).map((p) => p.name)).toEqual([]);
-    expect(applyFilters(places, state(on, { type: "setStarredOnly", value: true }), { bookmarks: new Set(ids) })).toEqual([]);
-    // counts respect it too
-    const counts = facetCounts(places, state(on, coffeeOnly), coffee, { bookmarks: new Set(ids) });
-    expect([...counts.get("Format")!.values]).toEqual([["Stand", 0], ["Café", 1], ["Kissaten", 0]]);
-    expect([...neighborhoodCounts(places, state(on), NEIGHBORHOODS, { bookmarks: new Set(ids) })]).toEqual([["Central", 1], ["Shibuya", 1], ["East", 0]]);
+    expect(names(run(on), { bookmarks: new Set(ids) })).toEqual(["Fuglen", "Ippodo"]);
+    expect(names(run(on))).toEqual([]);
+    expect(names(run(on, { type: "setStarredOnly", value: true }), { bookmarks: new Set(ids) })).toEqual([]);
   });
 
-  it("open now: open passes, closed fails, unknown follows the toggle, hour-less layers untouched, no map passes all", () => {
+  it("open now: closed fails; open and unknown pass; layers without hours are untouched; no evaluation passes all", () => {
     const on: FilterAction = { type: "setOpenNow", value: true };
     const id = (name: string) => places.find((p) => p.name === name)!.id;
     const hours: HoursInput = {
@@ -56,126 +78,55 @@ describe("applyFilters", () => {
         [id("Glitch"), "open"],
         [id("Fuglen"), "closed"],
         [id("Bear Pond"), "unknown"],
-        // "Unknown Kissa" and "ＧＬＩＴＣＨ annex" absent from the map -> unknown
+        // the rest of the drinks are absent from the map: unknown
       ]),
-      layersWithHours: new Set(["drinks"]), // tea has no hours: untouched
+      layersWithHours: new Set(["drinks"]),
     };
-    expect(applyFilters(places, state(on), { hours }).map((p) => p.name)).toEqual(["Glitch", "Bear Pond", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo"]);
-    const strict = state(on, { type: "setIncludeUnknownHours", value: false });
-    expect(applyFilters(places, strict, { hours }).map((p) => p.name)).toEqual(["Glitch", "Ippodo"]);
-    expect(applyFilters(places, state(on)).map((p) => p.name)).toHaveLength(6);
-    expect(openNowCounts(places, state(on), { hours })).toEqual({ open: 1, unknown: 3 });
-    expect(openNowCounts(places, state(on, coffeeOnly, { type: "setText", text: "glitch" }), { hours })).toEqual({ open: 1, unknown: 1 });
+    expect(names(run(on), { hours })).toEqual(ALL_TOKYO.filter((n) => n !== "Fuglen"));
+    expect(names(run(on))).toEqual(ALL_TOKYO);
   });
 
-  it("neighborhoods OR together and apply across layers", () => {
-    expect(names(state({ type: "toggleNeighborhood", neighborhood: "Central" }))).toEqual(["Glitch", "ＧＬＩＴＣＨ annex", "Ippodo"]);
-    expect(
-      names(state({ type: "toggleNeighborhood", neighborhood: "Central" }, { type: "toggleNeighborhood", neighborhood: "East" })),
-    ).toEqual(["Glitch", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo"]);
+  it("text search is case- and width-insensitive over name, area, notes, kinds, facet values and the address", () => {
+    expect(names(run({ type: "setText", text: "glitch" }))).toEqual(["Glitch", "ＧＬＩＴＣＨ annex"]);
+    expect(names(run({ type: "setText", text: "ｇｌｉｔｃｈ" }))).toEqual(["Glitch", "ＧＬＩＴＣＨ annex"]);
+    expect(names(run({ type: "setText", text: "shibuya" }))).toEqual(["Fuglen", "Bear Pond", "Hotel"]);
+    expect(names(run({ type: "setText", text: "light roast" }))).toEqual(["Glitch"]);
+    expect(names(run({ type: "setText", text: "pour-over" }))).toEqual(["Glitch", "Fuglen"]);
+    expect(names(run({ type: "setText", text: "Kissaten" }))).toEqual(["ＧＬＩＴＣＨ annex"]);
+    expect(names(run({ type: "setText", text: "bar" }))).toEqual(["Fuglen"]);
+    expect(names(run({ type: "setText", text: "千代田" }))).toEqual(["Glitch"]);
+    expect(names(run({ type: "setText", text: "   " }))).toEqual(ALL_TOKYO);
   });
 
-  it("facet values OR within a facet; blanks still pass by default", () => {
-    const s = state(coffeeOnly, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" });
-    expect(names(s)).toEqual(["Bear Pond", "Unknown Kissa"]);
-    const s2 = reduce(s, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Café" }, allLayers);
-    expect(names(s2)).toEqual(["Glitch", "Fuglen", "Bear Pond", "Unknown Kissa"]);
-  });
-
-  it("include unknown off drops blank rows, with or without a value selection", () => {
-    const off: FilterAction = { type: "setIncludeUnknown", layer: "drinks", column: "Format", value: false };
-    expect(names(state(coffeeOnly, off))).toEqual(["Glitch", "Fuglen", "Bear Pond", "ＧＬＩＴＣＨ annex"]);
-    expect(
-      names(state(coffeeOnly, off, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" })),
-    ).toEqual(["Bear Pond"]);
-  });
-
-  it("facets AND across columns; multi-value rows match on any value", () => {
-    const s = state(
-      coffeeOnly,
-      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Café" },
-      { type: "toggleFacetValue", layer: "drinks", column: "Specialty", value: "Espresso" },
-    );
-    expect(names(s)).toEqual(["Fuglen", "Unknown Kissa"]);
-  });
-
-  it("facets are ignored while two layers are selected and come back with one", () => {
-    const one = state(coffeeOnly, { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" });
-    const two = reduce(one, { type: "toggleLayer", layer: TEA }, allLayers);
-    expect(names(two)).toHaveLength(6);
-    expect(names(reduce(two, { type: "toggleLayer", layer: TEA }, allLayers))).toEqual(["Bear Pond", "Unknown Kissa"]);
-  });
-
-  it("filters stack", () => {
-    const s = state(
-      coffeeOnly,
-      { type: "setText", text: "glitch" },
-      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Kissaten" },
-    );
-    expect(names(s)).toEqual(["ＧＬＩＴＣＨ annex"]);
+  it("everything stacks", () => {
+    const s = run(cat("drinks/Coffee"), area("Central"), { type: "setText", text: "glitch" }, { type: "setStarredOnly", value: true });
+    expect(names(s)).toEqual(["Glitch"]);
   });
 });
 
-describe("matchesFacet", () => {
-  const sel = (values: string[], includeUnknown = true) => ({ values: new Set(values), includeUnknown });
-  it("no selection matches anything non-blank", () => {
-    expect(matchesFacet(["x"], sel([]))).toBe(true);
-    expect(matchesFacet([], sel([]))).toBe(true);
-    expect(matchesFacet([], sel([], false))).toBe(false);
+describe("areaScope", () => {
+  it("is undefined when the area filter keeps everything", () => {
+    expect(areaScope(run(), { areas })).toBeUndefined();
+    expect(areaScope(run(NEARBY), { areas })).toBeUndefined();
+    expect(areaScope(run(HERE), { areas })).toBeUndefined();
   });
-  it("selection needs an overlap", () => {
-    expect(matchesFacet(["a", "b"], sel(["b"]))).toBe(true);
-    expect(matchesFacet(["a"], sel(["b"]))).toBe(false);
-    expect(matchesFacet([], sel(["b"]))).toBe(true);
-    expect(matchesFacet([], sel(["b"], false))).toBe(false);
+
+  it("names what is chosen and, with Include nearby, what is pulled in", () => {
+    expect(areaScope(run(area("East")), { areas })).toEqual({ chosen: new Set(["East"]), nearby: new Set() });
+    expect(areaScope(run(area("East"), NEARBY), { areas })).toEqual({ chosen: new Set(["East"]), nearby: new Set(["Central"]) });
+    expect(areaScope(run(HERE, NEARBY), { areas, hereGroup: "Shibuya" })).toEqual({ chosen: new Set(["Shibuya"]), nearby: new Set(["Central"]) });
+    expect(areaScope(run(area("Central"), NEARBY), { areas })).toEqual({ chosen: new Set(["Central"]), nearby: new Set(["Shibuya", "East"]) });
   });
 });
 
-describe("facetCounts", () => {
-  it("counts over the other filters, configured values first, multi-value once per value", () => {
-    const counts = facetCounts(places, state(coffeeOnly), coffee);
-    const format = counts.get("Format")!;
-    expect([...format.values]).toEqual([["Stand", 1], ["Café", 2], ["Kissaten", 1]]);
-    expect(format.unknown).toBe(1);
-    const specialty = counts.get("Specialty")!;
-    expect([...specialty.values]).toEqual([["Pour-over", 2], ["Espresso", 2]]);
-    expect(specialty.unknown).toBe(2);
-  });
-
-  it("a facet's own selection does not reduce its counts, but other facets do", () => {
-    const s = state(
-      coffeeOnly,
-      { type: "toggleFacetValue", layer: "drinks", column: "Format", value: "Stand" },
-      { type: "setIncludeUnknown", layer: "drinks", column: "Format", value: false },
-    );
-    const counts = facetCounts(places, s, coffee);
-    expect([...counts.get("Format")!.values]).toEqual([["Stand", 1], ["Café", 2], ["Kissaten", 1]]);
-    expect(counts.get("Format")!.unknown).toBe(1);
-    // Only Bear Pond passes the Format filter, so Specialty counts shrink to it.
-    expect([...counts.get("Specialty")!.values]).toEqual([["Pour-over", 0], ["Espresso", 1]]);
-    expect(counts.get("Specialty")!.unknown).toBe(0);
-  });
-
-  it("respects text and neighborhood filters", () => {
-    const counts = facetCounts(places, state(coffeeOnly, { type: "setText", text: "glitch" }), coffee);
-    expect([...counts.get("Format")!.values]).toEqual([["Stand", 0], ["Café", 1], ["Kissaten", 1]]);
-  });
-
-  it("includes unlisted values after the configured ones", () => {
-    const odd = [...places, samplePlaces()[0]!, { ...samplePlaces()[0]!, id: "x", name: "Odd", facets: { Format: ["Truck"] } }];
-    const counts = facetCounts(odd, state(coffeeOnly), coffee);
-    expect([...counts.get("Format")!.values.keys()]).toEqual(["Stand", "Café", "Kissaten", "Truck"]);
-  });
-});
-
-describe("neighborhoodCounts", () => {
-  it("counts ignore the neighborhood selection itself", () => {
-    const s = state({ type: "toggleNeighborhood", neighborhood: "East" });
-    expect([...neighborhoodCounts(places, s, NEIGHBORHOODS)]).toEqual([["Central", 3], ["Shibuya", 2], ["East", 1]]);
-  });
-  it("but respect the other filters", () => {
-    const s = state({ type: "setStarredOnly", value: true });
-    expect([...neighborhoodCounts(places, s, NEIGHBORHOODS)]).toEqual([["Central", 1], ["Shibuya", 0], ["East", 0]]);
+describe("matchesCategories", () => {
+  it("matches a kind of the place's layer, or the layer itself", () => {
+    const fuglen = place({ name: "f", kinds: ["Coffee", "Bar"] });
+    expect(matchesCategories(fuglen, new Set())).toBe(true);
+    expect(matchesCategories(fuglen, new Set(["drinks/Bar"]))).toBe(true);
+    expect(matchesCategories(fuglen, new Set(["drinks/Tea"]))).toBe(false);
+    expect(matchesCategories(fuglen, new Set(["drinks"]))).toBe(true);
+    expect(matchesCategories(fuglen, new Set(["kyoto-food/Bar"]))).toBe(false);
   });
 });
 
@@ -188,46 +139,15 @@ describe("normalise", () => {
 
 describe("sinkUnknownHours", () => {
   it("moves unknown-hours rows of hours layers to the end, in order, and leaves the rest alone", () => {
-    const coffeeRows = places.filter((p) => p.layerId === "drinks");
-    const [a, b, c] = coffeeRows as [typeof coffeeRows[0], typeof coffeeRows[0], typeof coffeeRows[0]];
+    const [a, b, c] = places.filter((p) => p.layerId === "drinks") as [typeof places[0], typeof places[0], typeof places[0]];
     const hours: HoursInput = {
       states: new Map([[a.id, "unknown"], [b.id, "open"]]), // c has no entry: unknown too
       layersWithHours: new Set(["drinks"]),
     };
     expect(sinkUnknownHours([a, b, c], hours).map((p) => p.name)).toEqual([b.name, a.name, c.name]);
     expect(sinkUnknownHours([a, b, c], undefined)).toEqual([a, b, c]);
-    const tea = places.find((p) => p.layerId === TEA)!;
+    const hotel = places.find((p) => p.name === "Hotel")!;
     // A layer without hours is not unknown; it keeps its place.
-    expect(sinkUnknownHours([a, tea, b], hours).map((p) => p.name)).toEqual([tea.name, b.name, a.name]);
-  });
-});
-
-describe("scopedFacetValues", () => {
-  const drinks: LayerConfig = {
-    ...coffee,
-    facets: [
-      { column: "Kind", values: ["Coffee", "Tea"] },
-      { column: "Specialty", values: ["Nordic", "Matcha"], scopeBy: "Kind" },
-    ],
-  };
-  const rows = [
-    place({ name: "a", facets: { Kind: ["Coffee"], Specialty: ["Nordic", "Espresso"] } }),
-    place({ name: "b", facets: { Kind: ["Tea"], Specialty: ["Matcha"] } }),
-    place({ name: "c", facets: { Kind: ["Tea"], Specialty: [] } }),
-    place({ name: "k", region: "kyoto", facets: { Kind: ["Coffee"], Specialty: ["Kyoto-only"] } }),
-  ];
-  const specialty = drinks.facets[1]!;
-
-  it("offers every value in the region when the scoping column has no selection", () => {
-    expect([...scopedFacetValues(rows, state(coffeeOnly), drinks, specialty)!].sort()).toEqual(["Espresso", "Matcha", "Nordic"]);
-  });
-
-  it("narrows to the values held by rows matching the scoping selection", () => {
-    const tea = state(coffeeOnly, { type: "toggleFacetValue", layer: "drinks", column: "Kind", value: "Tea" });
-    expect([...scopedFacetValues(rows, tea, drinks, specialty)!]).toEqual(["Matcha"]);
-  });
-
-  it("is undefined for an unscoped facet", () => {
-    expect(scopedFacetValues(rows, state(coffeeOnly), drinks, drinks.facets[0]!)).toBeUndefined();
+    expect(sinkUnknownHours([a, hotel, b], hours).map((p) => p.name)).toEqual(["Hotel", b.name, a.name]);
   });
 });

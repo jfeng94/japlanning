@@ -12,7 +12,7 @@ const BADGES: Record<Mark, string> = { bookmark: bookmarkIcon, unknown: unknownI
 
 export interface ListOptions {
   layers: LayerConfig[];
-  /** Show the layer name on each row (when more than one layer is selected). */
+  /** Show the layer name on each row (when more than one layer is in play). */
   showLayer: boolean;
   selectedId?: string;
   /** The one marker per place to show before the name (data/marks.ts). */

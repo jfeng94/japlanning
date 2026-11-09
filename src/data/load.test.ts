@@ -122,7 +122,7 @@ describe("loadLayer source chain", () => {
   });
 
   it("passes the region's areas to the parser", async () => {
-    const csv = "Name,Latitude,Longitude,Area\nX,35.6,139.7,Atlantis\n";
+    const csv = "Name,Latitude,Longitude,Area,Kind\nX,35.6,139.7,Atlantis,Coffee\n";
     const { deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: ok(csv) }));
     const r = await loadLayer(coffee, d);
     expect(r.warnings).toHaveLength(1);

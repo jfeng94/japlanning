@@ -38,18 +38,9 @@ const FIELDS: Field<keyof Settings>[] = [
     ],
   },
   {
-    key: "sort",
-    label: "List order",
-    help: "Distance needs a location fix (tap the map's locate button); until there is one the list is by name.",
-    options: [
-      ["name", "By name"],
-      ["distance", "By distance"],
-    ],
-  },
-  {
     key: "autoDistanceSort",
     label: "Sort by distance when located",
-    help: "On: the first fix after launch switches the list to distance order. Off while planning from home, on during the trip.",
+    help: "On: the first fix after launch switches the list to Nearest. Off while planning from home, on during the trip. The list's own order toggle is in the footer, bottom left.",
     options: [
       [false, "Off"],
       [true, "On"],

@@ -24,6 +24,12 @@ export function formatDistance(m: number): string {
   return `${Math.round(m / 1000)} km`;
 }
 
+/** Whether a point is inside [west, south, east, north] (a RegionConfig bbox). */
+export function inBbox(p: LatLng, bbox: readonly [number, number, number, number]): boolean {
+  const [west, south, east, north] = bbox;
+  return p.lng >= west && p.lng <= east && p.lat >= south && p.lat <= north;
+}
+
 /** Nearest first; ties keep their incoming order. */
 export function sortByDistance<T extends LatLng>(items: T[], from: LatLng): T[] {
   return items

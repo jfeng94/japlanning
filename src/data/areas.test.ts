@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { regionById, regions } from "../config/regions.ts";
-import { areaIndex, areaProblems, wardFromAddress } from "./areas.ts";
+import { areaAt, areaIndex, areaProblems, wardFromAddress } from "./areas.ts";
 
 describe("the configured areas", () => {
   it.each(regions.map((r) => [r.id, r] as const))("%s: neighbours symmetric, merges and labels sound", (_id, region) => {
@@ -97,5 +97,37 @@ describe("wardFromAddress", () => {
     expect(wardFromAddress("京都府宇治市宇治妙楽51-2")).toBe("宇治市");
     expect(wardFromAddress("神奈川県足柄下郡箱根町湯本")).toBe("箱根町");
     expect(wardFromAddress(undefined)).toBeUndefined();
+  });
+});
+
+describe("areaAt (Here)", () => {
+  const index = areaIndex({
+    areas: [
+      { label: "Shibuya", ward: "渋谷区", adjacent: [] },
+      { label: "Ginza", ward: "中央区", adjacent: ["Tsukiji"] },
+      { label: "Tsukiji", ward: "中央区", adjacent: ["Ginza"] },
+    ],
+    areaGroups: [{ label: "Ginza", areas: ["Ginza", "Tsukiji"] }],
+  });
+  const places = [
+    { area: "Shibuya", lat: 35.66, lng: 139.7 },
+    { area: "Shibuya", lat: 35.662, lng: 139.702 },
+    { area: "Ginza", lat: 35.671, lng: 139.765 },
+    { area: "Tsukiji", lat: 35.665, lng: 139.77 },
+    { area: undefined, lat: 35.7, lng: 139.7 },
+  ];
+  const tokyoBbox = [139.6, 35.58, 139.85, 35.75] as const;
+
+  it("is the chip of the raw area with the nearest centre (the centroid of its places)", () => {
+    expect(areaAt(index, places, { lat: 35.6605, lng: 139.7005 })).toBe("Shibuya");
+    expect(areaAt(index, places, { lat: 35.6652, lng: 139.7702 })).toBe("Ginza"); // Tsukiji, merged into Ginza
+  });
+
+  it("is undefined farther than 2 km from every centre, or outside the bbox", () => {
+    expect(areaAt(index, places, { lat: 35.7, lng: 139.7 })).toBeUndefined(); // ~4 km north of Shibuya; the area-less place doesn't count
+    expect(areaAt(index, places, { lat: 35.7, lng: 139.7 }, { maxM: 5000 })).toBe("Shibuya");
+    expect(areaAt(index, places, { lat: 37.77, lng: -122.42 }, { bbox: tokyoBbox, maxM: Infinity })).toBeUndefined();
+    expect(areaAt(index, places, { lat: 35.6605, lng: 139.7005 }, { bbox: tokyoBbox })).toBe("Shibuya");
+    expect(areaAt(index, [], { lat: 35.6605, lng: 139.7005 })).toBeUndefined();
   });
 });

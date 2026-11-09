@@ -1,13 +1,14 @@
 import { iconAssetUrl, isIconId } from "../config/icons.ts";
 import type { LayerConfig } from "../data/types.ts";
+import { categoriesOf, layersInPlay, type FilterState } from "../filter/state.ts";
 import { clock, DAY, tokyoWallClock } from "../hours/open.ts";
-import { activeFacetLayer, effectiveLayers, getSelection, isDefaultSelection, type FilterState } from "../filter/state.ts";
 import { tag } from "./chips.ts";
 
 /**
- * The strip's top line: the result count, then an icon per selected
- * layer, then a smaller line of the active selections. Tapping it opens
- * the filter sheet.
+ * The strip's top line: the result count and an icon per layer in play,
+ * then a smaller line of tags for what is selected: the search, the
+ * categories, the areas, the flags. List order is the footer's toggle, so
+ * it has no tag.
  */
 export function renderFilterSummary(
   countEl: HTMLElement,
@@ -15,15 +16,13 @@ export function renderFilterSummary(
   state: FilterState,
   regionLayers: LayerConfig[],
   countLabel: string,
-  /** The list is in distance order, which the tags say since it isn't a filter. */
-  byDistance = false,
+  /** Here as the sheet labels it ("Here · Shibuya"), shown while Here is on. */
+  hereLabel = "Here",
 ): void {
   countEl.replaceChildren(countLabel);
   const icons = document.createElement("span");
   icons.className = "layer-icons";
-  const on = effectiveLayers(state, regionLayers.map((l) => l.id));
-  for (const layer of regionLayers) {
-    if (!on.has(layer.id)) continue;
+  for (const layer of layersInPlay(state, regionLayers)) {
     const img = document.createElement("img");
     img.alt = layer.label;
     img.title = layer.label;
@@ -33,34 +32,32 @@ export function renderFilterSummary(
   }
   if (icons.childElementCount > 0) countEl.append(icons);
 
-  summaryEl.replaceChildren(...summaryTags(state, regionLayers, byDistance));
+  summaryEl.replaceChildren(...summaryTags(state, regionLayers, hereLabel));
   summaryEl.hidden = summaryEl.childElementCount === 0;
 }
 
-function summaryTags(state: FilterState, regionLayers: LayerConfig[], byDistance: boolean): HTMLElement[] {
+function summaryTags(state: FilterState, regionLayers: LayerConfig[], hereLabel: string): HTMLElement[] {
   const tags: HTMLElement[] = [];
-  if (byDistance) tags.push(tag("by distance"));
   if (state.text) tags.push(tag(`“${state.text}”`));
-  for (const n of state.neighborhoods) tags.push(tag(n));
-  if (state.starredOnly) tags.push(tag("★ key branches"));
-  if (state.bookmarkedOnly) tags.push(tag("Bookmarked"));
+
+  // A layer with every kind on reads as the layer; otherwise its kinds one by one.
+  for (const layer of regionLayers) {
+    const own = categoriesOf(layer);
+    const on = own.filter((c) => state.categories.has(c));
+    if (on.length === 0) continue;
+    if (on.length === own.length) tags.push(tag(layer.label));
+    else for (const c of on) tags.push(tag(c.slice(layer.id.length + 1)));
+  }
+
+  if (state.here) tags.push(tag(hereLabel));
+  for (const a of state.areas) tags.push(tag(a));
+  if (state.nearby && (state.here || state.areas.size > 0)) tags.push(tag("+ nearby"));
+
   if (state.openNow) {
     const at = tokyoWallClock(state.openAt);
     tags.push(tag(at ? `Open ${DAY[at.getDay()]} ${clock(at)}` : "Open now"));
   }
-
-  const activeId = activeFacetLayer(state, regionLayers.map((l) => l.id));
-  const activeLayer = regionLayers.find((l) => l.id === activeId);
-  if (activeLayer) {
-    for (const facet of activeLayer.facets) {
-      const sel = getSelection(state, activeLayer.id, facet.column);
-      if (isDefaultSelection(sel)) continue;
-      const label = facet.label ?? facet.column;
-      const values = [...sel.values];
-      if (values.length > 0) tags.push(tag(`${label}: ${values.join(", ")}`));
-      if (!sel.includeUnknown) tags.push(tag(`${label}: known only`));
-    }
-  }
+  if (state.bookmarkedOnly) tags.push(tag("Bookmarked"));
+  if (state.starredOnly) tags.push(tag("Key branches"));
   return tags;
 }
-

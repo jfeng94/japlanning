@@ -3,9 +3,10 @@ import type { LayerConfig, LayerId } from "../data/types.ts";
 /**
  * One entry per layer. Adding a layer: add its id to LAYER_IDS in
  * data/types.ts, put its CSV at data/<id>.csv (npm run import normalises
- * one), add an entry here, push. Facet `values` are the column's enum in
- * display order; values in the data but not here still render (after
- * these) and fail the build's data check so typos are visible.
+ * one), add an entry here, push. `kinds` are the category chips in the
+ * filter sheet. Facet `values` are the column's enum in display order;
+ * values in the data but not here still render (after these) and fail the
+ * build's data check so typos are visible.
  */
 export const layers: LayerConfig[] = [
   {
@@ -16,16 +17,15 @@ export const layers: LayerConfig[] = [
     color: "#b5452b",
     icon: "coffee",
     hasHours: true,
+    kinds: ["Coffee", "Tea", "Bar"],
     rowFacets: ["Format", "Specialty", "Linger"],
     facets: [
-      { column: "Kind", values: ["Coffee", "Tea", "Bar"] },
       { column: "Format", values: ["Stand", "Café", "Kissaten", "Tasting bar", "Bean shop", "Shop"] },
       { column: "Roasting", values: ["In-house", "Guest roasters", "Both"] },
       { column: "Food", values: ["None", "Light", "Full menu"] },
       { column: "Linger", values: ["Grab & go", "Short stay", "Settle in"] },
       {
         column: "Specialty",
-        scopeBy: "Kind",
         values: [
           "Light roast / Nordic",
           "Pour-over",

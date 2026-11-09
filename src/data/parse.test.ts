@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import drinksCsv from "../../data/drinks.csv?raw";
 import lodgingCsv from "./__fixtures__/stub-lodging.csv?raw";
 import { layers } from "../config/layers.ts";
-import { regionOptions } from "../config/regions.ts";
-import { areaIndex, wardFromAddress } from "./areas.ts";
+import { areasOf, regionById, regionOptions } from "../config/regions.ts";
+import { areaAt, areaIndex, wardFromAddress } from "./areas.ts";
 import { ParseError, parseLayerCsv, slug, splitMulti } from "./parse.ts";
 import type { LayerConfig, LayerId } from "./types.ts";
 
@@ -76,6 +76,22 @@ describe("drinks data (the repo file, so every test run validates it)", () => {
 
   it("gives every place a unique id", () => {
     expect(new Set(places.map((p) => p.id)).size).toBe(places.length);
+  });
+
+  it("gives every place its kind (the category chips select on it)", () => {
+    expect(places.filter((p) => p.kinds.length === 0).map((p) => p.name)).toEqual([]);
+    expect(places.filter((p) => p.kinds.includes("Coffee"))).toHaveLength(57);
+    expect(places.filter((p) => p.kinds.includes("Tea"))).toHaveLength(17);
+  });
+
+  it("Here picks the expected area at a few landmarks", () => {
+    const tokyo = places.filter((p) => p.region === "tokyo");
+    const here = (lat: number, lng: number) => areaAt(areasOf("tokyo"), tokyo, { lat, lng }, { bbox: regionById("tokyo").bbox! });
+    expect(here(35.658, 139.7016)).toBe("Shibuya"); // Shibuya station
+    expect(here(35.6717, 139.765)).toBe("Ginza"); // Ginza 4-chome crossing
+    expect(here(35.7148, 139.7967)).toBe("Asakusa"); // Sensō-ji
+    expect(here(35.6436, 139.6694)).toBe("Sangenjaya"); // Sangenjaya station
+    expect(here(37.7749, -122.4194)).toBeUndefined(); // San Francisco
   });
 });
 
@@ -246,6 +262,22 @@ describe("edge cases", () => {
       minimal,
     );
     expect(places).toHaveLength(1);
+  });
+
+  it("reads Kind for a layer with kinds (blank and unknown values warn); one without leaves it in extra", () => {
+    const withKinds: LayerConfig = { ...minimal, kinds: ["Coffee", "Tea", "Bar"], facets: [] };
+    const { places, warnings } = parseLayerCsv(
+      csv(["Name,Latitude,Longitude,Kind", "a,35.6,139.7,Tea; Coffee", "b,35.6,139.7,", "c,35.6,139.7,Juice;Bar"]),
+      withKinds,
+    );
+    expect(places.map((p) => p.kinds)).toEqual([["Coffee", "Tea"], [], ["Bar"]]);
+    expect(warnings.map((w) => [w.row, w.column, w.message])).toEqual([
+      [2, "Kind", "b: Kind is blank"],
+      [3, "Kind", 'c: Kind "Juice" is not one of Coffee, Tea, Bar'],
+    ]);
+    const without = parseLayerCsv(csv(["Name,Latitude,Longitude,Kind", "a,35.6,139.7,Hotel"]), lodging);
+    expect(without.places[0]!.kinds).toEqual([]);
+    expect(without.places[0]!.extra).toEqual({ Kind: "Hotel" });
   });
 
   it("reads the Icon column and drops unknown icons with a warning", () => {
