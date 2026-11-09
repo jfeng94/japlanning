@@ -1,7 +1,8 @@
 # Filters and areas
 
-Status: **building** (2026-11-09). Step 1 (areas) is built and deployed;
-steps 2 (the sheet and the footer) and 3 (cleanup and docs) are next.
+Status: **built** (2026-11-09). Step 1 (areas) and step 2 (the sheet and
+the footer) are built and deployed; step 2 also removed the dead code step
+3 listed, so step 3 was the docs. A phone pass is still to come.
 
 ## Why
 
@@ -264,20 +265,41 @@ blank until it next goes online.
 
 ## Done when
 
-- [ ] The sheet shows flags, areas and categories only; no chip changes
+- [x] The sheet shows flags, areas and categories only; no chip changes
       because another was tapped.
 - [ ] Here picks the right area on the phone in Tokyo (checkable by
       faking a position at home), and Include nearby adds the
-      neighbouring groups with dotted outlines.
-- [ ] Coffee + Tea + Shibuya + nearby gives the union of both kinds
+      neighbouring groups with dotted outlines. Checked in the browser
+      with faked positions (Shibuya station, Sensō-ji, San Francisco) and
+      in the tests at four landmarks; the phone pass is to come.
+- [x] Coffee + Tea + Shibuya + nearby gives the union of both kinds
       across Shibuya and its neighbours.
-- [ ] Merging two raw areas in config changes the chips and the
+- [x] Merging two raw areas in config changes the chips and the
       neighbours with no data edit.
-- [ ] Tokyo's chips sit under five headings and Kyoto's in one list; a
+- [x] Tokyo's chips sit under five headings and Kyoto's in one list; a
       heading tap selects its section.
-- [ ] The footer toggle switches A–Z and Nearest, and Prev/Next follow.
-- [ ] "pour-over" in search finds the pour-over places.
-- [ ] Every row has a raw area; the build fails on a blank or unknown one.
+- [x] The footer toggle switches A–Z and Nearest, and Prev/Next follow.
+- [x] "pour-over" in search finds the pour-over places.
+- [x] Every row has a raw area; the build fails on a blank or unknown one.
+      Kind likewise.
+
+### As built (step 2)
+
+- **Here's states.** The chip reads "Here" until there is a fix, then
+  where you are whether or not it is on ("Here · Shibuya"); "Here ·
+  locating…" while a fix is on the way, "Here · no location" when none is
+  coming, "Here · outside Tokyo" or "Here · no area nearby" when the fix
+  matches no area. Unresolved, Here narrows nothing. Tapping it on with
+  no fix starts locating; a `here=1` link never prompts by itself.
+  Turning Location off in Settings hides the chip and turns Here off.
+- **The order toggle** reads "Nearest…" while a fix is on the way. With
+  Location off, a tap explains that it needs Location instead of
+  switching.
+- **Bookmarked with no bookmarks** shows "No bookmarks in Tokyo yet"
+  instead of the generic empty message; the chip itself is never greyed.
+- **Unknown kinds.** A Kind cell outside the layer's `kinds` warns (the
+  build fails) and the value is dropped from the place, so a typo never
+  becomes a category.
 
 ## Appendix: draft raw areas
 

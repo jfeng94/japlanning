@@ -30,8 +30,10 @@ Jerry wants to be hands-on with this project. He's an experienced engineer
 ## Requirements (from Jerry)
 
 1. Browse pinned locations as a **list**.
-2. **Filter** by criteria. The same filter state drives both list and map.
-   See `docs/design/regions-layers-filters.md`.
+2. **Filter** by criteria: what (layer and kind), where (areas, Here,
+   nearby) and flags (bookmarked, open, key branches), with search for
+   anything specific (2026-11-09). The same filter state drives both list
+   and map. See `docs/design/regions-layers-filters.md`.
 2b. **Bookmark** places of interest on the device, and filter to just
    those.
 3. Show **current location** (blue dot).
@@ -98,7 +100,7 @@ rows carry the region.
 | Branch | string | Which branch, when the name alone is ambiguous ("Yakumo"). Shown muted after the name; searched. |
 | Key | boolean | ★ or a checkbox (TRUE) = the key branch of a multi-branch brand, shown as a star. Blank = no. |
 | Region | enum | Region id: tokyo · kyoto · hakone. Required; a bad value fails the build. |
-| Kind | enum | Coffee · Tea · Bar. First facet. |
+| Kind | enum | Coffee · Tea · Bar (the layer's `kinds`); several allowed, e.g. `Coffee; Bar`. Required: the build fails on a blank or unknown one. The category chips under Drinks in the filter sheet, and in the card's meta line. |
 | Icon | enum | Pin artwork from the global icon enum (src/config/icons.ts): coffee · tea · bar. Blank = the layer default (coffee). |
 | Latitude, Longitude | number | WGS84 decimal degrees |
 | Area | enum | The raw area the place is in, as a visitor would name it (Shibuya, Ningyocho): one of its region's areas in `src/config/regions.ts`, in the ward its address names. The build fails on a blank or unknown one, or one in another ward than the address. Merges in config fold raw areas into the filter chips; see `docs/proposals/filters-and-areas.md`. |
@@ -116,9 +118,12 @@ rows carry the region.
 | Last verified | date | YYYY-MM-DD; blank = hours unverified |
 | Google rating, Google reviews, Rated on | number, integer, date | A dated snapshot of the Google Maps rating and review count, taken by hand from an aggregator that mirrors Google (no Places API key, decided 2026-11-05). Blank when none was reachable. Shown in the card's "Also in the sheet" section until there is UI for it. |
 
-**Any enum field except Region and Area may be blank (unknown).** Filters treat blank as "unknown"
-with an explicit include-unknowns toggle, never as a silent match or
-non-match. **Any enum cell may hold several values separated by `;`.**
+**Any enum field except Region, Area and Kind may be blank (unknown).**
+Blank beats a guess. Format, Roasting, Food, Linger, Specialty and
+Reservation are not filters (decided 2026-11-09,
+`docs/proposals/filters-and-areas.md`): they show on the row and the card,
+and search matches them. **Any enum cell may hold several values
+separated by `;`.**
 
 The loader tolerates new, missing and reordered columns (look up by header
 name), since Jerry will keep editing the sheets and other layers have
@@ -281,7 +286,6 @@ proposal in `docs/proposals/` before work starts.
 
 - Framework: vanilla TS (recommended to start), or something like
   Preact/Svelte if the UI grows?
-- Unknown-hours behavior in the "open now" filter: hide, show greyed, or a
-  toggle?
-- Schemas for tea, pastry, restaurants, lodging and POIs: not researched yet.
+- Schemas for food (pastry, restaurants), lodging and points of interest:
+  not researched yet. Tea and bars joined coffee in the drinks layer.
 - Does the iPad need the offline basemap, or is online-only fine there?

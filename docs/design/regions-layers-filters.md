@@ -2,6 +2,8 @@
 
 Status: **reviewed** (2026-11-04). Decisions here are inputs to M1 (data
 layer) and M2 (list and filters). Open points at the bottom are closed.
+The filter model was rewritten 2026-11-09 (`docs/proposals/filters-and-areas.md`):
+categories, areas and flags, no facet filters, no cascade.
 
 The app covers a whole trip, not just Tokyo coffee. Several travellers
 install it. One deployment serves everyone at https://japan.garbage.house.
@@ -60,21 +62,22 @@ interest. Each layer is one entry in a config file in the repo:
 
 ```ts
 interface LayerConfig {
-  id: string;                  // "tokyo-coffee"
+  id: string;                  // "drinks"
   region?: RegionId;           // fixed region; absent = rows carry a Region column
   label: string;               // "Drinks"
   dataUrl: string;             // "/data/<id>.csv", served from the site
   color: string;               // pin colour, one per layer type
   icon: string;                // pin glyph
   hasHours: boolean;           // participates in "open now"
-  facets: FacetConfig[];
+  kinds?: string[];            // the Kind column's values: the layer's category chips
+  facets: FacetConfig[];       // shown on rows and the card, matched by search; not filters
+  rowFacets?: string[];        // facet columns shown as chips on a row
 }
 
 interface FacetConfig {
   column: string;              // exact header text, e.g. "Specialty"
   label?: string;              // display name, defaults to column
   values: string[];            // ordered; values not listed still render, after these
-  scopeBy?: string;            // another facet column whose selection narrows the values offered
 }
 ```
 
@@ -88,7 +91,7 @@ Shared by every layer, looked up by header name, all optional except Name,
 Latitude, Longitude:
 
 ```
-ID   Name   Branch   Key   Region   Latitude   Longitude   Area   Icon
+ID   Name   Branch   Key   Region   Latitude   Longitude   Area   Kind   Icon
 Hours   Hours (OSM)   Link   Address (JA)   Notes   Last verified
 ```
 
@@ -102,22 +105,32 @@ fails on any such warning, so a bad edit can't ship; `npm run ids` runs the
 same check against the live sheets and prints the next free ID.
 
 **Branch**: for multi-branch brands, Name is the brand and Branch says
-which shop ("Onibus Coffee" / "Yakumo"), since neighborhoods are too coarse
-to tell them apart (all four Onibus rows are Nakameguro). Rows and the card
+which shop ("Onibus Coffee" / "Yakumo"), since an area is too coarse to
+tell them apart (two Onibus rows are in Nakameguro). Rows and the card
 show it muted after the name, search covers it, and name order sorts by
 name then branch. Pin labels show the name only.
 
 **Key** (2026-11-05): marks the key branch of a brand, shown as a ★ flag on
-rows, pins and the card and behind the "★ Key branches only" filter. Any of
+rows, pins and the card and behind the Key branches flag. Any of
 ★, TRUE (a Sheets checkbox), yes or 1 means yes; blank, FALSE or no means
 no; anything else warns and counts as no. The older convention of a ★
 prefix on Name still works and is stripped for display, so a sheet can
 move to the column at its own pace.
 
+**Kind** (2026-11-09): for a layer with `kinds`, which of them the row is
+(several allowed: `Coffee; Bar`). Required there: a blank or unknown value
+warns, so the build fails, and an unknown value is dropped rather than
+becoming a category. The kinds are the layer's category chips in the
+filter sheet and show in the card's meta line ("Drinks · Coffee ·
+Shibuya · 160 m away"). A layer without `kinds` leaves any Kind column in
+the card's "Also in the sheet".
+
 ### Facet columns
 
-The enum fields listed in the layer's config. They drive the generated
-filter UI.
+The enum fields listed in the layer's config. Since 2026-11-09 they are
+not filters: they show as chips on the row (`rowFacets`) and in the card's
+Details, and search matches their values, so "pour-over" or "kissaten"
+finds them in one step.
 
 ### Unknown columns
 
@@ -126,10 +139,9 @@ be added to a sheet before deciding whether it is a facet.
 
 ### Multi-value cells
 
-Any facet cell may hold several values separated by `;` (e.g.
-`Pour-over; Espresso`). Trim whitespace around each value. A row matches a
-facet selection if **any** of its values is selected. In counts, a row is
-counted once under each value it holds.
+Any enum cell (a facet, Kind) may hold several values separated by `;`
+(e.g. `Pour-over; Espresso`). Trim whitespace around each value. A place
+of two kinds matches either kind's chip.
 
 ### Lodging
 
@@ -139,51 +151,75 @@ confirmation numbers, dates or prices. `hasHours: false`.
 
 ## Filter model
 
-Filter state is one module shared by list and map. Three levels, each
-narrowing the next:
+Rewritten 2026-11-09 (`docs/proposals/filters-and-areas.md`). The filter
+state is one module (`src/filter/state.ts`) shared by the list, the map
+and the URL.
 
-1. **Region**: exactly one. Swaps the basemap, the neighborhood list and the
-   available layers.
-2. **Layers**: chips, any number. **None selected means every layer in
-   the region**, the same convention as the Neighborhood filter (decided
-   2026-11-04). Pins are coloured by layer.
-3. **Filters**:
-   - **Shared filters** apply across all selected layers: text substring
-     (name, neighborhood, notes), Neighborhood, ★ only, Bookmarked only
-     (this device's bookmarks, kept outside the filter state and passed
-     in; added 2026-11-04), Open now (only affects layers with
-     `hasHours`), and later distance sort.
-   - **Layer facets** appear only when exactly one layer is in play (one
-     selected, or none selected in a region that has only one), because
-     "Roasting" means nothing to a restaurant. With two or more in play,
-     only shared filters are shown; facet selections are kept but inactive,
-     so narrowing back to one layer restores them.
+The **region** is the top-level switch: exactly one; it swaps the
+basemap, the areas and the layers, and resets the filters. Within it the
+sheet has three groups, top to bottom:
+
+1. **Show only** (flags): Bookmarked (this device's bookmarks, kept
+   outside the filter state and passed in), Open now or Open at a day and
+   time, Key branches. Each one on narrows the results.
+2. **Area** (where): Here, the area chips under ward headings, and an
+   Include nearby areas switch.
+3. **Category** (what): each layer is a header chip followed by its kinds
+   (Drinks: Coffee · Tea · Bar). A layer without kinds is one chip.
+
+Anything more specific (pour-over, kissaten, a branch, a street) is the
+search box's job. Pins are coloured by layer.
 
 ### Semantics
 
-- Within a facet, selected values are OR'd. Across facets, AND.
-- Every facet value shows a live count of rows that would match if it were
-  selected, given the other active filters.
-- **Blank = unknown.** Every facet has an "include unknown" toggle, default
-  **on**, so a blank cell never silently hides a row. A row with a blank
-  facet cell is counted under "unknown", not under any value.
-- The whole state serialises to the URL query string, so a filtered view
-  survives reload and can be shared with the group.
+- Selected chips within a group are a **union**; the groups AND together.
+  None selected in a group means everything: no category is every layer
+  and kind, no area is everywhere.
+- A header (a layer, a ward heading) selects every chip under it, or
+  clears them when they are all on. It is not a selection of its own.
+- **Filters do not cascade.** Nothing in the sheet appears, disappears,
+  greys out or recounts because of another selection. The feedback is the
+  result count in the strip; an empty result says "Nothing matches these
+  filters" with Clear filters. Here depends on the position, not on other
+  chips, so it is the one chip whose label changes by itself.
+- **Include nearby** adds the chips next to everything chosen (the
+  selection and Here's chip): one hop on the area graph, with each merge
+  contracted to a single node. Chips pulled in by Here or Include nearby
+  get a dotted outline without becoming selected, so the count is
+  explainable.
+- **Here** is the chip of the raw area whose centre (the centroid of its
+  places) is nearest to the position, within 2 km and inside the region's
+  bbox. Unresolved (no fix yet, or away from every area) it narrows
+  nothing. It follows the position, re-evaluated with the 3 s position
+  throttle.
+- **Search** matches the name, branch, raw area, area chip, kinds, notes,
+  every facet value and the Japanese address, ignoring case and width.
+- The whole state serialises to the URL query string (`c`, `a`, `here`,
+  `nb`, `q`, `star`, `b`, `open`, `at`; `src/filter/url.ts`), so a
+  filtered view survives reload and can be shared. Here travels as "here",
+  not as where the sender stood.
 
 ```ts
 interface FilterState {
   region: RegionId;
-  layers: Set<LayerId>;
+  categories: Set<string>;   // "drinks/Coffee", or a layer id for a layer without kinds
+  areas: Set<string>;        // area chips
+  here: boolean;
+  nearby: boolean;
   text: string;
-  neighborhoods: Set<string>;
   starredOnly: boolean;
   bookmarkedOnly: boolean;
   openNow: boolean;
-  facets: Record<LayerId, Record<string /* column */, {
-    values: Set<string>;
-    includeUnknown: boolean;
-  }>>;
+  openAt?: string;           // "YYYY-MM-DDTHH:MM", Tokyo wall clock
 }
+```
+
+```
+shown = places in the region
+  ∩ (no categories ? all : ∪ selected categories)
+  ∩ (no areas and no Here ? all : area ∈ chosen ∪ (nearby ? their neighbours : ∅))
+  ∩ every flag that is on
+  ∩ text match
 ```
 
 ## Open now (M5, 2026-11-04)
@@ -195,9 +231,9 @@ A shared filter evaluated in Asia/Tokyo wall-clock time from the
 - Layer has `hasHours: false` (lodging and the like): untouched; rows
   show a "no hours" mark while the filter is on.
 - Open: passes. Closed: hidden.
-- Unknown (blank or unparsable hours): passes iff `includeUnknownHours`
-  (default on, like the facets' include-unknown). Those rows sink to the
-  end of the list, in their usual order (2026-11-05).
+- Unknown (blank or unparsable hours): passes, and sinks to the end of
+  the list in its usual order with the "?" mark (2026-11-05). The
+  "Include unknown hours" toggle went with the facet toggles (2026-11-09).
 - Before the parser has loaded, everything passes so the list never
   blanks.
 
@@ -219,19 +255,22 @@ user is asking about opening times (the filter on, or an "open at" time
 set): it answers "is this open?" with "we don't know", and is noise
 otherwise. On rows the marker sits before the name; on pins
 it is the upper-right badge. All four are artwork (the ★ glyph stays
-only in the filter chip and strip tag, which are labels).
+only where it is a label).
 
-## Sort (M6, 2026-11-04)
+## Sort (M6, 2026-11-04; the footer toggle 2026-11-09)
 
 List order is a device preference, not filter state: `sort: "name" |
-"distance"` in the Settings store, shown as a Name / Distance pair at the
-top of the filter sheet and as "List order" in Settings. It is not in the
-share URL (a link shouldn't reorder a friend's list), though `?sort=` works
-as an override like the other settings.
+"distance"` in the Settings store, switched by the toggle at the bottom
+left of the strip's footer in list mode, labelled with the current order:
+**A–Z** or **Nearest**. It is not in the share URL (a link shouldn't
+reorder a friend's list), though `?sort=` works as an override like the
+other settings.
 
-- Distance order needs a fix. Without one the list is by name and the
-  Distance chip is disabled ("Distance · locate first"); the preference is
-  kept and takes effect on the next fix.
+- Nearest needs a fix. Choosing it with none starts locating, and the
+  toggle reads "Nearest…" (the list stays A–Z) until the fix lands. With
+  Location off a tap says so instead of switching. The preference is kept
+  and takes effect on the next fix.
+- Prev and Next on the card follow the list's order.
 - Location is a Settings toggle (`location`, default on, revised
   2026-11-05): on shows the map's locate button and, when the browser
   already reports the permission granted, starts watching at launch; the
@@ -241,8 +280,6 @@ as an override like the other settings.
 - "Sort by distance when located" (`autoDistanceSort`, off by default)
   switches `sort` to distance on the first fix after launch. Off while
   planning from home, on during the trip.
-- The strip shows a "by distance" tag alongside the filter tags so it is
-  visible why the order changed.
 - Rows and the card show the distance from the last fix whenever one
   exists, whatever the order. Re-renders from new fixes are throttled to
   one every 3 s so the list doesn't re-sort under a thumb.
@@ -267,14 +304,13 @@ as an override like the other settings.
 - **Facet value order comes from config**, not from first appearance in the
   sheet, so the UI is stable as rows are added. Values present in the sheet
   but missing from config still render, after the configured ones.
-- **A facet can be scoped by another** (`scopeBy`, 2026-11-05): Specialty
-  is scoped by Kind, so with Coffee selected the sheet offers only the
-  specialties coffee rows hold, with Tea only the tea ones, with no Kind
-  selected all of them. The data stays flat ("Matcha", not "Tea: Matcha");
-  the grouping is read from the rows, so a new specialty on a tea row shows
-  under Tea with no config change. A selected value is never hidden.
+- **Facets are not filters** (2026-11-09, superseding the per-facet
+  sections, live counts, include-unknown toggles and `scopeBy` of
+  2026-11-04 and 2026-11-05): a sheet that grows with every layer and
+  recounts as you tap was hard to predict. Kind became the categories;
+  the rest is search.
 - **"Open now" leaves `hasHours: false` layers untouched.** With several
-  layers selected, rows from layers without hours stay visible and show a
+  layers in play, rows from layers without hours stay visible and show a
   small "no hours" marker.
 - **Layer and facet config lives in the repo**, typed and tested, not in a
   registry sheet. Schemas are not changed mid-trip; adding a layer is a config

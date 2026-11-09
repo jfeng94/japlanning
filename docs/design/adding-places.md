@@ -30,10 +30,11 @@ if something is ambiguous enough to stop the research.
 - **Hours.** Human-readable plus OSM syntax. `Last verified` is today
   only when the hours were read from the official source; hours from a
   third party go in without a date, so the app shows them as unverified.
-- **Facets.** Kind always. Format, Food, Linger, Reservation, Specialty
-  only when a source supports them; blank otherwise. Blank beats a
-  guess: the filters treat blank as unknown, a wrong value hides or
-  shows the place for the wrong reason.
+- **Kind** always: it is required, and it files the place under its
+  category chip.
+- **Facets.** Format, Food, Linger, Reservation, Specialty only when a
+  source supports them; blank otherwise. Blank beats a guess: a wrong
+  value misleads on the card and in search.
 - **Notes.** Two or three lines in English: what it is known for, the
   order, practical tips (card only, queues, reservations). Nothing
   private, ever.
