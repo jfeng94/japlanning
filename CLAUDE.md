@@ -44,10 +44,11 @@ Jerry wants to be hands-on with this project. He's an experienced engineer
 7. **Simple "atlas" basemap**: roads, rail/subway lines, stations, water and
    parks only. **No third-party POIs** (shops, restaurants). Our pins are the
    only POIs.
-8. **Multiple location types** (layers), each with its own schema. Only
-   coffee is researched so far; the rest must be addable without code changes
-   beyond config.
-9. **Three regions**: Tokyo, Kyoto, Hakone, in one app.
+8. **Multiple location types** (layers), each with its own schema, addable
+   without code changes beyond config. Six so far (2026-11-09): drinks,
+   sweets, food, music, shops, activities.
+9. **Regions**: Tokyo, Kyoto, Osaka, Nara, Hakone, in one app (Osaka and
+   Nara joined 2026-11-09 as day trips; Uji counts as Kyoto).
 10. **Group use**: several travellers install the same URL. Lodging is a
     shared quick reference, never private data.
 
@@ -103,6 +104,15 @@ where and `Icon` picking the artwork (decided 2026-11-05, see
 `docs/proposals/drinks-layer.md`). A layer is one location type; its
 rows carry the region.
 
+**Sweets, food, music, shops and activities** joined 2026-11-09 from
+Jerry's trip list (`docs/design/regions-layers-filters.md`, "Layers"):
+the same core columns, a `Kind` where the layer has kinds (Sweets: Pastry
+· Wagashi · Ice; Music: Café · Shop · Concert; Shops: Kitchen · Baking ·
+Games), and a **Type** facet saying what the place is ("Kakigori",
+"Ramen; Tsukemen"), multi-valued from the layer's list. Places still
+waiting for fitting pin art use the `question` icon. The list's research
+gaps are in `docs/research/places-followup-2026-11-09.csv`.
+
 ### Drinks columns (one row per place)
 
 | Column | Type | Notes |
@@ -111,7 +121,7 @@ rows carry the region.
 | Name | string | The brand. An older ★ prefix still marks a key branch and is stripped for display. |
 | Branch | string | Which branch, when the name alone is ambiguous ("Yakumo"). Shown muted after the name; searched. |
 | Key | boolean | ★ or a checkbox (TRUE) = the key branch of a multi-branch brand, shown as a star. Blank = no. |
-| Region | enum | Region id: tokyo · kyoto · hakone. Required; a bad value fails the build. |
+| Region | enum | Region id: tokyo · kyoto · osaka · nara · hakone. Required; a bad value fails the build. |
 | Kind | enum | Coffee · Tea · Bar (the layer's `kinds`); several allowed, e.g. `Coffee; Bar`. Required: the build fails on a blank or unknown one. The category chips under Drinks on the Filters page, and in the card's meta line. |
 | Icon | enum | Pin artwork from the global icon enum (src/config/icons.ts): coffee · tea · bar. Blank = the layer default (coffee). |
 | Latitude, Longitude | number | WGS84 decimal degrees |
@@ -307,6 +317,7 @@ proposal in `docs/proposals/` before work starts.
 
 - Framework: vanilla TS (recommended to start), or something like
   Preact/Svelte if the UI grows?
-- Schemas for food (pastry, restaurants), lodging and points of interest:
-  not researched yet. Tea and bars joined coffee in the drinks layer.
+- The 2026-11-09 layers (sweets, food, music, shops, activities) are a
+  first cut from Jerry's trip list: are those the right splits and kinds?
+  Lodging's schema is still to come.
 - Does the iPad need the offline basemap, or is online-only fine there?

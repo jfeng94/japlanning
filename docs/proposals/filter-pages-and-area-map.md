@@ -287,7 +287,10 @@ shown = places in the region
   Hatagaya – Tomigaya, Shibuya – Yoyogi. Fourteen listed Tokyo pairs are
   now apart, from 119 m (Kuramae – Nihonbashi) to 1.4 km (Ichigaya –
   Shinjuku). The test doesn't hold the graph to those, since + Adjacent
-  can rightly reach across a gap.
+  can rightly reach across a gap. (2026-11-09, after the places import:
+  only Aoyama – Harajuku still waits. The other two pairs no longer
+  touch in the shapes rebuilt around the new places, and every other
+  touching pair, old areas and new, is now listed as neighbours.)
 - **Credit:** Settings ends with the map and area-shape credits; e-Stat's
   terms ask for the source and a note that it was processed.
 

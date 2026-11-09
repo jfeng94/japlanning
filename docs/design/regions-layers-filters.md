@@ -10,8 +10,11 @@ install it. One deployment serves everyone at https://japan.garbage.house.
 
 ## Regions
 
-Three regions: **Tokyo, Kyoto, Hakone**. Region is the top-level switch in
-the UI. Each region has:
+Five regions: **Tokyo, Kyoto, Osaka, Nara, Hakone**, in that order in the
+menu (Osaka and Nara joined 2026-11-09 with Jerry's trip list, as day
+trips; Uji counts as Kyoto and Sakai as Osaka; Hakone got its map and
+areas with its first pins). Region is the top-level switch in the UI. Each
+region has:
 
 - its own basemap extract (bbox and maxzoom chosen per region),
 - its own set of layers,
@@ -45,7 +48,7 @@ change, not a rewrite. Start unified.
 
 ```ts
 interface RegionConfig {
-  id: "tokyo" | "kyoto" | "hakone";
+  id: "tokyo" | "kyoto" | "osaka" | "nara" | "hakone";
   label: string;
   areas: AreaConfig[];         // raw areas: { label, ward, adjacent }
   areaGroups?: AreaGroup[];    // merges: { label, areas } -> one chip
@@ -60,8 +63,26 @@ A **layer** is one location type, backed by one CSV file in the repo
 (`data/<id>.csv`; it began as a published Google Sheet per region, moved
 into the repo 2026-11-05, see `docs/proposals/data-in-repo.md`). A layer
 may be fixed to one region, or span all of them with a `Region` column
-per row (`docs/proposals/drinks-layer.md`, 2026-11-05). Planned layers: Coffee, Tea, Pastry, Restaurants, Lodging, Points of
-interest. Each layer is one entry in a config file in the repo:
+per row (`docs/proposals/drinks-layer.md`, 2026-11-05). Every layer so
+far spans all regions. Each layer is one entry in a config file in the
+repo (`src/config/layers.ts`):
+
+| Layer | Kinds (the category chips) | Facets | Default pin |
+| --- | --- | --- | --- |
+| Drinks | Coffee · Tea · Bar | Format, Roasting, Food, Linger, Specialty, Reservation | coffee |
+| Sweets | Pastry · Wagashi · Ice | Type, Reservation | pastry |
+| Food | none: one chip | Type, Reservation | fork |
+| Music | Café · Shop · Concert | Type, Reservation | musicbox |
+| Shops | Kitchen · Baking · Games | Type | question |
+| Activities | none: one chip | Type, Reservation | bingbong |
+
+Sweets, Food, Music, Shops and Activities joined 2026-11-09 from Jerry's
+trip list, as a first cut he may reshape: the list's categories became
+layers (Coffee and Cocktails went into Drinks as Coffee and Bar; Kitchen
+shopping, Baking shopping and Board games became Shops), and its "What"
+column became **Type**, what the place is ("Kakigori", "Ramen; Tsukemen",
+"Knives"), multi-valued and from a fixed list per layer like any facet.
+Lodging is still to come, with `onAreaMap` (below).
 
 ```ts
 interface LayerConfig {
@@ -85,8 +106,12 @@ interface FacetConfig {
 ```
 
 Adding a layer or a facet is a config edit and a push; Actions deploys it.
-The schema for Tea, Pastry, Restaurants and POIs is not researched yet; the
-loader and filter UI must not assume anything beyond the core columns.
+The loader and filter UI assume nothing beyond the core columns.
+
+**Pins** (2026-11-09): each row's Icon picks its artwork from the global
+enum (`src/config/icons.ts`). Places with no fitting artwork yet use
+`question` (a ? on a brown disc), so `,question,` in the data finds every
+pin still waiting for art.
 
 ### Core columns
 
