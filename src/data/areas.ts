@@ -186,6 +186,15 @@ export function areaProblems(region: AreaSource): string[] {
   }
   const labels = areaIndex(region).chips.map((c) => c.label);
   for (const l of new Set(labels.filter((l, i) => labels.indexOf(l) !== i))) out.push(`two chips are labelled ${l}`);
+  // With sections, every ward belongs to one: otherwise its chips get a heading of their own, in Japanese.
+  if (region.areaSections && region.areaSections.length > 0) {
+    const sectioned = new Set(region.areaSections.flatMap((s) => s.wards));
+    for (const ward of new Set(region.areas.map((a) => a.ward))) {
+      if (!sectioned.has(ward)) out.push(`${ward} is in no section; add it to one in areaSections`);
+    }
+    const hues = region.areaSections.flatMap((s) => (s.hue ? [s.hue] : []));
+    for (const h of new Set(hues.filter((h, i) => hues.indexOf(h) !== i))) out.push(`two sections are ${h}`);
+  }
   return out;
 }
 

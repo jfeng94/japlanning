@@ -40,7 +40,7 @@ export interface AreaConfig {
 export interface AreaShapeOverride {
   /** [lng, lat] to measure blocks from, instead of the centroid of the area's places. */
   centre?: [number, number];
-  /** How far in metres a block's centre may be and still join; 1000 by default. */
+  /** How far in metres a block's centre may be and still join; 700 by default (REACH_M in scripts/build-areas.ts). */
   reachM?: number;
   /** Census blocks always in this area, as e-Stat names them ("神宮前四丁目"). */
   include?: string[];

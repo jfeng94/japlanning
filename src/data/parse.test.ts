@@ -3,6 +3,7 @@ import drinksCsv from "../../data/drinks.csv?raw";
 import lodgingCsv from "./__fixtures__/stub-lodging.csv?raw";
 import { layers } from "../config/layers.ts";
 import { areasOf, regionById, regionOptions } from "../config/regions.ts";
+import { inBbox } from "../geo/distance.ts";
 import { areaAt, areaIndex, wardFromAddress } from "./areas.ts";
 import { ParseError, parseLayerCsv, slug, splitMulti } from "./parse.ts";
 import type { LayerConfig, LayerId } from "./types.ts";
@@ -36,6 +37,16 @@ describe("drinks data (the repo file, so every test run validates it)", () => {
   it("parses every row with no warnings", () => {
     expect(places).toHaveLength(74);
     expect(warnings).toEqual([]);
+  });
+
+  it("puts every place inside its region's map box, which is all the offline map covers (else grow the bbox; docs/design/adding-places.md)", () => {
+    const outside = places
+      .filter((p) => {
+        const bbox = regionById(p.region).bbox;
+        return bbox !== undefined && !inBbox(p, bbox);
+      })
+      .map((p) => `${p.name}${p.branch ? ` ${p.branch}` : ""} (${p.region})`);
+    expect(outside).toEqual([]);
   });
 
   it("matches the profile of the data (update these when rows change on purpose)", () => {

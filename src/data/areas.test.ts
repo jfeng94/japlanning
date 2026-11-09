@@ -86,6 +86,21 @@ describe("areaProblems", () => {
       "two chips are labelled A",
     ]);
   });
+
+  it("with sections, names a ward in none and a hue used twice", () => {
+    const problems = areaProblems({
+      areas: [
+        { label: "A", ward: "一区", adjacent: [] },
+        { label: "B", ward: "二区", adjacent: [] },
+        { label: "C", ward: "三区", adjacent: [] },
+      ],
+      areaSections: [
+        { label: "One", wards: ["一区"], hue: "red" },
+        { label: "Two", wards: ["二区"], hue: "red" },
+      ],
+    });
+    expect(problems).toEqual(["三区 is in no section; add it to one in areaSections", "two sections are red"]);
+  });
 });
 
 describe("wardFromAddress", () => {
