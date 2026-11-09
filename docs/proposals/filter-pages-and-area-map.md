@@ -1,8 +1,9 @@
 # Filter pages and the area map
 
-Status: **Part 1 built** (2026-11-09); Parts 2 and 3 next. Decided in
-three rounds; Jerry's answers are folded in below. One change while
-building Part 1 is under "As built" at the end of Part 1.
+Status: **Parts 1 and 2 built** (2026-11-09). Part 2's shapes are a
+draft waiting for Jerry's review on the phone; Part 3 is next. Decided in
+three rounds; Jerry's answers are folded in below. Changes made while
+building are under "As built" at the end of each part.
 Jerry framed two sub-milestones: the filter pages in the strip, then the
 area map. The second splits in two here (agreed), because the area
 shapes are a data job of their own and are worth reviewing before any
@@ -224,7 +225,8 @@ shown = places in the region
   the fallback for Tokyo.
 - **Generated, then reviewed.** Each census block goes to the raw area
   whose centre is nearest, among the areas of the block's own ward,
-  within about 1 km. A raw area's shape is the union of its blocks.
+  within 700 m (1 km at first; see "As built"). A raw area's shape is the
+  union of its blocks.
   - Where the draft is wrong, an override in config moves named blocks
     between areas, or moves an area's centre.
   - Hand-listing blocks would be impractical in Kyoto, at 277 for one
@@ -243,7 +245,7 @@ shown = places in the region
     so the hand-kept graph stays honest.
 - **Adding places** gains a step: a new raw area means regenerating the
   shapes and looking at them.
-- **Review:** a Diagnostics switch draws the shapes on the normal map,
+- **Review:** a switch in Settings draws the shapes on the normal map,
   so they can be checked on the phone before Part 3.
 - **If a shape still looks wrong** after overrides, it can be drawn by
   hand: in Google My Maps, exported as KML, which the script reads in
@@ -256,6 +258,37 @@ shown = places in the region
   - Between shapes, it falls back to the nearest centre within 2 km.
   - It costs a point-in-polygon test on about 40 shapes per position
     update.
+
+### As built (Part 2)
+
+- **A 700 m reach, not 1 km.** At 1 km a ward with one area gave it a
+  disc about 2 km across: Jimbocho took in Otemachi and Kitanomaru Park,
+  Ginza reached Yaesu, Kuramae the edge of Akihabara. At 700 m each area
+  keeps to its neighbourhood, with unclaimed city between them. That is
+  honest: the shapes show where our places are, not a complete map of
+  Tokyo. Tokyo's shapes come to 27 KB, Kyoto's to 14 KB.
+- **Rules beyond the proposal:**
+  - a block that holds one of an area's places always goes to that
+    area, so every place sits inside its own shape;
+  - water blocks (水面, in Koto ward's bay) are skipped;
+  - coordinates snap to a 10 cm grid before the union, which otherwise
+    trips on floating-point near-misses between neighbouring blocks;
+  - outlines are simplified to 8 m, and slivers under 1,500 m² dropped.
+- **The review switch is in Settings** ("Area shapes on the map"),
+  rather than Diagnostics, because a setting is saved on the device and
+  survives relaunches during the review. It gives each shape a colour so
+  that neighbours tell apart; Part 3 brings the section colours.
+- **Here goes by the shapes.** Between shapes it falls back to the
+  nearest centre within 2 km: Daikanyama, between the Shibuya and
+  Nakameguro shapes, reads as Nakameguro.
+- **The neighbour check** is a test. Three pairs of chips touch without
+  being listed as neighbours, waiting for a decision: Aoyama – Harajuku,
+  Hatagaya – Tomigaya, Shibuya – Yoyogi. Fourteen listed Tokyo pairs are
+  now apart, from 119 m (Kuramae – Nihonbashi) to 1.4 km (Ichigaya –
+  Shinjuku). The test doesn't hold the graph to those, since + Adjacent
+  can rightly reach across a gap.
+- **Credit:** Settings ends with the map and area-shape credits; e-Stat's
+  terms ask for the source and a note that it was processed.
 
 ## Part 3: the area map
 

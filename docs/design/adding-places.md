@@ -26,7 +26,11 @@ if something is ambiguous enough to stop the research.
   following the address; the ward in the address must be the area's
   (the build checks). A place in a new area adds that raw area to the
   region's config with its ward and neighbours, and a merge if it should
-  share a chip (docs/proposals/filters-and-areas.md).
+  share a chip (docs/proposals/filters-and-areas.md). Then
+  `npm run areas` regenerates the area shapes (public/areas): its report
+  lists each area's blocks and any shapes that touch without being
+  neighbours. Look at the new shape with Settings → Area shapes on the
+  map.
 - **Hours.** Human-readable plus OSM syntax. `Last verified` is today
   only when the hours were read from the official source; hours from a
   third party go in without a date, so the app shows them as unverified.

@@ -209,11 +209,13 @@ search box's job. Pins are coloured by layer.
     freezes the other added areas as picks, with + Adjacent off;
   - **out**: outlined; a tap picks it, and with + Adjacent on its
     neighbours come in as added.
-- **Here** is the chip of the raw area whose centre (the centroid of its
-  places) is nearest to the position, within 2 km and inside the region's
-  bbox. Unresolved (no fix yet, or away from every area) it narrows
-  nothing. It follows the position, re-evaluated with the 3 s position
-  throttle.
+- **Here** is the chip whose shape the position falls in (the area
+  shapes in public/areas, generated from census blocks by
+  `npm run areas`). Between shapes it is the chip of the raw area whose
+  centre (the centroid of its places) is nearest, within 2 km and inside
+  the region's bbox. Unresolved (no fix yet, or away from every area) it
+  narrows nothing. It follows the position, re-evaluated with the 3 s
+  position throttle.
 - **Search** matches the name, branch, raw area, area chip, kinds, notes,
   every facet value and the Japanese address, ignoring case and width.
 - The whole state serialises to the URL query string (`c`, `a`, `here`,
