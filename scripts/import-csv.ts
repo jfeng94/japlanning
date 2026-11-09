@@ -8,7 +8,7 @@
  * replaces the file. Either way:
  *
  * - the ID, Branch and Key columns exist; ID first, Branch and Key after
- *   Name, then Latitude, Longitude, Neighborhood, then every other column
+ *   Name, then Latitude, Longitude, Area, then every other column
  *   in the source's order;
  * - a ★ prefix on Name moves into Key;
  * - rows without a valid, unique ID get the next free one, in row order,
@@ -32,7 +32,7 @@ import type { LayerId } from "../src/data/types.ts";
 const DATA_DIR = path.resolve(import.meta.dirname, "..", "data");
 const STAR = "★";
 /** Canonical leading columns; anything else follows in source order. */
-const LEADING = [ID_COLUMN, "Name", "Branch", "Key", "Region", "Latitude", "Longitude", "Neighborhood"];
+const LEADING = [ID_COLUMN, "Name", "Branch", "Key", "Region", "Latitude", "Longitude", "Area"];
 
 export function dataFile(layerId: string): string {
   return path.join(DATA_DIR, `${layerId}.csv`);

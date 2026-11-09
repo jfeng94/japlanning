@@ -55,17 +55,17 @@ export function place(over: Partial<Place> & { name: string }): Place {
 /** A small, varied set of places across both Tokyo layers and one in Kyoto. */
 export function samplePlaces(): Place[] {
   return [
-    place({ name: "Glitch", starred: true, neighborhood: "Central", notes: "Light roast only",
+    place({ name: "Glitch", starred: true, area: "Central", areaGroup: "Central", notes: "Light roast only",
       facets: { Format: ["Café"], Specialty: ["Pour-over"] } }),
-    place({ name: "Fuglen", neighborhood: "Shibuya",
+    place({ name: "Fuglen", area: "Shibuya", areaGroup: "Shibuya",
       facets: { Format: ["Café"], Specialty: ["Espresso", "Pour-over"] } }),
-    place({ name: "Bear Pond", neighborhood: "Shibuya",
+    place({ name: "Bear Pond", area: "Shibuya", areaGroup: "Shibuya",
       facets: { Format: ["Stand"], Specialty: ["Espresso"] } }),
-    place({ name: "Unknown Kissa", neighborhood: "East",
+    place({ name: "Unknown Kissa", area: "East", areaGroup: "East",
       facets: { Format: [], Specialty: [] } }),
-    place({ name: "ＧＬＩＴＣＨ annex", neighborhood: "Central",
+    place({ name: "ＧＬＩＴＣＨ annex", area: "Central", areaGroup: "Central",
       facets: { Format: ["Kissaten"], Specialty: [] } }),
-    place({ name: "Ippodo", layerId: "tokyo-tea" as LayerId, neighborhood: "Central",
+    place({ name: "Ippodo", layerId: "tokyo-tea" as LayerId, area: "Central", areaGroup: "Central",
       facets: { Style: ["Matcha"] } }),
     place({ name: "Kyoto Diner", layerId: "kyoto-food" as LayerId, region: "kyoto" }),
   ];

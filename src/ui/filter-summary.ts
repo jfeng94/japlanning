@@ -41,7 +41,7 @@ function summaryTags(state: FilterState, regionLayers: LayerConfig[], byDistance
   const tags: HTMLElement[] = [];
   if (byDistance) tags.push(tag("by distance"));
   if (state.text) tags.push(tag(`“${state.text}”`));
-  for (const n of state.neighborhoods) tags.push(tag(shortNeighborhood(n)));
+  for (const n of state.neighborhoods) tags.push(tag(n));
   if (state.starredOnly) tags.push(tag("★ key branches"));
   if (state.bookmarkedOnly) tags.push(tag("Bookmarked"));
   if (state.openNow) {
@@ -64,8 +64,3 @@ function summaryTags(state: FilterState, regionLayers: LayerConfig[], byDistance
   return tags;
 }
 
-/** "Central (Ginza / Jimbocho / Minato)" -> "Central"; short names stay as they are. */
-function shortNeighborhood(name: string): string {
-  const paren = name.indexOf(" (");
-  return paren > 0 ? name.slice(0, paren) : name;
-}

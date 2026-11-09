@@ -1,4 +1,5 @@
 import Papa from "papaparse";
+import { wardFromAddress, type AreaIndex } from "./areas.ts";
 import type { LayerConfig, ParseResult, ParseWarning, Place, RegionId } from "./types.ts";
 
 /** Thrown when the sheet is unusable as a whole (not for bad rows). */
@@ -9,8 +10,8 @@ export class ParseError extends Error {
 export interface ParseOptions {
   /** Known region ids; a Region cell outside them warns and skips the row (layers without a fixed region). */
   regions?: readonly string[];
-  /** A region's shared neighborhood list; a Neighborhood outside it warns. */
-  neighborhoodsFor?: (region: RegionId) => readonly string[] | undefined;
+  /** A region's areas; an Area cell that is blank, unknown or in another ward than the address warns. */
+  areasFor?: (region: RegionId) => Pick<AreaIndex, "raw" | "has" | "wardOf" | "groupOf"> | undefined;
   /** Known icon ids; an Icon cell outside them warns and is dropped. */
   icons?: string[];
 }
@@ -26,7 +27,7 @@ const COL = {
   branch: "Branch",
   key: "Key",
   region: "Region",
-  neighborhood: "Neighborhood",
+  area: "Area",
   hours: "Hours",
   hoursOsm: "Hours (OSM)",
   link: "Link",
@@ -177,10 +178,26 @@ export function parseLayerCsv(
       warn(`${name}: Last verified "${rawDate}" is not YYYY-MM-DD; ignored`, COL.lastVerified);
     }
 
-    const neighborhood = cell(COL.neighborhood);
-    const neighborhoods = options.neighborhoodsFor?.(region);
-    if (neighborhood && neighborhoods && !neighborhoods.includes(neighborhood)) {
-      warn(`${name}: Neighborhood "${neighborhood}" is not in the region's list`, COL.neighborhood);
+    // Area: one of the region's raw areas, in the ward the address names (docs/proposals/filters-and-areas.md).
+    const rawArea = cell(COL.area);
+    const areas = options.areasFor?.(region);
+    let area = rawArea;
+    let areaGroup = rawArea;
+    if (areas && areas.raw.length > 0) {
+      area = areaGroup = undefined;
+      if (!rawArea) {
+        warn(`${name}: Area is blank`, COL.area);
+      } else if (!areas.has(rawArea)) {
+        warn(`${name}: Area "${rawArea}" is not one of ${region}'s areas`, COL.area);
+      } else {
+        area = rawArea;
+        areaGroup = areas.groupOf(rawArea);
+        const addressWard = wardFromAddress(address);
+        const areaWard = areas.wardOf(rawArea);
+        if (addressWard && areaWard && addressWard !== areaWard) {
+          warn(`${name}: the address is in ${addressWard}, but ${rawArea} is in ${areaWard}`, COL.area);
+        }
+      }
     }
 
     let icon = cell(COL.icon);
@@ -215,7 +232,8 @@ export function parseLayerCsv(
       starred,
       lat,
       lng,
-      neighborhood,
+      area,
+      areaGroup,
       hours: cell(COL.hours),
       hoursOsm: cell(COL.hoursOsm),
       link: cell(COL.link),

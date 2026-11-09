@@ -13,8 +13,12 @@ the UI. Each region has:
 
 - its own basemap extract (bbox and maxzoom chosen per region),
 - its own set of layers,
-- its own **neighborhood list**, shared by every layer in that region, so
-  the Neighborhood filter means the same thing for coffee and restaurants.
+- its own **areas**, shared by every layer in that region, in three
+  layers (2026-11-09, `docs/proposals/filters-and-areas.md`): raw areas
+  are facts (the data's Area column, each with the ward its addresses
+  name and its neighbours); merges fold raw areas into the filter chips
+  and can change without touching the data; ward sections put the chips
+  under headings in the filter sheet.
 
 Offline basemaps are downloaded per region on demand from Settings →
 Offline, each with its own status (not on this device, downloading,
@@ -27,8 +31,8 @@ are checked against their allowed values when read; bookmarks live under
 `bookmarks:v1`; basemap Blobs carry a sidecar (build, maxzoom, bbox) that
 is compared with the config on every look; the service worker's cache is
 named by a content hash and older caches are deleted on activation.
-Never a bare key with an unchecked shape. Kyoto's neighborhoods and bbox
-were set 2026-11-05 with its first pins; Uji counts as Kyoto.
+Never a bare key with an unchecked shape. Kyoto's areas and bbox were
+set 2026-11-05 with its first pins; Uji counts as Kyoto.
 
 Region is config, not architecture. If one app ever becomes a problem
 (storage quota, size), splitting to tokyo.garbage.house etc. is a deploy
@@ -38,8 +42,10 @@ change, not a rewrite. Start unified.
 interface RegionConfig {
   id: "tokyo" | "kyoto" | "hakone";
   label: string;
-  neighborhoods: string[];     // ordered; the shared enum for this region
-  basemap: { url: string; bbox: [number, number, number, number] };
+  areas: AreaConfig[];         // raw areas: { label, ward, adjacent }
+  areaGroups?: AreaGroup[];    // merges: { label, areas } -> one chip
+  areaSections?: AreaSection[];// headings: { label, wards }; none = one flat list
+  bbox?: [number, number, number, number];
 }
 ```
 
@@ -82,7 +88,7 @@ Shared by every layer, looked up by header name, all optional except Name,
 Latitude, Longitude:
 
 ```
-ID   Name   Branch   Key   Region   Latitude   Longitude   Neighborhood   Icon
+ID   Name   Branch   Key   Region   Latitude   Longitude   Area   Icon
 Hours   Hours (OSM)   Link   Address (JA)   Notes   Last verified
 ```
 

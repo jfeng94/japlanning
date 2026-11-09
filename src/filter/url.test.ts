@@ -5,9 +5,9 @@ import { allLayers, NEIGHBORHOODS } from "./testing.ts";
 import { fromSearchParams, toSearchParams, type UrlContext } from "./url.ts";
 
 const regions: RegionConfig[] = [
-  { id: "tokyo", label: "Tokyo", neighborhoods: NEIGHBORHOODS },
-  { id: "kyoto", label: "Kyoto", neighborhoods: ["Gion"] },
-  { id: "hakone", label: "Hakone", neighborhoods: [] },
+  { id: "tokyo", label: "Tokyo", areas: NEIGHBORHOODS.map((label) => ({ label, ward: "x", adjacent: [] })) },
+  { id: "kyoto", label: "Kyoto", areas: [{ label: "Gion", ward: "y", adjacent: [] }] },
+  { id: "hakone", label: "Hakone", areas: [] },
 ];
 const ctx: UrlContext = { regions, layers: allLayers, defaultRegion: "tokyo" };
 const TEA = "tokyo-tea" as LayerId;

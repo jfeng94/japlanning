@@ -1,7 +1,7 @@
 # Filters and areas
 
-Status: **proposed** (2026-11-09); open points and area sections decided
-the same day (see Decisions); waiting for a go-ahead.
+Status: **building** (2026-11-09). Step 1 (areas) is built and deployed;
+steps 2 (the sheet and the footer) and 3 (cleanup and docs) are next.
 
 ## Why
 

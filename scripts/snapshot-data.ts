@@ -9,7 +9,7 @@
  *
  * Fails the build on any parse warning: a missing required column, a bad
  * ID (blank, non-integer, repeated), a facet value outside the configured
- * list, a neighborhood outside the region's list, a malformed date. The
+ * list, an area that is blank, unknown or in another ward than the address, a malformed date. The
  * data is in the repo, so a warning is an edit to fix, not a condition
  * to tolerate.
  */

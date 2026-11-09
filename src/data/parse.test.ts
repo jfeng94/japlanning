@@ -3,6 +3,7 @@ import drinksCsv from "../../data/drinks.csv?raw";
 import lodgingCsv from "./__fixtures__/stub-lodging.csv?raw";
 import { layers } from "../config/layers.ts";
 import { regionOptions } from "../config/regions.ts";
+import { areaIndex, wardFromAddress } from "./areas.ts";
 import { ParseError, parseLayerCsv, slug, splitMulti } from "./parse.ts";
 import type { LayerConfig, LayerId } from "./types.ts";
 
@@ -62,6 +63,17 @@ describe("drinks data (the repo file, so every test run validates it)", () => {
     expect(places.filter((p) => p.extra["Google rating"] !== undefined)).toHaveLength(43);
   });
 
+  it("gives every place a raw area in the ward its address names, and a chip", () => {
+    const { areasFor } = regionOptions();
+    for (const p of places) {
+      const areas = areasFor(p.region)!;
+      expect(p.area, p.name).toBeDefined();
+      expect(p.areaGroup, p.name).toBe(areas.groupOf(p.area!));
+      // Every address yields a ward, so the parser's ward check never passes by skipping.
+      expect(wardFromAddress(p.address), p.name).toBe(areas.wardOf(p.area!));
+    }
+  });
+
   it("gives every place a unique id", () => {
     expect(new Set(places.map((p) => p.id)).size).toBe(places.length);
   });
@@ -102,7 +114,7 @@ describe("lodging fixture (different schema, deliberate problems)", () => {
   it("leaves missing optional columns undefined", () => {
     expect(places[0]!.hours).toBeUndefined();
     expect(places[0]!.hoursOsm).toBeUndefined();
-    expect(places[0]!.neighborhood).toBeUndefined();
+    expect(places[0]!.area).toBeUndefined();
     expect(places[0]!.lastVerified).toBeUndefined();
   });
 
@@ -196,14 +208,36 @@ describe("edge cases", () => {
     expect(warnings.map((w) => w.row)).toEqual([2, 3]);
   });
 
-  it("warns when a neighborhood is not in the region's list", () => {
-    const { warnings } = parseLayerCsv(
-      csv(["Name,Latitude,Longitude,Neighborhood", "X,35.6,139.7,Atlantis"]),
+  it("warns on an area that is blank, unknown, or in another ward than the address; maps a raw area to its chip", () => {
+    const areas = areaIndex({
+      areas: [
+        { label: "Ginza", ward: "中央区", adjacent: [] },
+        { label: "Tsukiji", ward: "中央区", adjacent: [] },
+      ],
+      areaGroups: [{ label: "Ginza", areas: ["Ginza", "Tsukiji"] }],
+    });
+    const { places, warnings } = parseLayerCsv(
+      csv([
+        "Name,Latitude,Longitude,Area,Address (JA)",
+        "Turret,35.6,139.7,Tsukiji,東京都中央区築地2-12-6",
+        "Blank,35.6,139.7,,",
+        "Atlantis,35.6,139.7,Atlantis,",
+        "Wrong ward,35.6,139.7,Ginza,東京都港区芝5-14-16",
+      ]),
       minimal,
-      { neighborhoodsFor: () => ["Central"] },
+      { areasFor: () => areas },
     );
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toMatchObject({ row: 1, column: "Neighborhood" });
+    expect(places.map((p) => [p.name, p.area, p.areaGroup])).toEqual([
+      ["Turret", "Tsukiji", "Ginza"],
+      ["Blank", undefined, undefined],
+      ["Atlantis", undefined, undefined],
+      ["Wrong ward", "Ginza", "Ginza"],
+    ]);
+    expect(warnings.map((w) => [w.row, w.column, w.message])).toEqual([
+      [2, "Area", "Blank: Area is blank"],
+      [3, "Area", 'Atlantis: Area "Atlantis" is not one of tokyo\'s areas'],
+      [4, "Area", "Wrong ward: the address is in 港区, but Ginza is in 中央区"],
+    ]);
   });
 
   it("trims header whitespace and ignores a UTF-8 BOM", () => {
@@ -312,17 +346,17 @@ describe("Key column", () => {
 
 describe("Region column (a layer without a fixed region)", () => {
   const spanning: LayerConfig = { ...minimal, region: undefined };
-  const header = "Name,Latitude,Longitude,Region,Neighborhood";
+  const header = "Name,Latitude,Longitude,Region,Area";
 
-  it("takes each row's region from the cell and validates the neighborhood against that region", () => {
+  it("takes each row's region from the cell and validates the area against that region", () => {
     const { places, warnings } = parseLayerCsv(
-      csv([header, "A,35.6,139.7,tokyo,Central (Ginza / Jimbocho / Minato)", "B,35.0,135.7,kyoto,", "C,35.6,139.7,tokyo,Atlantis"]),
+      csv([header, "A,35.6,139.7,tokyo,Ginza", "B,35.0,135.7,kyoto,Uji", "C,35.6,139.7,tokyo,Atlantis"]),
       spanning,
       regionOptions(),
     );
     expect(places.map((p) => [p.name, p.region])).toEqual([["A", "tokyo"], ["B", "kyoto"], ["C", "tokyo"]]);
     expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toMatchObject({ row: 3, column: "Neighborhood" });
+    expect(warnings[0]).toMatchObject({ row: 3, column: "Area" });
   });
 
   it("skips a row with a blank or unknown region, with a warning on the Region column", () => {
@@ -332,7 +366,7 @@ describe("Region column (a layer without a fixed region)", () => {
   });
 
   it("ignores the column when the layer has a fixed region", () => {
-    const { places, warnings } = parseLayerCsv(csv([header, "A,35.6,139.7,kyoto,"]), minimal, regionOptions());
+    const { places, warnings } = parseLayerCsv(csv([header, "A,35.6,139.7,kyoto,Ginza"]), minimal, regionOptions());
     expect(places[0]!.region).toBe("tokyo");
     expect(warnings).toEqual([]);
   });

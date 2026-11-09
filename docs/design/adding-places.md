@@ -21,9 +21,12 @@ if something is ambiguous enough to stop the research.
 - **Position.** Coordinates from the official address, cross-checked on
   OpenStreetMap or Google Maps, and inside the region's bounding box.
   The Japanese address from the official source; a `~` prefix when only
-  the neighborhood is known.
-- **Neighborhood.** One of the region's configured values. A region
-  without a list yet (Kyoto, Hakone) gets one proposed in the findings.
+  the area is known.
+- **Area.** The raw area the place is in, as a visitor would name it,
+  following the address; the ward in the address must be the area's
+  (the build checks). A place in a new area adds that raw area to the
+  region's config with its ward and neighbours, and a merge if it should
+  share a chip (docs/proposals/filters-and-areas.md).
 - **Hours.** Human-readable plus OSM syntax. `Last verified` is today
   only when the hours were read from the official source; hours from a
   third party go in without a date, so the app shows them as unverified.
@@ -46,12 +49,12 @@ findings say so.
 ## 3. Findings (the gate)
 
 One table, one row per candidate: name and branch, region and
-neighborhood, coordinates, hours and whether verified, the facets found,
+area, coordinates, hours and whether verified, the facets found,
 a one-line note, source links, a confidence (high: official source for
 identity, position and hours; medium: one of those from a third party;
 low: identity uncertain), and open questions. Below it: anything the
-config lacks (a new Specialty value, a neighborhood list, a region
-bounding box), since those go in the same commit.
+config lacks (a new Specialty value, a new raw area with its neighbours
+and merge, a region bounding box), since those go in the same commit.
 
 Claude stops here. Jerry answers the questions, drops candidates, or
 corrects facts. Nothing is written until he says go.

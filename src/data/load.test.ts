@@ -121,12 +121,12 @@ describe("loadLayer source chain", () => {
     expect(r.error).toContain("cache: layer drinks: missing required column(s): Longitude");
   });
 
-  it("passes the region's neighborhoods to the parser", async () => {
-    const csv = "Name,Latitude,Longitude,Neighborhood\nX,35.6,139.7,Atlantis\n";
+  it("passes the region's areas to the parser", async () => {
+    const csv = "Name,Latitude,Longitude,Area\nX,35.6,139.7,Atlantis\n";
     const { deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: ok(csv) }));
     const r = await loadLayer(coffee, d);
     expect(r.warnings).toHaveLength(1);
-    expect(r.warnings[0]!.column).toBe("Neighborhood");
+    expect(r.warnings[0]!.column).toBe("Area");
   });
 });
 

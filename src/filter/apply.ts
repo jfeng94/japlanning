@@ -9,7 +9,7 @@ export function normalise(s: string): string {
 export function matchesText(place: Place, query: string): boolean {
   const q = normalise(query);
   if (!q) return true;
-  return [place.name, place.branch, place.neighborhood, place.notes]
+  return [place.name, place.branch, place.area, place.areaGroup, place.notes]
     .filter((s): s is string => typeof s === "string")
     .some((s) => normalise(s).includes(q));
 }
@@ -40,7 +40,7 @@ export interface ApplyOptions {
   skipOpenNow?: boolean;
   /** Ignore this facet column's selection (used to count "what if I picked this"). */
   skipFacet?: string;
-  /** Ignore the neighborhood selection (same reason). */
+  /** Ignore the area selection (same reason). */
   skipNeighborhoods?: boolean;
 }
 
@@ -62,7 +62,7 @@ export function applyFilters(places: Place[], state: FilterState, opts: ApplyOpt
     if (state.starredOnly && !p.starred) return false;
     if (state.bookmarkedOnly && !opts.bookmarks?.has(p.id)) return false;
     if (state.openNow && !opts.skipOpenNow && !passesOpenNow(p, state, opts.hours)) return false;
-    if (byNeighborhood && !(p.neighborhood !== undefined && state.neighborhoods.has(p.neighborhood))) return false;
+    if (byNeighborhood && !(p.areaGroup !== undefined && state.neighborhoods.has(p.areaGroup))) return false;
     if (!matchesText(p, state.text)) return false;
     if (facets && p.layerId === facetLayer) {
       for (const [column, sel] of Object.entries(facets)) {
@@ -170,7 +170,7 @@ export function facetCounts(
   return out;
 }
 
-/** Same idea for the shared Neighborhood filter. */
+/** Same idea for the area chips (src/data/areas.ts): counts by the chip each place falls under. */
 export function neighborhoodCounts(
   places: Place[],
   state: FilterState,
@@ -180,7 +180,7 @@ export function neighborhoodCounts(
   const base = applyFilters(places, state, { ...opts, skipNeighborhoods: true });
   const counts = new Map<string, number>(neighborhoods.map((n) => [n, 0]));
   for (const p of base) {
-    if (p.neighborhood !== undefined) counts.set(p.neighborhood, (counts.get(p.neighborhood) ?? 0) + 1);
+    if (p.areaGroup !== undefined) counts.set(p.areaGroup, (counts.get(p.areaGroup) ?? 0) + 1);
   }
   return counts;
 }

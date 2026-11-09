@@ -18,7 +18,7 @@ export interface FilterState {
   /** Selected layers; empty means every layer in the region, like an empty neighborhood selection means any. */
   layers: Set<LayerId>;
   text: string;
-  /** Selected neighborhoods; empty means "any". */
+  /** Selected area chips (src/data/areas.ts); empty means "any". Renamed in the filter rewrite (docs/proposals/filters-and-areas.md). */
   neighborhoods: Set<string>;
   starredOnly: boolean;
   /** Only the device's bookmarked places (the set itself lives outside this state). */

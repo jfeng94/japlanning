@@ -3,8 +3,8 @@ import { BASEMAP } from "../config/basemap.ts";
 import type { RegionConfig } from "../data/types.ts";
 import { BlobSource, expectedSidecar, registerStoredBasemaps, statusFor, type StoredBasemap } from "./basemap.ts";
 
-const tokyo: RegionConfig = { id: "tokyo", label: "Tokyo", neighborhoods: [], bbox: [139.6, 35.58, 139.85, 35.75] };
-const hakone: RegionConfig = { id: "hakone", label: "Hakone", neighborhoods: [] };
+const tokyo: RegionConfig = { id: "tokyo", label: "Tokyo", areas: [], bbox: [139.6, 35.58, 139.85, 35.75] };
+const hakone: RegionConfig = { id: "hakone", label: "Hakone", areas: [] };
 const stored = (over: Partial<StoredBasemap> = {}): StoredBasemap => ({
   build: BASEMAP.build,
   maxzoom: BASEMAP.maxzoom,

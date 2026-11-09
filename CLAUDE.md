@@ -101,7 +101,7 @@ rows carry the region.
 | Kind | enum | Coffee · Tea · Bar. First facet. |
 | Icon | enum | Pin artwork from the global icon enum (src/config/icons.ts): coffee · tea · bar. Blank = the layer default (coffee). |
 | Latitude, Longitude | number | WGS84 decimal degrees |
-| Neighborhood | enum | Shared across all layers in a region. Tokyo has 6 values, e.g. Central (Ginza / Jimbocho / Minato) |
+| Area | enum | The raw area the place is in, as a visitor would name it (Shibuya, Ningyocho): one of its region's areas in `src/config/regions.ts`, in the ward its address names. The build fails on a blank or unknown one, or one in another ward than the address. Merges in config fold raw areas into the filter chips; see `docs/proposals/filters-and-areas.md`. |
 | Format | enum | Stand · Café · Kissaten · Tasting bar · Bean shop |
 | Roasting | enum | In-house · Guest roasters · Both |
 | Food | enum | None · Light · Full menu |
@@ -111,12 +111,12 @@ rows carry the region.
 | Hours (OSM) | string | OpenStreetMap opening_hours syntax, e.g. `Mo-Fr 08:00-19:00; Sa,Su 09:00-19:00; Tu off` |
 | Reservation | enum | Required · Optional · No |
 | Link | URL | Official site / Instagram |
-| Address (JA) | string | Japanese address. **Leading `~` = approximate** (neighborhood-level only) |
+| Address (JA) | string | Japanese address. **Leading `~` = approximate** (area-level only). Always names its ward (区) or city, which the build checks against the Area. |
 | Notes | string | Free text |
 | Last verified | date | YYYY-MM-DD; blank = hours unverified |
 | Google rating, Google reviews, Rated on | number, integer, date | A dated snapshot of the Google Maps rating and review count, taken by hand from an aggregator that mirrors Google (no Places API key, decided 2026-11-05). Blank when none was reachable. Shown in the card's "Also in the sheet" section until there is UI for it. |
 
-**Any enum field may be blank (unknown).** Filters treat blank as "unknown"
+**Any enum field except Region and Area may be blank (unknown).** Filters treat blank as "unknown"
 with an explicit include-unknowns toggle, never as a silent match or
 non-match. **Any enum cell may hold several values separated by `;`.**
 

@@ -1,16 +1,17 @@
+import { areaIndex } from "../data/areas.ts";
 import type { LayerConfig, LayerId, RegionConfig, RegionId } from "../data/types.ts";
 import { defaultSelection, defaultState, layersInRegion, type FacetSelection, type FilterState } from "./state.ts";
 
 /**
  * FilterState <-> URL query string. Only non-default values are written,
  * so a default view has a bare URL. Reading drops anything it doesn't
- * recognise (unknown region, layer, column or neighborhood) rather than
+ * recognise (unknown region, layer, column or area) rather than
  * failing, so a stale shared link degrades to the nearest valid view.
  *
  *   ?r=kyoto                       region (omitted for the default region)
  *   &l=drinks,tokyo-tea      layers (omitted when none selected, which means all)
  *   &q=glitch                      text
- *   &n=Central&n=East              neighborhoods, repeated
+ *   &n=Ginza&n=Asakusa             area chips, repeated; a raw area maps to its chip
  *   &star=1 &b=1 &open=1           flags (b = this device's bookmarks only)
  *   &hu=0                          open now: exclude unknown hours
  *   &at=2026-11-10T10:00           open at this Tokyo wall-clock time instead of now
@@ -54,7 +55,7 @@ export function fromSearchParams(params: URLSearchParams, ctx: UrlContext): Filt
   const region = ctx.regions.find((x) => x.id === r)?.id ?? ctx.defaultRegion;
   const state = defaultState(region, ctx.layers);
   const regionLayers = new Map(layersInRegion(ctx.layers, region).map((l) => [l.id as string, l]));
-  const neighborhoods = new Set(ctx.regions.find((x) => x.id === region)?.neighborhoods ?? []);
+  const areas = areaIndex(ctx.regions.find((x) => x.id === region) ?? { areas: [] });
 
   const l = params.get("l");
   if (l !== null) {
@@ -63,7 +64,13 @@ export function fromSearchParams(params: URLSearchParams, ctx: UrlContext): Filt
   }
 
   state.text = params.get("q") ?? "";
-  state.neighborhoods = new Set(params.getAll("n").filter((n) => neighborhoods.has(n)));
+  // A chip label stays; a raw area becomes its chip, so a link survives a later merge; anything else drops.
+  state.neighborhoods = new Set(
+    params.getAll("n").flatMap((n) => {
+      const chip = areas.chip(n) ? n : areas.groupOf(n);
+      return chip === undefined ? [] : [chip];
+    }),
+  );
   state.starredOnly = params.get("star") === "1";
   state.bookmarkedOnly = params.get("b") === "1";
   state.openNow = params.get("open") === "1";

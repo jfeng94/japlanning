@@ -40,7 +40,7 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   const meta = document.createElement("p");
   meta.className = "detail-meta";
   const away = h.from ? `${formatDistance(distanceM(h.from, place))} away` : undefined;
-  meta.textContent = [layer?.label, place.neighborhood, away].filter(Boolean).join(" · ");
+  meta.textContent = [layer?.label, place.area, away].filter(Boolean).join(" · ");
 
   // ---- actions (Directions lives in the strip above the card) ----
   const actions = document.createElement("div");

@@ -12,10 +12,41 @@ export type LayerId = (typeof LAYER_IDS)[number];
 export interface RegionConfig {
   id: RegionId;
   label: string;
-  /** Ordered. The shared Neighborhood enum for every layer in this region. */
-  neighborhoods: string[];
+  /**
+   * Raw areas: where a place is, as a visitor would name it, with the ward
+   * its addresses name and its neighbours. The data's Area column holds
+   * these (docs/proposals/filters-and-areas.md).
+   */
+  areas: AreaConfig[];
+  /** Merges that fold raw areas into one filter chip; an unmerged raw area is its own chip. */
+  areaGroups?: AreaGroup[];
+  /** Headings over wards for the area chips; none means one flat list. */
+  areaSections?: AreaSection[];
   /** [west, south, east, north] in degrees. Basemap extract bounds (M7). */
   bbox?: [number, number, number, number];
+}
+
+export interface AreaConfig {
+  /** "Takanawa": the value in the data's Area column. */
+  label: string;
+  /** As written in its places' addresses, e.g. "港区"; the build checks every address against it. */
+  ward: string;
+  /** Raw labels one hop away; the graph must be symmetric. */
+  adjacent: string[];
+}
+
+export interface AreaGroup {
+  /** The chip, e.g. "Tamachi · Takanawa". */
+  label: string;
+  /** Raw labels it folds together; the first decides the chip's section. */
+  areas: string[];
+}
+
+export interface AreaSection {
+  /** The heading, e.g. "Central". */
+  label: string;
+  /** Wards as written in addresses, e.g. ["千代田区", "中央区", "港区"]. */
+  wards: string[];
 }
 
 export interface FacetConfig {
@@ -75,7 +106,10 @@ export interface Place {
   starred: boolean;
   lat: number;
   lng: number;
-  neighborhood?: string;
+  /** The raw area the place is in (the Area column). */
+  area?: string;
+  /** The filter chip it falls under: its area's merge, or the area itself. */
+  areaGroup?: string;
   /** Human-readable hours, may contain caveats. */
   hours?: string;
   /** OpenStreetMap opening_hours syntax. */

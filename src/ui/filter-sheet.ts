@@ -1,5 +1,6 @@
 import type { SortKey } from "../config/settings.ts";
 import type { LayerConfig, Place, RegionConfig } from "../data/types.ts";
+import { areaIndex } from "../data/areas.ts";
 import { facetCounts, neighborhoodCounts, openNowCounts, scopedFacetValues, type HoursInput } from "../filter/apply.ts";
 import { clock, DAY, tokyoNow, tokyoWallClock, wallClockString } from "../hours/open.ts";
 import {
@@ -29,7 +30,7 @@ export interface FilterSheetContext {
 }
 
 /**
- * Rebuild the filter sheet body for a state. Neighborhood chips, the
+ * Rebuild the filter sheet body for a state. Area chips, the
  * starred toggle, then one section per facet of the active layer with a
  * count on every value and an include-unknown checkbox. Cheap enough to
  * rebuild on every change at this data size.
@@ -56,21 +57,37 @@ export function renderFilterSheet(body: HTMLElement, state: FilterState, ctx: Fi
     body.append(sec);
   }
 
-  if (region.neighborhoods.length > 0) {
-    const counts = neighborhoodCounts(places, state, region.neighborhoods, opts);
-    body.append(
-      section(
-        "Neighborhood",
-        region.neighborhoods.map((n) =>
-          chip(n, {
-            pressed: state.neighborhoods.has(n),
-            count: counts.get(n) ?? 0,
-            disabled: (counts.get(n) ?? 0) === 0 && !state.neighborhoods.has(n),
-            onClick: () => dispatch({ type: "toggleNeighborhood", neighborhood: n }),
+  // Areas: the chips (merged raw areas) under ward headings; Kyoto is one flat list.
+  const areas = areaIndex(region);
+  if (areas.chips.length > 0) {
+    const counts = neighborhoodCounts(places, state, areas.chips.map((c) => c.label), opts);
+    const sec = document.createElement("section");
+    sec.className = "filter-section";
+    const h = document.createElement("h3");
+    h.textContent = "Area";
+    sec.append(h);
+    for (const group of areas.sections) {
+      if (group.label) {
+        const heading = document.createElement("p");
+        heading.className = "area-heading";
+        heading.textContent = group.label;
+        sec.append(heading);
+      }
+      const row = document.createElement("div");
+      row.className = "chip-row";
+      row.append(
+        ...group.chips.map((c) =>
+          chip(c.label, {
+            pressed: state.neighborhoods.has(c.label),
+            count: counts.get(c.label) ?? 0,
+            disabled: (counts.get(c.label) ?? 0) === 0 && !state.neighborhoods.has(c.label),
+            onClick: () => dispatch({ type: "toggleNeighborhood", neighborhood: c.label }),
           }),
         ),
-      ),
-    );
+      );
+      sec.append(row);
+    }
+    body.append(sec);
   }
 
   // Sort: a preference rather than a filter, but it belongs with "what am I looking at".

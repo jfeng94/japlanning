@@ -67,12 +67,12 @@ export function renderList(ul: HTMLUListElement, places: Place[], opts: ListOpti
         dot.style.background = layer.color;
         meta.append(dot, `${layer.label} · `);
       }
-      meta.append(p.neighborhood ?? "");
+      meta.append(p.area ?? "");
       if (opts.from) {
         const distance = document.createElement("span");
         distance.className = "place-distance";
         distance.textContent = formatDistance(distanceM(opts.from, p));
-        meta.append(p.neighborhood ? " · " : "", distance);
+        meta.append(p.area ? " · " : "", distance);
       }
       const hoursMark = opts.hoursMarks?.get(p.id);
       if (hoursMark) meta.append(" ", tag(hoursMark, "tag tag--flag"));
