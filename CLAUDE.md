@@ -223,6 +223,15 @@ is used only as the **directions hand-off**.
    well under that by choosing a tight bounding box and a sensible max zoom.
 9. **Node version.** The machine shipped with Node 14. Vite needs Node 20+.
    Use nvm-windows so the upgrade doesn't disturb anything else.
+10. **Location in the installed app is "Safari Websites" in iOS.** A Home
+   Screen app runs in Apple's web-app container, not in the browser that
+   added it, so iOS asks Settings → Privacy & Security → Location Services
+   → Safari Websites, even for an app added from Chrome. Set to Never, it
+   refuses every web app at once with no prompt (error code 1), while the
+   same site in a Chrome tab works; re-adding the app doesn't help. The
+   "blocked" toast opens Diagnostics, whose Location section names the
+   setting for the way the app is running and can test it
+   (`src/geo/location-help.ts`, 2026-11-09).
 
 ## Basemap extracts (starting point)
 

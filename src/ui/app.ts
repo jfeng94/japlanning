@@ -338,12 +338,13 @@ export function mountApp(root: HTMLElement): AppHandle {
     if (kind === "denied") dropPosition();
     // A failed request leaves the button idle again rather than "waiting" forever.
     if (position === undefined) view.locate.setFix(undefined);
-    const text: Record<LocateError, string> = {
-      denied: "Location is off for this app. Allow it in the phone's Settings.",
-      unavailable: "Couldn't get your location.",
-      timeout: "No location fix yet. Try again, ideally outdoors.",
-    };
-    showToast(text[kind], 3000);
+    if (kind === "denied") {
+      // The phone refused, not the app's own setting. The fix is a path in iOS Settings, too long
+      // for a toast, so the tap opens Diagnostics, which names it and can test it.
+      showToast("The phone is blocking location for this app. Tap for the fix.", 8000, { onClick: () => diagSheet.open() });
+    } else {
+      showToast(kind === "unavailable" ? "Couldn't get your location." : "No location fix yet. Try again, ideally outdoors.", 3000);
+    }
     render(); // Here's label and the order toggle read the watch's state
   }
 

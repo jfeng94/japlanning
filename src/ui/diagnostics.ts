@@ -1,5 +1,7 @@
 import type { LoadResult } from "../data/types.ts";
 import { renderCapabilities, type Capability } from "../capabilities.ts";
+import { currentRuntime, unblockLocationHint } from "../geo/location-help.ts";
+import { permissionState } from "../geo/locate.ts";
 import { renderDataStatus } from "./data-status.ts";
 
 export interface Diagnostics {
@@ -12,6 +14,14 @@ export interface Diagnostics {
 /** The M1 data status and M0 capability panel, behind the ⓘ button. */
 export function mountDiagnostics(body: HTMLElement, onRefresh: () => void, extraCaps?: () => Promise<Capability[]>): Diagnostics {
   body.innerHTML = `
+    <section class="diag-location">
+      <div class="data-head">
+        <h3>Location</h3>
+        <button type="button" class="refresh location-test">Test location</button>
+      </div>
+      <p class="note location-state"></p>
+      <p class="note location-result" role="status" hidden></p>
+    </section>
     <section class="diag-data">
       <div class="data-head">
         <h3>Data</h3>
@@ -31,11 +41,53 @@ export function mountDiagnostics(body: HTMLElement, onRefresh: () => void, extra
   const caps = body.querySelector<HTMLDListElement>("#cap-list")!;
   void renderCapabilities(caps, extraCaps);
 
+  // ---- location: what the browser reports, and a real attempt on demand ----
+  const locationState = body.querySelector<HTMLElement>(".location-state")!;
+  const locationResult = body.querySelector<HTMLElement>(".location-result")!;
+  const locationTest = body.querySelector<HTMLButtonElement>(".location-test")!;
+  const STATE_TEXT = { granted: "allowed", denied: "blocked", prompt: "not asked yet", unknown: "not reported by this browser" } as const;
+  async function renderLocationState(): Promise<void> {
+    const state = await permissionState();
+    locationState.textContent = `Permission, as the browser reports it: ${STATE_TEXT[state]}. If the locate button says location is blocked: ${unblockLocationHint(currentRuntime())}`;
+  }
+  /**
+   * One real request, which is also the permission prompt when there hasn't been one.
+   * The permission state above can say "not asked yet" while iOS refuses outright,
+   * so this is the check that settles it.
+   */
+  locationTest.addEventListener("click", () => {
+    locationResult.hidden = false;
+    if (!("geolocation" in navigator)) {
+      locationResult.textContent = "This browser has no location API.";
+      return;
+    }
+    locationTest.disabled = true;
+    locationResult.textContent = "Asking the phone for a position…";
+    const done = (text: string): void => {
+      locationResult.textContent = text;
+      locationTest.disabled = false;
+      void renderLocationState();
+    };
+    navigator.geolocation.getCurrentPosition(
+      (p) => done(`Working: a position within ±${Math.round(p.coords.accuracy)} m.`),
+      (e) => {
+        if (e.code === 1) done(`Blocked by the phone (permission denied). ${unblockLocationHint(currentRuntime())} Then close the app fully and open it again.`);
+        else if (e.code === 2) done("No position available. Location Services may be off for the whole phone, or there is no signal.");
+        else done("Timed out after 15 seconds without a position. Try again, ideally outdoors.");
+      },
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 },
+    );
+  });
+  void renderLocationState();
+
   return {
     update(results, loading) {
       refresh.disabled = loading;
       renderDataStatus(list, results, loading);
     },
-    refreshCapabilities: () => void renderCapabilities(caps, extraCaps),
+    refreshCapabilities: () => {
+      void renderCapabilities(caps, extraCaps);
+      void renderLocationState();
+    },
   };
 }

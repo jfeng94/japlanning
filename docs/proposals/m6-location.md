@@ -80,6 +80,20 @@ positioning does not. Permission is per origin and persists in the
 installed app. The map's own tiles are M7's business; the dot renders
 regardless.
 
+**Blocked in the installed app** (found 2026-11-09). On the iPhone the
+installed app asks iOS for location as "Safari Websites" (Settings →
+Privacy & Security → Location Services), whichever browser added it.
+With that entry on Never, the app is refused at once and never prompts,
+while the same site in a Chrome tab works, and re-adding the app changes
+nothing. So that it can be fixed on the trip without help:
+- the "blocked" toast says the phone is blocking location and, tapped,
+  opens Diagnostics;
+- Diagnostics starts with a Location section: the permission as the
+  browser reports it, the setting to change for the way the app is
+  running (installed app, Chrome tab or Safari tab), and a **Test
+  location** button that makes one real request and says what happened;
+- the Location setting's help points there.
+
 ### Files
 
 ```

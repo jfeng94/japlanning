@@ -22,7 +22,7 @@ const FIELDS: Field<keyof Settings>[] = [
   {
     key: "location",
     label: "Location",
-    help: "On shows the map's locate button; the phone asks for permission the first time you tap it. Off hides the button and stops using your position.",
+    help: "On shows the map's locate button; the phone asks for permission the first time you tap it. Off hides the button and stops using your position. If the phone blocks it, Diagnostics (below) says where to allow it and can test it.",
     options: [
       [true, "On"],
       [false, "Off"],
