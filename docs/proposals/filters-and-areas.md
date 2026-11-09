@@ -1,6 +1,7 @@
 # Filters and areas
 
-Status: **proposed** (2026-11-09), waiting for a go-ahead.
+Status: **proposed** (2026-11-09); open points decided the same day (see
+Decisions); waiting for a go-ahead.
 
 ## Why
 
@@ -19,6 +20,16 @@ Jerry's direction (2026-11-09): a short, stable sheet that sets the
 macro filter (what, where, when), and the search box for anything
 specific.
 
+## Decisions (2026-11-09)
+
+1. **Area** is the term: in the data, the sheet and the code.
+2. **Bar** stays the third drinks kind.
+3. **List order moves to the strip's footer** as a toggle; it leaves the
+   sheet and Settings.
+4. **Areas in the data are raw; merging is interpretation in code.** A
+   place records the area it is actually in; a merge layer in config
+   groups raw areas into the chips, revisited as places are added.
+
 ## The sheet, top to bottom
 
 ### 1. Flags (narrow the results)
@@ -34,15 +45,16 @@ today; the "Include unknown hours" toggle goes.
 
 ### 2. Areas (where)
 
-- **Here**: the area you are standing in. Shown when Location is on;
-  tapping it with no fix yet starts locating, like the locate button.
-  Follows you as you walk, re-evaluated with the 3 s position throttle.
-- One chip per area in the region: nearest first when there is a fix,
-  alphabetical otherwise.
-- **Include nearby areas**: a switch under the chips that adds each
-  selected area's neighbours (one hop in the adjacency graph). Pulled-in
-  neighbours get a dotted outline so the result count is explainable,
-  without becoming selected.
+- **Here**, labelled with where that is ("Here · Shibuya"). Shown when
+  Location is on; tapping it with no fix yet starts locating, like the
+  locate button. Follows you as you walk, re-evaluated with the 3 s
+  position throttle.
+- One chip per area group in the region (see Areas below): nearest first
+  when there is a fix, alphabetical otherwise.
+- **Include nearby areas**: a switch under the chips that adds the
+  neighbouring groups of everything selected. Pulled-in groups get a
+  dotted outline so the result count is explainable, without becoming
+  selected.
 
 Selected areas are a union; none selected means everywhere.
 
@@ -58,17 +70,13 @@ Every selected chip is a union: Coffee + Ramen shows all coffee and all
 ramen. The header chip selects or clears all of its kinds. None selected
 means everything.
 
-### 4. Order
-
-The Name · Distance pair stays as the last row; it goes with Here more
-than with Settings.
-
 ### What leaves the sheet
 
-Every facet section, the include-unknown toggles, the per-chip counts and
-the "pick a single layer" note. The facets stay in the data, in the row
-chips and in the card's Details; the search box now matches them (see
-below), so "pour-over" or "kissaten" finds them in one step.
+Every facet section, the include-unknown toggles, the per-chip counts,
+the "pick a single layer" note and the Sort row. The facets stay in the
+data, in the row chips and in the card's Details; the search box now
+matches them (see below), so "pour-over" or "kissaten" finds them in one
+step.
 
 ### The rule this sets
 
@@ -78,99 +86,150 @@ result count in the header; an empty result shows "Nothing matches" with
 Clear filters, as today. "Here" depends on your position, not on other
 chips, so it is the one chip whose state can change by itself.
 
+## The footer's order toggle
+
+The footer's left slot is empty in list mode (Back lives there in card
+mode). It gains a two-state toggle, labelled with the current order:
+**A–Z** or **Nearest**; a tap switches. It writes the existing `sort`
+setting, so the choice persists as now; the "List order" row in Settings
+goes, and "Sort by distance when located" stays there. Choosing Nearest
+with no fix starts locating and switches when the fix lands. Prev and
+Next in card mode follow whichever order the list has. Text labels until
+there is artwork for it.
+
 ## The algebra
 
 ```
 shown = places in the region
   ∩ (no category chips ? all : ∪ selected (layer, kind))
   ∩ (no area chips and not Here ? all
-       : area ∈ selected ∪ {here} ∪ (nearby ? their neighbours : ∅))
+       : area ∈ members(selected groups ∪ {here's group}
+                        ∪ (nearby ? their neighbouring groups : ∅)))
   ∩ every flag that is on
   ∩ text match
 ```
 
-Text matches the name, branch, area, kind, notes, every facet value and
-the Japanese address.
+Text matches the name, branch, raw area, area group, kind, notes, every
+facet value and the Japanese address.
 
 ## Areas
 
-**"Area", not neighborhood** (recommended). It is short, it is how
-Japanese guides and signs talk (渋谷エリア), and it has no administrative
-meaning. "District" in Tokyo English is used for wards (区) as well,
-which are far coarser: Shibuya ward holds Shibuya, Harajuku, Ebisu,
-Tomigaya and Hatagaya.
+"Area", not neighborhood: short, how Japanese guides and signs talk
+(渋谷エリア), and free of administrative meaning. "District" in Tokyo
+English is also used for wards (区), which are far coarser.
 
-An area is a place name visitors use, sized so a few minutes' walk
-covers it. Areas are defined per region in config with their
-neighbours:
+### Two layers
+
+**Raw areas** are facts: the area a place is in, as a visitor would name
+it, following its address. They are the values in the data's **Area**
+column and the nodes of the adjacency graph, defined per region with
+their neighbours. Geography does not change when the chips are
+regrouped, so the graph lives here.
+
+**Area groups** are interpretation: a merge layer that folds raw areas
+into the chips. An unmerged raw area is its own group. Merges are named
+explicitly and revisited as places are added; splitting one back apart
+is a config edit with no data change.
 
 ```ts
 interface AreaConfig {
-  label: string;          // "Shibuya"; also the value in the data's Area column
-  adjacent: string[];     // labels; the graph must be symmetric
+  label: string;          // raw area, e.g. "Takanawa"; the data's Area value
+  adjacent: string[];     // raw labels; the graph must be symmetric
+}
+
+interface AreaGroup {
+  label: string;          // the chip, e.g. "Tamachi · Takanawa"
+  areas: string[];        // raw labels it folds together
+}
+
+interface RegionConfig {
+  areas: AreaConfig[];
+  areaGroups?: AreaGroup[];
 }
 ```
 
-Only areas with places are defined; a new place in a new area adds the
-area in the same commit (the adding-places workflow already lists
-"anything the config lacks"). An area's centre is the centroid of its
-places, computed at load, so there are no coordinates to maintain; "Here"
-is the area with the nearest centre, provided you are inside the region's
-bounding box and within 2 km of it. Near a border "Here" may pick the
-other side; with Include nearby on, that stops mattering.
+### Neighbours of a group
 
-A test checks that the graph is symmetric and names only defined areas.
-The build fails on a row whose Area is blank or not in its region's
-list, the same as an unknown Region.
+Contract each group into one node. Its neighbours are the union of its
+members' neighbours, minus its own members, lifted to whole groups:
 
-The draft for the current 74 places is in the appendix: 30 areas in
-Tokyo, 7 in Kyoto, many with a single place today. That is the price of
-specific areas; nearest-first ordering and Here keep the list short in
-practice, and any pair that feels too fine can merge.
+```
+nearby(G) = { group(b) : a ∈ G, b ∈ adjacent(a), group(b) ≠ G }
+```
+
+That is one hop on the contracted graph, which answers the question of
+how merging interacts with adjacency: a merged group is adjacent to
+everything any member touches. It is deliberately not a traversal to
+everything connected: Tokyo's graph is one connected component, so that
+would select the whole city. Include nearby applies `nearby` to every
+selected group (and to Here's group) and takes the union.
+
+### Here
+
+Each raw area's centre is the centroid of its places, computed at load,
+so there are no coordinates to maintain. Here is the raw area with the
+nearest centre, provided you are inside the region's bounding box and
+within 2 km of it, mapped to its group. Near a border it may pick the
+other side; with Include nearby on, that stops mattering. Chips sort by
+the distance to their group's centre (the centroid of all member
+places).
+
+### What shows where
+
+- Rows and the card show the **raw** area, the most specific fact.
+- Chips, the strip's summary tags and the URL use **groups**. The URL's
+  `a=` accepts raw labels too and maps them to their current group, so
+  a link survives a later merge.
+
+### Validation
+
+- A test checks the raw graph is symmetric and names only defined raw
+  areas, and that every raw area is in at most one group.
+- The build fails on a row whose Area is blank or not a raw area of its
+  region, the same as an unknown Region.
+- Only raw areas with places are defined; a place in a new area adds the
+  raw area (and, if wanted, its merge) in the same commit, which the
+  adding-places workflow already covers under "anything the config
+  lacks".
 
 ## Data and config changes
 
 - `data/drinks.csv`: the **Neighborhood** column becomes **Area**, every
-  row re-assigned from its Japanese address (town and chome map to an
-  area). The assignments go through the usual findings table before they
-  are written.
+  row re-assigned to its raw area from its Japanese address (town and
+  chome). The appendix is the draft assignment; it is reviewed before
+  anything is written, as the findings table.
 - `LayerConfig` gains `kinds: string[]`, read from each layer's **Kind**
   column, which becomes required (blank or unknown fails the build). Kind
   leaves `facets`; the card's meta line shows it ("Drinks · Coffee ·
   Shibuya · 1.2 km away").
-- `RegionConfig.neighborhoods` becomes `areas: AreaConfig[]`.
+- `RegionConfig.neighborhoods` becomes `areas` and `areaGroups`.
 - `FacetConfig.scopeBy` goes, with nothing left to scope.
 - Filter state: `layers`, `neighborhoods`, `facets` and
-  `includeUnknownHours` give way to `categories`, `areas`, `here` and
-  `nearby`. The URL carries `c=` (categories), `a=` (areas), `here=1`,
-  `nb=1`; old filter links stop applying, place links are unaffected.
+  `includeUnknownHours` give way to `categories`, `areas` (groups),
+  `here` and `nearby`. The URL carries `c=` (categories), `a=` (areas),
+  `here=1`, `nb=1`; old filter links stop applying, place links are
+  unaffected.
 
 ## Steps, each deployable
 
-1. **Areas.** Config with the adjacency graph, the Area column and its
-   validation, the data migration (findings first), the area shown on
-   rows and the card. The existing Neighborhood section shows the new
-   areas until step 2 replaces it.
-2. **The sheet.** New filter state, algebra and URL; the sheet and the
-   strip's summary tags rebuilt as above; Here and Include nearby; the
-   wider search; facet filtering removed.
+1. **Areas.** Raw areas with their graph and the initial merges in
+   config, the Area column and its validation, the data migration
+   (findings first), the raw area on rows and the card. The existing
+   Neighborhood section lists the groups until step 2 replaces it.
+2. **The sheet and the footer.** New filter state, algebra and URL; the
+   sheet and the summary tags rebuilt as above; Here and Include nearby;
+   the order toggle in the footer; the wider search; facet filtering
+   removed.
 3. **Cleanup and docs.** Dead code out (facet counts, scoping, unknown
-   toggles); the design doc's filter model rewritten with the no-cascade
-   rule; CLAUDE.md's requirement 2, column table and open questions
-   updated.
+   toggles, the Settings order row); the design doc's filter model
+   rewritten with the no-cascade rule and the two area layers;
+   CLAUDE.md's requirement 2, column table and open questions updated.
 
-Roughly 900 lines touched, about half of them deletions; the filter
-tests are largely rewritten. One known effect: a phone whose first
-launch after the deploy is offline reads its cached copy of the data
-with the old column, so areas are blank until it next goes online.
-
-## Open points
-
-1. **Area** as the term (recommended) or District.
-2. **Bar** or **Cocktails** for the third drinks kind. Bar covers sake,
-   wine and whisky bars too; no bar rows exist yet, so either is free.
-3. The **Order** row in the sheet (recommended) or only in Settings.
-4. The **area draft** below: merges, splits, names, neighbours.
+Roughly 1,000 lines touched, about half of them deletions; the filter
+tests are largely rewritten, with new ones for the group graph. One
+known effect: a phone whose first launch after the deploy is offline
+reads its cached copy of the data with the old column, so areas are
+blank until it next goes online.
 
 ## Done when
 
@@ -178,37 +237,47 @@ with the old column, so areas are blank until it next goes online.
       because another was tapped.
 - [ ] Here picks the right area on the phone in Tokyo (checkable by
       faking a position at home), and Include nearby adds the
-      neighbours with dotted outlines.
+      neighbouring groups with dotted outlines.
 - [ ] Coffee + Tea + Shibuya + nearby gives the union of both kinds
       across Shibuya and its neighbours.
+- [ ] Merging two raw areas in config changes the chips and the
+      neighbours with no data edit.
+- [ ] The footer toggle switches A–Z and Nearest, and Prev/Next follow.
 - [ ] "pour-over" in search finds the pour-over places.
-- [ ] Every row has an area; the build fails on a blank or unknown one.
+- [ ] Every row has a raw area; the build fails on a blank or unknown one.
 
-## Appendix: draft areas
+## Appendix: draft raw areas
 
-### Tokyo (61 places)
+With merging available, the raw areas follow the address more literally
+than the first draft did: Turret is in Tsukiji, Passage Nihombashi in
+Ningyocho and Leaves in Honjo across the river from Kuramae, and merges
+fold them back for the chips.
 
-| Area | Places | Nearby |
+### Tokyo: 33 raw areas, 61 places
+
+| Raw area | Places | Adjacent (raw) |
 | --- | --- | --- |
 | Aoyama | Latte Art Mania | Shibuya, Omotesando, Azabudai |
-| Asakusa | Fuglen, Hatoya | Kuramae, Oshiage |
+| Asakusa | Fuglen, Hatoya | Kuramae, Honjo, Oshiage |
 | Azabudai | Ogawa Azabudai | Aoyama, Tamachi |
 | Ebisu | Matcha Tokyo atre | Shibuya, Nakameguro |
-| Ginza | Glitch, Turret, Cloud Club ×2, Atelier Matcha | Nihonbashi |
+| Ginza | Glitch, Cloud Club ×2, Atelier Matcha | Tsukiji, Nihonbashi |
 | Hanegi | Fuglen Hanegi Koen | Shimokitazawa |
 | Harajuku | Cafe Reissue, Matcha Tokyo Harajuku | Shibuya, Omotesando, Yoyogi |
 | Hatagaya | Sedai Hatagaya, nadoya no katte | Shimokitazawa, Yoyogi |
-| Ichigaya | Passage Ichigaya | Shinjuku, Jimbocho |
+| Honjo | Leaves | Kuramae, Asakusa, Oshiage |
+| Ichigaya | Passage Ichigaya | Kita-Shinjuku, Shinjuku, Jimbocho |
 | Jimbocho | Glitch Jimbocho | Ichigaya, Nihonbashi |
 | Jiyugaoka | Onibus Jiyugaoka | Yakumo |
 | Kinshicho | Coffee Elementary School | Oshiage, Kiyosumi |
-| Kita-Shinjuku | Alternative Coffee Works | Shinjuku |
-| Kiyosumi | Koffee Mameya Kakeru | Kinshicho, Nihonbashi |
-| Kuramae | ARC, Coffee Wrights, Leaves | Asakusa, Nihonbashi |
+| Kita-Shinjuku | Alternative Coffee Works | Shinjuku, Ichigaya |
+| Kiyosumi | Koffee Mameya Kakeru | Kinshicho, Ningyocho |
+| Kuramae | ARC, Coffee Wrights | Asakusa, Honjo, Ningyocho |
 | Nakameguro | Onibus ×2, Sidewalk, little cloud | Ebisu, Yutenji |
-| Nihonbashi | Glitch Nihonbashi, Passage Nihombashi | Ginza, Jimbocho, Kuramae, Kiyosumi |
+| Nihonbashi | Glitch Nihonbashi | Ginza, Jimbocho, Ningyocho |
+| Ningyocho | Passage Nihombashi | Nihonbashi, Kuramae, Kiyosumi |
 | Omotesando | Koffee Mameya, Higuma × Coffee Wrights, little cloud, Matcha Tokyo | Shibuya, Harajuku, Aoyama |
-| Oshiage | Unlimited, Matcha Tokyo Skytree | Asakusa, Kinshicho |
+| Oshiage | Unlimited, Matcha Tokyo Skytree | Asakusa, Honjo, Kinshicho |
 | Sakurashinmachi | Ogawa Sakurashinmachi | Sangenjaya |
 | Sangenjaya | Obscura ×3 | Shimokitazawa, Sakurashinmachi, Yutenji |
 | Shibuya | Sedai, Obscura Front, About Life ×2, White Glass, Matcha Tokyo Miyashita | Harajuku, Omotesando, Aoyama, Ebisu, Tomigaya |
@@ -217,16 +286,30 @@ with the old column, so areas are blank until it next goes online.
 | Takanawa | Ogawa Takanawa | Tamachi |
 | Tamachi | Passage Shiba | Takanawa, Azabudai |
 | Tomigaya | Fuglen, Coffee Supreme, Little Nap Roasters, Hatoya Shibuya | Shibuya, Yoyogi |
+| Tsukiji | Turret | Ginza |
 | Yakumo | Onibus Yakumo | Yutenji, Jiyugaoka |
 | Yoyogi | Little Nap Stand, Fuglen Sangubashi | Harajuku, Tomigaya, Hatagaya, Shinjuku |
 | Yutenji | Sidewalk Yutenji | Nakameguro, Yakumo, Sangenjaya |
 
-Candidates to merge if 30 feels like too many: Tamachi + Takanawa,
-Yakumo + Jiyugaoka, Shinjuku + Kita-Shinjuku, Shimokitazawa + Hanegi.
+### Tokyo: initial merges (26 chips)
 
-### Kyoto (13 places)
+| Chip | Raw areas |
+| --- | --- |
+| Ginza | Ginza, Tsukiji |
+| Nihonbashi | Nihonbashi, Ningyocho |
+| Kuramae | Kuramae, Honjo |
+| Shinjuku | Shinjuku, Kita-Shinjuku |
+| Shimokitazawa | Shimokitazawa, Hanegi |
+| Tamachi · Takanawa | Tamachi, Takanawa |
+| Jiyugaoka · Yakumo | Jiyugaoka, Yakumo |
 
-| Area | Places | Nearby |
+Every other raw area is its own chip. With these, "Kuramae + nearby"
+reaches Asakusa, Oshiage and Nihonbashi through Honjo and Ningyocho, and
+"Shimokitazawa + nearby" reaches Sangenjaya and Hatagaya.
+
+### Kyoto: 7 raw areas, 13 places, no merges
+
+| Raw area | Places | Adjacent (raw) |
 | --- | --- | --- |
 | Arashiyama | Hatoya Arashiyama | none |
 | Karasuma | Ogawa Sakaimachi Nishiki | Kawaramachi, Kyoto Station, Kitaoji |
