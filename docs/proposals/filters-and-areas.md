@@ -1,7 +1,7 @@
 # Filters and areas
 
-Status: **proposed** (2026-11-09); open points decided the same day (see
-Decisions); waiting for a go-ahead.
+Status: **proposed** (2026-11-09); open points and area sections decided
+the same day (see Decisions); waiting for a go-ahead.
 
 ## Why
 
@@ -29,6 +29,10 @@ specific.
 4. **Areas in the data are raw; merging is interpretation in code.** A
    place records the area it is actually in; a merge layer in config
    groups raw areas into the chips, revisited as places are added.
+5. **Chips sit under ward-based sections** so a long list can be
+   scanned: one heading per ward, small wards clustered under a named
+   heading (Central for Chiyoda, Chuo and Minato). A merge that crosses a
+   ward boundary goes in the section of its first-named raw area.
 
 ## The sheet, top to bottom
 
@@ -49,8 +53,10 @@ today; the "Include unknown hours" toggle goes.
   Location is on; tapping it with no fix yet starts locating, like the
   locate button. Follows you as you walk, re-evaluated with the 3 s
   position throttle.
-- One chip per area group in the region (see Areas below): nearest first
-  when there is a fix, alphabetical otherwise.
+- The area chips under section headings by ward (see Sections below),
+  in a fixed order, chips alphabetical within a section. A heading, like
+  a category header, selects or clears every chip under it. Kyoto, with
+  seven areas, shows one flat list.
 - **Include nearby areas**: a switch under the chips that adds the
   neighbouring groups of everything selected. Pulled-in groups get a
   dotted outline so the result count is explainable, without becoming
@@ -134,6 +140,7 @@ is a config edit with no data change.
 ```ts
 interface AreaConfig {
   label: string;          // raw area, e.g. "Takanawa"; the data's Area value
+  ward: string;           // as written in its addresses, e.g. "港区"
   adjacent: string[];     // raw labels; the graph must be symmetric
 }
 
@@ -142,11 +149,32 @@ interface AreaGroup {
   areas: string[];        // raw labels it folds together
 }
 
+interface AreaSection {
+  label: string;          // the heading, e.g. "Central"
+  wards: string[];        // e.g. ["千代田区", "中央区", "港区"]
+}
+
 interface RegionConfig {
   areas: AreaConfig[];
   areaGroups?: AreaGroup[];
+  areaSections?: AreaSection[];   // none: one flat list (Kyoto)
 }
 ```
+
+### Sections
+
+A third layer, for display only. Every raw area records its ward, as
+written in its places' addresses. A section is a heading over one or
+more wards: a ward with many chips gets its own, small neighbours share
+a named one. A ward not listed in any section gets a section of its own,
+named after the ward, so a new ward never falls through.
+
+A chip belongs to the section of its first-named raw area, which settles
+a merge across a ward boundary deterministically. Today only Kuramae
+(Taito) + Honjo (Sumida) crosses one, and both wards sit under East.
+
+Sections change nothing in the filter algebra: a heading tap is the
+union of its chips.
 
 ### Neighbours of a group
 
@@ -170,9 +198,8 @@ Each raw area's centre is the centroid of its places, computed at load,
 so there are no coordinates to maintain. Here is the raw area with the
 nearest centre, provided you are inside the region's bounding box and
 within 2 km of it, mapped to its group. Near a border it may pick the
-other side; with Include nearby on, that stops mattering. Chips sort by
-the distance to their group's centre (the centroid of all member
-places).
+other side; with Include nearby on, that stops mattering. Chips do not
+reorder as you move; Here is the proximity tool.
 
 ### What shows where
 
@@ -187,6 +214,10 @@ places).
   areas, and that every raw area is in at most one group.
 - The build fails on a row whose Area is blank or not a raw area of its
   region, the same as an unknown Region.
+- The build fails on a row whose address names a different ward from its
+  raw area's (渋谷区 in the address, a Minato area in the Area column).
+  Every address, approximate ones included, carries its ward, so this
+  checks the area assignments for free.
 - Only raw areas with places are defined; a place in a new area adds the
   raw area (and, if wanted, its merge) in the same commit, which the
   adding-places workflow already covers under "anything the config
@@ -212,8 +243,8 @@ places).
 
 ## Steps, each deployable
 
-1. **Areas.** Raw areas with their graph and the initial merges in
-   config, the Area column and its validation, the data migration
+1. **Areas.** Raw areas with their wards and graph, the initial merges
+   and sections in config, the Area column and its validation, the data migration
    (findings first), the raw area on rows and the card. The existing
    Neighborhood section lists the groups until step 2 replaces it.
 2. **The sheet and the footer.** New filter state, algebra and URL; the
@@ -242,6 +273,8 @@ blank until it next goes online.
       across Shibuya and its neighbours.
 - [ ] Merging two raw areas in config changes the chips and the
       neighbours with no data edit.
+- [ ] Tokyo's chips sit under five headings and Kyoto's in one list; a
+      heading tap selects its section.
 - [ ] The footer toggle switches A–Z and Nearest, and Prev/Next follow.
 - [ ] "pour-over" in search finds the pour-over places.
 - [ ] Every row has a raw area; the build fails on a blank or unknown one.
@@ -307,7 +340,24 @@ Every other raw area is its own chip. With these, "Kuramae + nearby"
 reaches Asakusa, Oshiage and Nihonbashi through Honjo and Ningyocho, and
 "Shimokitazawa + nearby" reaches Sangenjaya and Hatagaya.
 
-### Kyoto: 7 raw areas, 13 places, no merges
+### Tokyo: sections (26 chips under 5 headings)
+
+| Section | Wards | Chips |
+| --- | --- | --- |
+| Central | Chiyoda, Chuo, Minato | Aoyama, Azabudai, Ginza, Jimbocho, Nihonbashi, Tamachi · Takanawa |
+| Shibuya | Shibuya | Ebisu, Harajuku, Hatagaya, Omotesando, Shibuya, Tomigaya, Yoyogi |
+| Shinjuku | Shinjuku | Ichigaya, Shinjuku |
+| Meguro · Setagaya | Meguro, Setagaya | Jiyugaoka · Yakumo, Nakameguro, Sakurashinmachi, Sangenjaya, Shimokitazawa, Yutenji |
+| East | Taito, Sumida, Koto | Asakusa, Kinshicho, Kiyosumi, Kuramae, Oshiage |
+
+The wards come from the addresses: Tsukiji and Ningyocho are Chuo,
+Takanawa and Tamachi Minato, Kita-Shinjuku Shinjuku, Hanegi Setagaya,
+Yakumo and Jiyugaoka Meguro, Honjo Sumida. Shinjuku has two chips today
+and the most room to grow once food and bars arrive. Meguro and
+Setagaya become two headings of three chips each with one line of
+config, if six feels like a mix.
+
+### Kyoto: 7 raw areas, 13 places, no merges, no sections
 
 | Raw area | Places | Adjacent (raw) |
 | --- | --- | --- |
