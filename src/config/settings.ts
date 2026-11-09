@@ -7,6 +7,8 @@
  * line in src/ui/settings-sheet.ts.
  */
 
+import { DEFAULT_NEARBY_M, NEARBY_STOPS } from "../geo/nearby.ts";
+
 export type PinRendererKind = "dom" | "sdf";
 export type PinStyle = "disc" | "bare";
 export type SortKey = "name" | "distance";
@@ -24,6 +26,8 @@ export interface Settings {
   sort: SortKey;
   /** Switch to distance order on the first fix after launch. Off while planning from home. */
   autoDistanceSort: boolean;
+  /** Nearby's radius in metres, set by its slider and remembered here; one of NEARBY_STOPS. */
+  nearbyM: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -34,6 +38,7 @@ export const DEFAULT_SETTINGS: Settings = {
   pinLabelMinZoom: 14,
   sort: "name",
   autoDistanceSort: false,
+  nearbyM: DEFAULT_NEARBY_M,
 };
 
 /** URL parameter names, kept short for sharing. */
@@ -45,6 +50,7 @@ const URL_KEYS: Record<keyof Settings, string> = {
   pinLabelMinZoom: "labelzoom",
   sort: "sort",
   autoDistanceSort: "autosort",
+  nearbyM: "radius",
 };
 
 const STORAGE_KEY = "japlanning.settings";
@@ -57,6 +63,7 @@ const VALID: { [K in keyof Settings]: (v: unknown) => v is Settings[K] } = {
   pinLabelMinZoom: (v): v is number => typeof v === "number" && v >= 0 && v <= 20,
   sort: (v): v is SortKey => v === "name" || v === "distance",
   autoDistanceSort: (v): v is boolean => typeof v === "boolean",
+  nearbyM: (v): v is number => typeof v === "number" && (NEARBY_STOPS as readonly number[]).includes(v),
 };
 
 /** A URL parameter or `<select>` value as the setting's own type; validated by the caller. */

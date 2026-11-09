@@ -3,6 +3,7 @@ import {
   categoriesOf,
   defaultState,
   hasActiveFilters,
+  hasGroupSelection,
   layersInPlay,
   layersInRegion,
   reduce,
@@ -20,7 +21,8 @@ describe("defaultState", () => {
     const s = defaultState("tokyo");
     expect(s.categories.size).toBe(0);
     expect(s.areas.size).toBe(0);
-    expect([s.here, s.nearby, s.starredOnly, s.bookmarkedOnly, s.openNow, s.text, s.openAt]).toEqual([false, false, false, false, false, "", undefined]);
+    expect([s.here, s.adjacent, s.starredOnly, s.bookmarkedOnly, s.openNow, s.text]).toEqual([false, false, false, false, false, ""]);
+    expect("nearby" in s || "openAt" in s).toBe(false);
     expect(hasActiveFilters(s)).toBe(false);
   });
 });
@@ -70,11 +72,45 @@ describe("reduce", () => {
     expect(reduce(s, { type: "toggleArea", area: "East" }).areas.has("East")).toBe(false);
   });
 
-  it("Here narrows; Include nearby alone narrows nothing, so it is not an active filter", () => {
+  it("Here narrows; + Adjacent alone narrows nothing, so it is not an active filter", () => {
     expect(hasActiveFilters(run({ type: "setHere", value: true }))).toBe(true);
-    const nearby = run({ type: "setNearby", value: true });
-    expect(nearby.nearby).toBe(true);
-    expect(hasActiveFilters(nearby)).toBe(false);
+    const adjacent = run({ type: "setAdjacent", value: true });
+    expect(adjacent.adjacent).toBe(true);
+    expect(hasActiveFilters(adjacent)).toBe(false);
+  });
+
+  it("Nearby holds a radius; off removes the key, so a cleared state equals a fresh one", () => {
+    const on = run({ type: "setNearby", value: 1500 });
+    expect(on.nearby).toBe(1500);
+    expect(hasActiveFilters(on)).toBe(true);
+    expect(reduce(on, { type: "setNearby", value: undefined })).toEqual(defaultState("tokyo"));
+  });
+
+  it("setAreaChoice sets the picks, Here and + Adjacent at once", () => {
+    const s = run({ type: "toggleArea", area: "East" }, { type: "setAreaChoice", areas: ["Central", "Shibuya"], here: true, adjacent: true });
+    expect([[...s.areas], s.here, s.adjacent]).toEqual([["Central", "Shibuya"], true, true]);
+  });
+
+  it("each page's selection and its Clear cover that page's state only", () => {
+    const s = run(
+      { type: "toggleCategory", category: COFFEE },
+      { type: "setOpenNow", value: true },
+      { type: "setOpenAt", value: "2026-11-10T10:00" },
+      { type: "setNearby", value: 1000 },
+      { type: "toggleArea", area: "East" },
+      { type: "setHere", value: true },
+      { type: "setAdjacent", value: true },
+      { type: "setText", text: "glitch" },
+    );
+    expect([hasGroupSelection(s, "filters"), hasGroupSelection(s, "area")]).toEqual([true, true]);
+    const noFilters = reduce(s, { type: "clearGroup", group: "filters" });
+    expect(hasGroupSelection(noFilters, "filters")).toBe(false);
+    expect([noFilters.text, [...noFilters.areas], noFilters.here, noFilters.adjacent]).toEqual(["glitch", ["East"], true, true]);
+    const noAreas = reduce(s, { type: "clearGroup", group: "area" });
+    expect([noAreas.areas.size, noAreas.here, noAreas.adjacent]).toEqual([0, false, false]);
+    expect([noAreas.openNow, noAreas.nearby, noAreas.openAt, noAreas.text]).toEqual([true, 1000, "2026-11-10T10:00", "glitch"]);
+    // + Adjacent alone is no selection on the Area page.
+    expect(hasGroupSelection(run({ type: "setAdjacent", value: true }), "area")).toBe(false);
   });
 
   it("every other selection counts as active", () => {
@@ -86,6 +122,7 @@ describe("reduce", () => {
       { type: "setBookmarkedOnly", value: true },
       { type: "setOpenNow", value: true },
       { type: "setOpenAt", value: "2026-11-10T10:00" },
+      { type: "setNearby", value: 500 },
     ];
     for (const a of actions) expect(hasActiveFilters(run(a))).toBe(true);
   });
@@ -102,7 +139,8 @@ describe("reduce", () => {
       { type: "setText", text: "x" },
       { type: "toggleArea", area: "Gion" },
       { type: "setHere", value: true },
-      { type: "setNearby", value: true },
+      { type: "setAdjacent", value: true },
+      { type: "setNearby", value: 2000 },
       { type: "setStarredOnly", value: true },
       { type: "setBookmarkedOnly", value: true },
       { type: "setOpenNow", value: true },

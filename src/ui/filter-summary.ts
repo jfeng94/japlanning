@@ -1,6 +1,7 @@
 import { iconAssetUrl, isIconId } from "../config/icons.ts";
 import type { LayerConfig } from "../data/types.ts";
 import { categoriesOf, layersInPlay, type FilterState } from "../filter/state.ts";
+import { formatRadius } from "../geo/nearby.ts";
 import { clock, DAY, tokyoWallClock } from "../hours/open.ts";
 import { tag } from "./chips.ts";
 
@@ -51,7 +52,8 @@ function summaryTags(state: FilterState, regionLayers: LayerConfig[], hereLabel:
 
   if (state.here) tags.push(tag(hereLabel));
   for (const a of state.areas) tags.push(tag(a));
-  if (state.nearby && (state.here || state.areas.size > 0)) tags.push(tag("+ nearby"));
+  if (state.adjacent && (state.here || state.areas.size > 0)) tags.push(tag("+ adjacent"));
+  if (state.nearby !== undefined) tags.push(tag(`Within ${formatRadius(state.nearby)}`));
 
   if (state.openNow) {
     const at = tokyoWallClock(state.openAt);

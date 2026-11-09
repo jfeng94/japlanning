@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { areasOf } from "../config/regions.ts";
 import { areaIndex } from "../data/areas.ts";
-import { applyFilters, areaScope, matchesCategories, normalise, sinkUnknownHours, type ApplyOptions, type HoursInput } from "./apply.ts";
+import { applyFilters, areaLook, areaScope, matchesCategories, normalise, sinkUnknownHours, tapArea, type ApplyOptions, type HoursInput } from "./apply.ts";
 import { defaultState, reduce, type FilterAction, type FilterState } from "./state.ts";
 import { AREAS, place, samplePlaces } from "./testing.ts";
 
@@ -10,7 +11,7 @@ const names = (s: FilterState, opts: ApplyOptions = {}) => applyFilters(places, 
 const run = (...actions: FilterAction[]): FilterState => actions.reduce((s, a) => reduce(s, a), defaultState("tokyo"));
 const cat = (category: string): FilterAction => ({ type: "toggleCategory", category });
 const area = (a: string): FilterAction => ({ type: "toggleArea", area: a });
-const NEARBY: FilterAction = { type: "setNearby", value: true };
+const ADJ: FilterAction = { type: "setAdjacent", value: true };
 const HERE: FilterAction = { type: "setHere", value: true };
 const ALL_TOKYO = ["Glitch", "Fuglen", "Bear Pond", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo", "Hotel"];
 
@@ -33,10 +34,10 @@ describe("applyFilters", () => {
     expect(names(run(area("Central"), area("East")))).toEqual(["Glitch", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo"]);
   });
 
-  it("Include nearby adds the neighbouring chips of everything chosen, and nothing on its own", () => {
-    expect(names(run(area("East"), NEARBY))).toEqual(["Glitch", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo"]);
-    expect(names(run(area("Shibuya"), NEARBY))).toEqual(["Glitch", "Fuglen", "Bear Pond", "ＧＬＩＴＣＨ annex", "Ippodo", "Hotel"]);
-    expect(names(run(NEARBY))).toEqual(ALL_TOKYO);
+  it("+ Adjacent adds the neighbouring chips of everything picked, and nothing on its own", () => {
+    expect(names(run(area("East"), ADJ))).toEqual(["Glitch", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo"]);
+    expect(names(run(area("Shibuya"), ADJ))).toEqual(["Glitch", "Fuglen", "Bear Pond", "ＧＬＩＴＣＨ annex", "Ippodo", "Hotel"]);
+    expect(names(run(ADJ))).toEqual(ALL_TOKYO);
   });
 
   it("Here adds its chip; unresolved, it keeps everything; off, a resolved chip is ignored", () => {
@@ -45,11 +46,11 @@ describe("applyFilters", () => {
     expect(names(run(HERE, area("East")), { hereGroup: "Shibuya" })).toEqual(["Fuglen", "Bear Pond", "Unknown Kissa", "Hotel"]);
     expect(names(run(HERE, area("East")))).toEqual(["Unknown Kissa"]);
     expect(names(run(), { hereGroup: "Shibuya" })).toEqual(ALL_TOKYO);
-    expect(names(run(HERE, NEARBY), { hereGroup: "East" })).toEqual(["Glitch", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo"]);
+    expect(names(run(HERE, ADJ), { hereGroup: "East" })).toEqual(["Glitch", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo"]);
   });
 
-  it("groups AND together: Coffee + Tea in Shibuya and nearby", () => {
-    expect(names(run(cat("drinks/Coffee"), cat("drinks/Tea"), area("Shibuya"), NEARBY))).toEqual([
+  it("groups AND together: Coffee + Tea in Shibuya and its neighbours", () => {
+    expect(names(run(cat("drinks/Coffee"), cat("drinks/Tea"), area("Shibuya"), ADJ))).toEqual([
       "Glitch",
       "Fuglen",
       "Bear Pond",
@@ -107,15 +108,15 @@ describe("applyFilters", () => {
 describe("areaScope", () => {
   it("is undefined when the area filter keeps everything", () => {
     expect(areaScope(run(), { areas })).toBeUndefined();
-    expect(areaScope(run(NEARBY), { areas })).toBeUndefined();
+    expect(areaScope(run(ADJ), { areas })).toBeUndefined();
     expect(areaScope(run(HERE), { areas })).toBeUndefined();
   });
 
-  it("names what is chosen and, with Include nearby, what is pulled in", () => {
-    expect(areaScope(run(area("East")), { areas })).toEqual({ chosen: new Set(["East"]), nearby: new Set() });
-    expect(areaScope(run(area("East"), NEARBY), { areas })).toEqual({ chosen: new Set(["East"]), nearby: new Set(["Central"]) });
-    expect(areaScope(run(HERE, NEARBY), { areas, hereGroup: "Shibuya" })).toEqual({ chosen: new Set(["Shibuya"]), nearby: new Set(["Central"]) });
-    expect(areaScope(run(area("Central"), NEARBY), { areas })).toEqual({ chosen: new Set(["Central"]), nearby: new Set(["Shibuya", "East"]) });
+  it("names what is picked and, with + Adjacent, what is added", () => {
+    expect(areaScope(run(area("East")), { areas })).toEqual({ chosen: new Set(["East"]), added: new Set() });
+    expect(areaScope(run(area("East"), ADJ), { areas })).toEqual({ chosen: new Set(["East"]), added: new Set(["Central"]) });
+    expect(areaScope(run(HERE, ADJ), { areas, hereGroup: "Shibuya" })).toEqual({ chosen: new Set(["Shibuya"]), added: new Set(["Central"]) });
+    expect(areaScope(run(area("Central"), ADJ), { areas })).toEqual({ chosen: new Set(["Central"]), added: new Set(["Shibuya", "East"]) });
   });
 });
 
@@ -149,5 +150,69 @@ describe("sinkUnknownHours", () => {
     const hotel = places.find((p) => p.name === "Hotel")!;
     // A layer without hours is not unknown; it keeps its place.
     expect(sinkUnknownHours([a, hotel, b], hours).map((p) => p.name)).toEqual(["Hotel", b.name, a.name]);
+  });
+});
+
+describe("Nearby", () => {
+  const at = { lat: 35.658, lng: 139.7016 }; // Shibuya station
+  const rows = [
+    place({ name: "here", lat: 35.658, lng: 139.7016 }),
+    place({ name: "600 m", lat: 35.6634, lng: 139.7016 }),
+    place({ name: "1.3 km", lat: 35.6697, lng: 139.7016 }),
+  ];
+  const near = (radius: number, opts: ApplyOptions = { position: at }) =>
+    applyFilters(rows, run({ type: "setNearby", value: radius }), opts).map((p) => p.name);
+
+  it("keeps the places within the radius of the position", () => {
+    expect(near(500)).toEqual(["here"]);
+    expect(near(1000)).toEqual(["here", "600 m"]);
+    expect(near(1500)).toEqual(["here", "600 m", "1.3 km"]);
+  });
+
+  it("narrows nothing without a position", () => {
+    expect(near(500, {})).toEqual(["here", "600 m", "1.3 km"]);
+  });
+});
+
+describe("tapArea, on Tokyo's real areas", () => {
+  const tokyo = areasOf("tokyo");
+  const tap = (s: FilterState, chip: string, hereGroup?: string) => reduce(s, tapArea(s, chip, { areas: tokyo, ...(hereGroup ? { hereGroup } : {}) }));
+  const look = (s: FilterState, chip: string, hereGroup?: string) => areaLook(s, chip, { areas: tokyo, ...(hereGroup ? { hereGroup } : {}) });
+  const sorted = (s: FilterState) => [...s.areas].sort();
+
+  it("walks the proposal's example: picks bring their neighbours, a tap on an added area freezes the rest", () => {
+    let s = tap(run(ADJ), "Shibuya");
+    expect(["Harajuku", "Omotesando", "Aoyama", "Ebisu", "Tomigaya"].map((c) => look(s, c))).toEqual(Array(5).fill("added"));
+    expect(look(s, "Shibuya")).toBe("picked");
+    expect(look(s, "Ginza")).toBe("out");
+    s = tap(s, "Ginza");
+    expect(look(s, "Nihonbashi")).toBe("added");
+    s = tap(s, "Ebisu");
+    expect(s.adjacent).toBe(false);
+    expect(look(s, "Ebisu")).toBe("out");
+    expect(sorted(s)).toEqual(["Aoyama", "Ginza", "Harajuku", "Nihonbashi", "Omotesando", "Shibuya", "Tomigaya"]);
+  });
+
+  it("a picked area goes out, and its added neighbours with it", () => {
+    let s = tap(tap(run(ADJ), "Shibuya"), "Ginza");
+    s = tap(s, "Shibuya");
+    expect(sorted(s)).toEqual(["Ginza"]);
+    expect(look(s, "Harajuku")).toBe("out");
+    expect(look(s, "Nihonbashi")).toBe("added");
+    expect(s.adjacent).toBe(true);
+  });
+
+  it("Here's area counts as picked; tapping it turns Here off", () => {
+    const s = run(HERE, ADJ);
+    expect(look(s, "Shibuya", "Shibuya")).toBe("picked");
+    expect(look(s, "Ebisu", "Shibuya")).toBe("added");
+    const off = tap(s, "Shibuya", "Shibuya");
+    expect([off.here, off.adjacent, off.areas.size]).toEqual([false, true, 0]);
+  });
+
+  it("freezing keeps Here on: its area stays in through Here, not as a pick", () => {
+    const s = tap(run(HERE, ADJ), "Ebisu", "Shibuya");
+    expect([s.here, s.adjacent]).toEqual([true, false]);
+    expect(sorted(s)).toEqual(["Aoyama", "Harajuku", "Omotesando", "Tomigaya"]);
   });
 });

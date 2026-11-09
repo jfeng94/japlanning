@@ -32,7 +32,8 @@ describe("toSearchParams", () => {
     expect(query(run({ type: "setText", text: "glitch" }))).toBe("q=glitch");
     expect(query(run({ type: "setRegion", region: "kyoto" }))).toBe("r=kyoto");
     expect(query(run({ type: "toggleArea", area: "Central" }, { type: "toggleArea", area: "East" }))).toBe("a=Central&a=East");
-    expect(query(run({ type: "setHere", value: true }, { type: "setNearby", value: true }))).toBe("here=1&nb=1");
+    expect(query(run({ type: "setHere", value: true }, { type: "setAdjacent", value: true }))).toBe("here=1&adj=1");
+    expect(query(run({ type: "setNearby", value: 1500 }))).toBe("near=1500");
     expect(query(run({ type: "setStarredOnly", value: true }, { type: "setBookmarkedOnly", value: true }))).toBe("star=1&b=1");
     expect(query(run({ type: "setOpenNow", value: true }, { type: "setOpenAt", value: "2026-11-10T10:00" }))).toBe("open=1&at=2026-11-10T10:00");
   });
@@ -54,7 +55,8 @@ describe("round trip", () => {
       { type: "toggleArea", area: "Central" },
       { type: "toggleArea", area: "East" },
       { type: "setHere", value: true },
-      { type: "setNearby", value: true },
+      { type: "setAdjacent", value: true },
+      { type: "setNearby", value: 2000 },
       { type: "setStarredOnly", value: true },
       { type: "setBookmarkedOnly", value: true },
       { type: "setOpenNow", value: true },
@@ -94,6 +96,15 @@ describe("fromSearchParams drops what it doesn't recognise", () => {
     expect([...parse("a=Tsukiji").areas]).toEqual(["Central"]);
     expect([...parse("n=East&a=Atlantis").areas]).toEqual(["East"]);
     expect([...parse("r=kyoto&a=East").areas]).toEqual([]);
+  });
+
+  it("Nearby's radius snaps to the slider's stops; nonsense is dropped; step 2's nb=1 reads as + Adjacent", () => {
+    expect(parse("near=1000").nearby).toBe(1000);
+    expect(parse("near=1200").nearby).toBe(1000);
+    expect(parse("near=99999").nearby).toBe(3000);
+    expect("nearby" in parse("near=abc")).toBe(false);
+    expect("nearby" in parse("near=0")).toBe(false);
+    expect(parse("nb=1").adjacent).toBe(true);
   });
 
   it("a malformed open-at time is ignored", () => {

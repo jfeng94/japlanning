@@ -3,8 +3,8 @@ import type { LayerConfig, LayerId } from "../data/types.ts";
 /**
  * One entry per layer. Adding a layer: add its id to LAYER_IDS in
  * data/types.ts, put its CSV at data/<id>.csv (npm run import normalises
- * one), add an entry here, push. `kinds` are the category chips in the
- * filter sheet. Facet `values` are the column's enum in display order;
+ * one), add an entry here, push. `kinds` are the category chips on the
+ * Filters page. Facet `values` are the column's enum in display order;
  * values in the data but not here still render (after these) and fail the
  * build's data check so typos are visible.
  */

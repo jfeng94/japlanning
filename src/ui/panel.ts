@@ -27,6 +27,8 @@ export interface Panel {
   heightPx(): number;
   /** Re-measure after the strip's content changed (its height depends on it). */
   relayout(): void;
+  /** Hold the current height: drags and handle taps do nothing (the Area page keeps the map in view). */
+  lockHeight(locked: boolean): void;
 }
 
 const NEXT: Record<PanelHeight, PanelHeight> = { strip: "half", half: "full", full: "strip" };
@@ -56,6 +58,7 @@ export function mountPanel(root: HTMLElement, onHeightChange?: (h: PanelHeight, 
   const content = el.querySelector<HTMLElement>(".panel-content")!;
   const footer = el.querySelector<HTMLElement>(".panel-footer")!;
   let height: PanelHeight = "half";
+  let locked = false;
 
   const safeBottom = () => parseFloat(getComputedStyle(el).paddingBottom) || 0;
   const headerPx = () => root.querySelector<HTMLElement>(".topbar")?.offsetHeight ?? 52;
@@ -88,6 +91,10 @@ export function mountPanel(root: HTMLElement, onHeightChange?: (h: PanelHeight, 
       const target = `${px[height]()}px`;
       if (el.style.height !== target) apply(height);
     },
+    lockHeight(on) {
+      locked = on;
+      el.classList.toggle("is-locked", on);
+    },
   };
 
   // ---- drag ----
@@ -100,7 +107,7 @@ export function mountPanel(root: HTMLElement, onHeightChange?: (h: PanelHeight, 
   let moved = false;
 
   drag.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || locked) return;
     pointerId = e.pointerId;
     startY = lastY = e.clientY;
     lastT = e.timeStamp;

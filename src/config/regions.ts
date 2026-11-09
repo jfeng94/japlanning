@@ -11,7 +11,7 @@ import type { RegionConfig, RegionId } from "../data/types.ts";
  *   neighbours, symmetric (a test checks).
  * - areaGroups: merges that fold raw areas into one filter chip. An
  *   unmerged raw area is its own chip. Revisit as places are added.
- * - areaSections: headings over wards for the chips in the filter sheet.
+ * - areaSections: headings over wards for the chips on the Area page.
  *   A chip sits under the ward of its first-named raw area.
  *
  * Only areas with places are defined. A bbox makes the build extract that

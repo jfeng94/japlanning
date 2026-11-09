@@ -1,14 +1,16 @@
 import type { AreaIndex } from "../data/areas.ts";
 import type { Place } from "../data/types.ts";
-import type { FilterState } from "./state.ts";
+import { distanceM, type LatLng } from "../geo/distance.ts";
+import type { FilterAction, FilterState } from "./state.ts";
 
 /**
- * The algebra (docs/proposals/filters-and-areas.md):
+ * The algebra (docs/proposals/filters-and-areas.md, filter-pages-and-area-map.md):
  *
  *   shown = places in the region
  *     ∩ (no categories ? all : ∪ selected categories)
- *     ∩ (no areas and no Here ? all : area ∈ chosen ∪ (nearby ? their neighbours : ∅))
- *     ∩ every flag that is on
+ *     ∩ (nothing picked and no Here ? all : area ∈ picked ∪ {Here's} ∪ (adjacent ? their neighbours : ∅))
+ *     ∩ (nearby and a fix ? within the radius of you : all)
+ *     ∩ every other flag that is on
  *     ∩ text match
  */
 
@@ -18,9 +20,9 @@ export function normalise(s: string): string {
 }
 
 /**
- * Search covers what the sheet no longer filters: the name and branch, the
- * raw area and its chip, the kinds, the notes, every facet value
- * ("pour-over", "kissaten") and the Japanese address ("渋谷").
+ * Search covers what the filters don't: the name and branch, the raw area
+ * and its chip, the kinds, the notes, every facet value ("pour-over",
+ * "kissaten") and the Japanese address ("渋谷").
  */
 export function matchesText(place: Place, query: string): boolean {
   const q = normalise(query);
@@ -49,43 +51,78 @@ export interface ApplyOptions {
   hours?: HoursInput;
   /** Here's area chip, when Here can be resolved (src/data/areas.ts areaAt). */
   hereGroup?: string;
-  /** The region's areas, for Include nearby. */
+  /** The region's areas, for + Adjacent. */
   areas?: Pick<AreaIndex, "neighbours">;
+  /** The device's position, for Nearby; without one Nearby narrows nothing. */
+  position?: LatLng;
 }
 
 /** What the area filter keeps. */
 export interface AreaScope {
-  /** Chips chosen: the selection, plus Here's. */
+  /** Chips picked: by hand, plus Here's. */
   chosen: ReadonlySet<string>;
-  /** Chips pulled in by Include nearby; never one of `chosen`. */
-  nearby: ReadonlySet<string>;
+  /** Chips added by + Adjacent; never one of `chosen`. */
+  added: ReadonlySet<string>;
 }
 
 /**
- * The area filter for a state, or undefined when it keeps everything: no
- * chip selected and Here off or unresolved (no fix yet, or away from every
- * area). The sheet uses it too, to outline the chips pulled in.
+ * The area filter for a state, or undefined when it keeps everything:
+ * nothing picked and Here off or unresolved (no fix yet, or away from
+ * every area). The Area page uses it too, for the chips' looks.
  */
 export function areaScope(state: FilterState, opts: Pick<ApplyOptions, "hereGroup" | "areas">): AreaScope | undefined {
   const chosen = new Set(state.areas);
   if (state.here && opts.hereGroup !== undefined) chosen.add(opts.hereGroup);
   if (chosen.size === 0) return undefined;
-  const nearby = state.nearby && opts.areas ? opts.areas.neighbours(chosen) : new Set<string>();
-  return { chosen, nearby };
+  const added = state.adjacent && opts.areas ? opts.areas.neighbours(chosen) : new Set<string>();
+  return { chosen, added };
 }
 
 /** The rows the list and map show for a state. */
 export function applyFilters(places: Place[], state: FilterState, opts: ApplyOptions = {}): Place[] {
   const scope = areaScope(state, opts);
+  const near = state.nearby !== undefined && opts.position ? { from: opts.position, within: state.nearby } : undefined;
   return places.filter((p) => {
     if (p.region !== state.region) return false;
     if (!matchesCategories(p, state.categories)) return false;
-    if (scope && !(p.areaGroup !== undefined && (scope.chosen.has(p.areaGroup) || scope.nearby.has(p.areaGroup)))) return false;
+    if (scope && !(p.areaGroup !== undefined && (scope.chosen.has(p.areaGroup) || scope.added.has(p.areaGroup)))) return false;
+    if (near && distanceM(near.from, p) > near.within) return false;
     if (state.starredOnly && !p.starred) return false;
     if (state.bookmarkedOnly && !opts.bookmarks?.has(p.id)) return false;
     if (state.openNow && !passesOpenNow(p, opts.hours)) return false;
     return matchesText(p, state.text);
   });
+}
+
+/**
+ * An area's look, on its chip and (in Part 3) on the map: picked by hand
+ * or through Here, added by + Adjacent, or out.
+ */
+export type AreaLook = "picked" | "added" | "out";
+
+export function areaLook(state: FilterState, chip: string, opts: Pick<ApplyOptions, "hereGroup" | "areas">): AreaLook {
+  if (state.areas.has(chip) || (state.here && opts.hereGroup === chip)) return "picked";
+  return areaScope(state, opts)?.added.has(chip) ? "added" : "out";
+}
+
+/**
+ * What tapping an area does:
+ * - picked: out, and if it was Here's area, Here turns off;
+ * - added: out, and everything else that was in stays in as picks, with
+ *   + Adjacent off (the added areas freeze);
+ * - out: picked; with + Adjacent on, its neighbours come in as added.
+ */
+export function tapArea(state: FilterState, chip: string, opts: Pick<ApplyOptions, "hereGroup" | "areas">): FilterAction {
+  const look = areaLook(state, chip, opts);
+  if (look === "picked") {
+    const here = state.here && opts.hereGroup !== chip;
+    return { type: "setAreaChoice", areas: [...state.areas].filter((a) => a !== chip), here, adjacent: state.adjacent };
+  }
+  if (look === "added") {
+    const frozen = [...state.areas, ...(areaScope(state, opts)?.added ?? [])].filter((a) => a !== chip);
+    return { type: "setAreaChoice", areas: frozen, here: state.here, adjacent: false };
+  }
+  return { type: "setAreaChoice", areas: [...state.areas, chip], here: state.here, adjacent: state.adjacent };
 }
 
 /**

@@ -1,5 +1,6 @@
 import { areaIndex } from "../data/areas.ts";
 import type { LayerConfig, RegionConfig, RegionId } from "../data/types.ts";
+import { snapRadius } from "../geo/nearby.ts";
 import { categoriesOf, defaultState, layersInRegion, type FilterState } from "./state.ts";
 
 /**
@@ -11,12 +12,14 @@ import { categoriesOf, defaultState, layersInRegion, type FilterState } from "./
  *   ?r=kyoto                       region (omitted for the default region)
  *   &c=drinks/Coffee&c=drinks/Tea  categories, repeated; a layer id alone when all its kinds are on
  *   &a=Ginza&a=Asakusa             area chips, repeated; a raw area maps to its chip
- *   &here=1 &nb=1                  Here; Include nearby
+ *   &here=1 &adj=1                 Here; + Adjacent
  *   &q=glitch                      text
  *   &star=1 &b=1 &open=1           flags (b = this device's bookmarks only)
+ *   &near=1000                     Nearby, in metres (snapped to the slider's stops)
  *   &at=2026-11-10T10:00           open at this Tokyo wall-clock time instead of now
  *
- * Step 1's n= (area chips) is still read as a=.
+ * Older links still read: n= (area chips, step 1) as a=, nb=1 (step 2's
+ * Include nearby) as adj=1.
  */
 export interface UrlContext {
   regions: RegionConfig[];
@@ -40,11 +43,12 @@ export function toSearchParams(state: FilterState, ctx: UrlContext): URLSearchPa
   for (const c of state.categories) if (!written.has(c)) p.append("c", c);
   for (const a of state.areas) p.append("a", a);
   if (state.here) p.set("here", "1");
-  if (state.nearby) p.set("nb", "1");
+  if (state.adjacent) p.set("adj", "1");
   if (state.text) p.set("q", state.text);
   if (state.starredOnly) p.set("star", "1");
   if (state.bookmarkedOnly) p.set("b", "1");
   if (state.openNow) p.set("open", "1");
+  if (state.nearby !== undefined) p.set("near", String(state.nearby));
   if (state.openAt) p.set("at", state.openAt);
   return p;
 }
@@ -72,11 +76,13 @@ export function fromSearchParams(params: URLSearchParams, ctx: UrlContext): Filt
     }),
   );
   state.here = params.get("here") === "1";
-  state.nearby = params.get("nb") === "1";
+  state.adjacent = params.get("adj") === "1" || params.get("nb") === "1";
   state.text = params.get("q") ?? "";
   state.starredOnly = params.get("star") === "1";
   state.bookmarkedOnly = params.get("b") === "1";
   state.openNow = params.get("open") === "1";
+  const near = Number(params.get("near"));
+  if (params.has("near") && Number.isFinite(near) && near > 0) state.nearby = snapRadius(near);
   const at = params.get("at");
   if (at && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(at)) state.openAt = at;
   return state;

@@ -78,7 +78,7 @@ export interface LayerConfig {
   /**
    * The layer's kinds, from its Kind column (required when set: a blank or
    * unknown value fails the build). They are the category chips under the
-   * layer's header in the filter sheet. Absent: the layer is one category.
+   * layer's header on the Filters page. Absent: the layer is one category.
    */
   kinds?: string[];
   /** Columns shown on the row and the card, and matched by search; not filters (docs/proposals/filters-and-areas.md). */

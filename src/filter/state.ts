@@ -8,17 +8,21 @@ import type { LayerConfig, RegionId } from "../data/types.ts";
  * (docs/proposals/filters-and-areas.md): categories (what), areas
  * (where), flags (narrow). None selected in a group means everything.
  * Nothing here depends on another selection: filters do not cascade.
+ * The two filter pages (docs/proposals/filter-pages-and-area-map.md)
+ * split them: Filters holds the flags and categories, Area the areas.
  */
 export interface FilterState {
   region: RegionId;
   /** Category chips: "layer/Kind" for a layer with kinds, the bare layer id for one without. Empty = every category. */
   categories: Set<string>;
-  /** Area chips (src/data/areas.ts). Empty, with Here off, = everywhere. */
+  /** Area chips picked by hand (src/data/areas.ts). Empty, with Here off, = everywhere. */
   areas: Set<string>;
-  /** Add the area chip you are in (resolved from the position by the app). */
+  /** Pick the area chip you are in (resolved from the position by the app). */
   here: boolean;
-  /** Add the chips next to everything chosen (one hop on the area graph). */
-  nearby: boolean;
+  /** + Adjacent: add the chips next to everything picked (one hop on the area graph). */
+  adjacent: boolean;
+  /** Nearby: only places within this many metres of you; undefined = off. */
+  nearby?: number;
   text: string;
   starredOnly: boolean;
   /** Only the device's bookmarked places (the set itself lives outside this state). */
@@ -29,6 +33,9 @@ export interface FilterState {
   openAt?: string;
 }
 
+/** The state each filter page owns: Filters (flags and categories) and Area. */
+export type FilterGroup = "filters" | "area";
+
 export type FilterAction =
   | { type: "setRegion"; region: RegionId }
   | { type: "toggleCategory"; category: string }
@@ -37,13 +44,18 @@ export type FilterAction =
   | { type: "toggleArea"; area: string }
   /** A ward heading: every chip under it on, or all off. */
   | { type: "setAreas"; areas: string[]; on: boolean }
+  /** The outcome of tapping an area (src/filter/apply.ts tapArea): the picks, Here and + Adjacent at once. */
+  | { type: "setAreaChoice"; areas: string[]; here: boolean; adjacent: boolean }
   | { type: "setHere"; value: boolean }
-  | { type: "setNearby"; value: boolean }
+  | { type: "setAdjacent"; value: boolean }
+  | { type: "setNearby"; value: number | undefined }
   | { type: "setText"; text: string }
   | { type: "setStarredOnly"; value: boolean }
   | { type: "setBookmarkedOnly"; value: boolean }
   | { type: "setOpenNow"; value: boolean }
   | { type: "setOpenAt"; value: string | undefined }
+  /** A page's Clear: that page's selections only. */
+  | { type: "clearGroup"; group: FilterGroup }
   | { type: "clearFilters" };
 
 export function layersInRegion(layers: LayerConfig[], region: RegionId): LayerConfig[] {
@@ -69,7 +81,7 @@ export function defaultState(region: RegionId): FilterState {
     categories: new Set(),
     areas: new Set(),
     here: false,
-    nearby: false,
+    adjacent: false,
     text: "",
     starredOnly: false,
     bookmarkedOnly: false,
@@ -78,20 +90,24 @@ export function defaultState(region: RegionId): FilterState {
 }
 
 /**
- * True when anything narrows the results. Drives the Filters dot and the
- * Clear buttons. Include nearby alone narrows nothing, so it doesn't count.
+ * Whether a page has anything that narrows the results: its footer dot
+ * and its Clear. + Adjacent alone narrows nothing, so it doesn't count.
  */
-export function hasActiveFilters(state: FilterState): boolean {
+export function hasGroupSelection(state: FilterState, group: FilterGroup): boolean {
+  if (group === "area") return state.areas.size > 0 || state.here;
   return (
     state.categories.size > 0 ||
-    state.areas.size > 0 ||
-    state.here ||
-    state.text !== "" ||
     state.starredOnly ||
     state.bookmarkedOnly ||
     state.openNow ||
-    state.openAt !== undefined
+    state.openAt !== undefined ||
+    state.nearby !== undefined
   );
+}
+
+/** True when anything narrows the results, search included. Drives the empty state's Clear filters. */
+export function hasActiveFilters(state: FilterState): boolean {
+  return state.text !== "" || hasGroupSelection(state, "filters") || hasGroupSelection(state, "area");
 }
 
 export function reduce(state: FilterState, action: FilterAction): FilterState {
@@ -106,10 +122,14 @@ export function reduce(state: FilterState, action: FilterAction): FilterState {
       return { ...state, areas: toggled(state.areas, action.area) };
     case "setAreas":
       return { ...state, areas: withAll(state.areas, action.areas, action.on) };
+    case "setAreaChoice":
+      return { ...state, areas: new Set(action.areas), here: action.here, adjacent: action.adjacent };
     case "setHere":
       return { ...state, here: action.value };
+    case "setAdjacent":
+      return { ...state, adjacent: action.value };
     case "setNearby":
-      return { ...state, nearby: action.value };
+      return withOptional(state, "nearby", action.value);
     case "setText":
       return { ...state, text: action.text };
     case "setStarredOnly":
@@ -118,11 +138,13 @@ export function reduce(state: FilterState, action: FilterAction): FilterState {
       return { ...state, bookmarkedOnly: action.value };
     case "setOpenNow":
       return { ...state, openNow: action.value };
-    case "setOpenAt": {
-      const next = { ...state };
-      if (action.value === undefined) delete next.openAt;
-      else next.openAt = action.value;
-      return next;
+    case "setOpenAt":
+      return withOptional(state, "openAt", action.value);
+    case "clearGroup": {
+      const fresh = defaultState(state.region);
+      if (action.group === "area") return { ...state, areas: fresh.areas, here: false, adjacent: false };
+      const { nearby: _n, openAt: _a, ...rest } = state;
+      return { ...rest, categories: fresh.categories, starredOnly: false, bookmarkedOnly: false, openNow: false };
     }
     case "clearFilters":
       return defaultState(state.region);
@@ -142,5 +164,13 @@ function withAll<T>(set: Set<T>, items: T[], on: boolean): Set<T> {
     if (on) next.add(item);
     else next.delete(item);
   }
+  return next;
+}
+
+/** Set an optional key, or remove it for undefined, so a cleared state equals a fresh one. */
+function withOptional<K extends "nearby" | "openAt">(state: FilterState, key: K, value: FilterState[K] | undefined): FilterState {
+  const next = { ...state };
+  if (value === undefined) delete next[key];
+  else next[key] = value;
   return next;
 }

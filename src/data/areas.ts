@@ -8,7 +8,7 @@ import type { AreaConfig, Place, RegionConfig } from "./types.ts";
  *   the ward its addresses name and its neighbours;
  * - merges fold raw areas into the filter chips, as interpretation that
  *   can change without touching the data;
- * - sections put the chips under headings by ward in the filter sheet.
+ * - sections put the chips under headings by ward on the Area page.
  *
  * Everything here derives from config and is pure.
  */
@@ -130,7 +130,7 @@ export const HERE_MAX_M = 2000;
  * centre is the centroid of the area's places, so there are no
  * coordinates to maintain. Undefined outside the region's bbox or farther
  * than `maxM` from every centre. Near a border it may pick the other
- * side, which Include nearby makes moot.
+ * side, which + Adjacent makes moot.
  */
 export function areaAt(
   index: Pick<AreaIndex, "groupOf">,

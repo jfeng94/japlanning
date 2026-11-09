@@ -7,16 +7,18 @@ import { areaAt } from "../data/areas.ts";
 import { browserDeps } from "../data/browser.ts";
 import { loadAllLayersStaged } from "../data/load.ts";
 import type { LoadResult, Place, RegionId } from "../data/types.ts";
-import { applyFilters, sinkUnknownHours, type ApplyOptions, type HoursInput } from "../filter/apply.ts";
+import { applyFilters, sinkUnknownHours, tapArea, type ApplyOptions, type HoursInput } from "../filter/apply.ts";
 import { inBbox, sortByDistance } from "../geo/distance.ts";
+import { formatRadius } from "../geo/nearby.ts";
 import { markFor, type Mark } from "../data/marks.ts";
 import { evaluateAll, type HoursState } from "../hours/evaluate-all.ts";
 import { loadParser, tokyoNow, tokyoWallClock, type OpeningHoursCtor } from "../hours/open.ts";
-import { defaultState, hasActiveFilters, layersInPlay, layersInRegion, reduce, type FilterState } from "../filter/state.ts";
+import { defaultState, hasActiveFilters, hasGroupSelection, layersInPlay, layersInRegion, reduce, type FilterState } from "../filter/state.ts";
 import { createStore } from "../filter/store.ts";
 import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url.ts";
 import { createWatch, permissionState, type LocateError, type Position } from "../geo/locate.ts";
 import { basemapUrl, ensureProtocol, mountMap, watchFlavor } from "../map/map.ts";
+import { createNearbyCircle } from "../map/nearby-circle.ts";
 import { createIdbBasemapStore, registerStoredBasemaps } from "../offline/basemap.ts";
 import { createDownloadManager } from "../offline/downloads.ts";
 import { appUsage, formatMb } from "../offline/usage.ts";
@@ -26,9 +28,10 @@ import { createSdfPinRenderer } from "../map/pins-sdf.ts";
 import { chip } from "./chips.ts";
 import { renderDetail, renderDetailStrip } from "./detail.ts";
 import { mountDiagnostics } from "./diagnostics.ts";
-import { renderFilterSheet, type HereChip } from "./filter-sheet.ts";
+import { renderAreaPage, renderFiltersPage, renderPageStrip, type FilterPage, type PageContext, type PositionChip } from "./filter-pages.ts";
 import { renderFilterSummary } from "./filter-summary.ts";
 import { CHEVRON_LEFT, mountHeader, SEARCH_ICON } from "./header.ts";
+import areaIcon from "./icons/area.webp";
 import filtersIcon from "./icons/filters.webp";
 import nextIcon from "./icons/next.webp";
 import prevIcon from "./icons/prev.webp";
@@ -44,13 +47,38 @@ const SELECTED_PARAM = "s";
 
 interface UiState {
   selectedId?: string;
+  /** A filter page in the strip. It hides the card, which comes back when the page closes. */
+  page?: FilterPage;
 }
-type UiAction = { type: "select"; id: string } | { type: "deselect" };
+type UiAction =
+  /** Show a card; any page closes. */
+  | { type: "select"; id: string }
+  | { type: "deselect" }
+  | { type: "openPage"; page: FilterPage }
+  /** The page closes and the card under it, if any, shows again. */
+  | { type: "closePage" }
+  /** No page, no card: the list. */
+  | { type: "reset" };
 
 function uiReduce(state: UiState, action: UiAction): UiState {
-  if (action.type === "deselect") return state.selectedId === undefined ? state : {};
-  return state.selectedId === action.id ? state : { selectedId: action.id };
+  switch (action.type) {
+    case "select":
+      return state.selectedId === action.id && state.page === undefined ? state : { selectedId: action.id };
+    case "deselect":
+      if (state.selectedId === undefined) return state;
+      return state.page === undefined ? {} : { page: state.page };
+    case "openPage":
+      return state.page === action.page ? state : { ...state, page: action.page };
+    case "closePage":
+      if (state.page === undefined) return state;
+      return state.selectedId === undefined ? {} : { selectedId: state.selectedId };
+    case "reset":
+      return state.selectedId === undefined && state.page === undefined ? state : {};
+  }
 }
+
+/** Our history entries: a card (s) and/or a filter page (p) over the list, always one entry, so Back means "to the list". */
+type HistoryState = { s?: string; p?: FilterPage } | null;
 
 export function mountApp(root: HTMLElement): void {
   const ctx: UrlContext = { regions, layers, defaultRegion: regions[0]!.id };
@@ -64,7 +92,7 @@ export function mountApp(root: HTMLElement): void {
   let loading = true;
   /** The list's scroll position, kept while the card is open so Back returns to it. */
   let listScrollTop = 0;
-  let shownMode: "list" | "detail" = "list";
+  let shownMode: "list" | "detail" | "page" = "list";
   let shownDetailId: string | undefined;
   /** Set for the one render that returns to the list, so the closed place's row can flash. */
   let flashId: string | undefined;
@@ -121,7 +149,6 @@ export function mountApp(root: HTMLElement): void {
       <a class="osm-credit" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
     </main>
   `;
-  const filterSheet = createSheet(root, "Filters", () => renderSheet());
   const diagSheet = createSheet(root, "Diagnostics", () => diagnostics.refreshCapabilities());
   const settingsSheet = createSheet(root, "Settings", () =>
     renderSettingsSheet(settingsSheet.body, {
@@ -202,12 +229,13 @@ export function mountApp(root: HTMLElement): void {
     },
   );
   view.setBottomPadding(panel.heightPx());
+  const nearbyCircle = createNearbyCircle(view);
   let pins: PinRenderer = createPinRenderer();
   pins.onSelect(onPinSelect);
 
   function onPinSelect(id: string | undefined): void {
     if (id === undefined) {
-      deselect();
+      if (ui.get().page === undefined) deselect();
     } else {
       openedFrom = "elsewhere";
       select(id);
@@ -253,8 +281,9 @@ export function mountApp(root: HTMLElement): void {
     } else {
       watch.stop();
       dropPosition();
-      // Here has nothing to go on without the position; its chip is hidden too.
+      // Here and Nearby have nothing to go on without the position; their chips are hidden too.
       if (filters.get().here) filters.dispatch({ type: "setHere", value: false });
+      if (filters.get().nearby !== undefined) filters.dispatch({ type: "setNearby", value: undefined });
     }
   }
   applyLocationSetting(settings().location);
@@ -299,7 +328,7 @@ export function mountApp(root: HTMLElement): void {
 
   // ---- Here ----
   /** Here as the sheet and the tags label it, and the area chip it stands for when it resolves to one. */
-  function hereChip(state: FilterState): HereChip {
+  function hereChip(state: FilterState): PositionChip {
     if (!position) {
       if (!state.here) return { label: "Here" };
       return { label: watch.active ? "Here · locating…" : "Here · no location" };
@@ -317,13 +346,40 @@ export function mountApp(root: HTMLElement): void {
     filters.dispatch({ type: "setHere", value: on });
   }
 
+  // ---- Nearby: places within a radius of you ----
+  function nearbyChip(state: FilterState): PositionChip {
+    if (state.nearby === undefined) return { label: "Nearby" };
+    if (!position) return { label: watch.active ? "Nearby · locating…" : "Nearby · no location" };
+    return { label: `Nearby · ${formatRadius(state.nearby)}` };
+  }
+
+  /** The Nearby chip: on at the radius last used on this device; with no fix it starts locating. */
+  function onNearby(on: boolean): void {
+    if (on && position === undefined) watch.start();
+    filters.dispatch({ type: "setNearby", value: on ? settings().nearbyM : undefined });
+  }
+
+  /** The radius while the slider is dragged: the circle follows it before the filter does. */
+  let previewRadius: number | undefined;
+  function onRadius(m: number, final: boolean): void {
+    if (!final) {
+      previewRadius = m;
+      nearbyCircle.set(position, m);
+      return;
+    }
+    previewRadius = undefined;
+    updateSettings({ nearbyM: m });
+    filters.dispatch({ type: "setNearby", value: m });
+  }
+
   /** Everything applyFilters needs beyond the state. */
-  function applyOpts(state: FilterState, here: HereChip = hereChip(state)): ApplyOptions {
+  function applyOpts(state: FilterState, here: PositionChip = hereChip(state)): ApplyOptions {
     return {
       bookmarks: bookmarks.all(),
       hours: hoursInput(),
       areas: areasOf(state.region),
       ...(state.here && here.group !== undefined ? { hereGroup: here.group } : {}),
+      ...(position ? { position } : {}),
     };
   }
 
@@ -365,10 +421,12 @@ export function mountApp(root: HTMLElement): void {
     `<p class="results-count"></p><p class="filter-summary" hidden></p><p class="status" role="status" hidden></p>`,
   );
   const detailStrip = el("div", "strip-detail");
-  // The footer is pinned to the bottom of the screen at every height: Search
-  // and Filters on the right always; on the left the list order toggle in
-  // list mode, Back in card mode; Prev/Next in the middle while a card is
-  // open (docs/proposals/strip-footer.md, filters-and-areas.md).
+  const pageStrip = el("div", "strip-page");
+  // The footer is pinned to the bottom of the screen at every height:
+  // Filters, Area and Search on the right always; on the left the list
+  // order toggle in list mode, Back in card mode; Prev/Next in the middle
+  // while a card is open; nothing else while a page is open
+  // (docs/proposals/strip-footer.md, filter-pages-and-area-map.md).
   panel.footer.innerHTML = `
     <div class="footer-left">
       <button type="button" class="icon-button back-button" aria-label="Back to the list">${CHEVRON_LEFT}</button>
@@ -379,25 +437,33 @@ export function mountApp(root: HTMLElement): void {
       <button type="button" class="arrow-button next-button" aria-label="Next place"><img alt="" draggable="false" src="${nextIcon}"></button>
     </div>
     <div class="footer-right">
-      <button type="button" class="icon-button filters-button" aria-label="Filters"><img alt="" draggable="false" src="${filtersIcon}"><span class="dot" hidden></span></button>
+      <button type="button" class="icon-button filters-button" aria-label="Filters" aria-pressed="false"><img alt="" draggable="false" src="${filtersIcon}"><span class="dot" hidden></span></button>
+      <button type="button" class="icon-button area-button" aria-label="Area" aria-pressed="false"><img alt="" draggable="false" src="${areaIcon}"><span class="dot" hidden></span></button>
       <button type="button" class="icon-button search-toggle" aria-label="Search">${SEARCH_ICON}<span class="dot" hidden></span></button>
     </div>`;
   const searchToggle = panel.footer.querySelector<HTMLButtonElement>(".search-toggle")!;
   const filtersButton = panel.footer.querySelector<HTMLButtonElement>(".filters-button")!;
+  const areaButton = panel.footer.querySelector<HTMLButtonElement>(".area-button")!;
   const backButton = panel.footer.querySelector<HTMLButtonElement>(".back-button")!;
   const prevButton = panel.footer.querySelector<HTMLButtonElement>(".prev-button")!;
   const nextButton = panel.footer.querySelector<HTMLButtonElement>(".next-button")!;
   const orderToggle = panel.footer.querySelector<HTMLButtonElement>(".order-toggle")!;
   orderToggle.addEventListener("click", toggleOrder);
-  searchToggle.addEventListener("click", () => header.openSearch());
-  filtersButton.addEventListener("click", filterSheet.open);
+  searchToggle.addEventListener("click", () => {
+    // Search is a list activity: a page gives way first, synchronously, so iOS still raises the keyboard.
+    leaveToList();
+    header.openSearch();
+  });
+  filtersButton.addEventListener("click", () => togglePage("filters"));
+  areaButton.addEventListener("click", () => togglePage("area"));
   backButton.addEventListener("click", () => deselect());
-  prevButton.addEventListener("click", () => page(-1));
-  nextButton.addEventListener("click", () => page(1));
+  prevButton.addEventListener("click", () => step(-1));
+  nextButton.addEventListener("click", () => step(1));
   const listBody = el("div", "body-list", `<ul class="place-list"></ul><div class="empty-state" hidden></div>`);
   const detailBody = el("div", "body-detail");
-  panel.strip.append(listStrip, detailStrip);
-  panel.content.append(listBody, detailBody);
+  const pageBody = el("div", "body-page");
+  panel.strip.append(listStrip, detailStrip, pageStrip);
+  panel.content.append(listBody, detailBody, pageBody);
   const resultsCount = listStrip.querySelector<HTMLElement>(".results-count")!;
   const filterSummary = listStrip.querySelector<HTMLElement>(".filter-summary")!;
   const status = listStrip.querySelector<HTMLElement>(".status")!;
@@ -438,22 +504,33 @@ export function mountApp(root: HTMLElement): void {
   let listHeight: PanelHeight | undefined;
 
   /** Prev/Next in the footer: the neighbour in the current list; the entry is replaced, so Back still means "to the list". */
-  function page(delta: 1 | -1): void {
+  function step(delta: 1 | -1): void {
     const current = ui.get().selectedId;
     const i = lastShown.findIndex((p) => p.id === current);
     const target = i >= 0 ? lastShown[i + delta] : undefined;
     if (target) select(target.id);
   }
 
-  /** Opening the detail pushes one history entry; switching place while open replaces it, so back always means "to the list". */
+  /**
+   * Opening the detail pushes one history entry; switching place while
+   * open replaces it, so back always means "to the list". From a filter
+   * page (a pin tapped under it), the page gives way to the card and its
+   * entry becomes the card's.
+   */
   function select(id: string): void {
-    const current = ui.get().selectedId;
-    if (current === id) return;
+    const { selectedId: current, page } = ui.get();
+    if (page !== undefined && current === id) return closePage(); // the hidden card's own pin: it comes back
+    if (page === undefined && current === id) return;
+    if (page !== undefined) {
+      listHeight ??= beforePage?.height; // Back from this card returns the list to the height it had
+      endPage();
+    }
+    const st = history.state as HistoryState;
+    const ours = st?.p !== undefined || (current !== undefined && st?.[SELECTED_PARAM] === current);
     ui.dispatch({ type: "select", id });
-    const alreadyOpen = current !== undefined && (history.state as { s?: string } | null)?.[SELECTED_PARAM] === current;
-    const state = { [SELECTED_PARAM]: id };
-    if (alreadyOpen) history.replaceState(state, "", urlFor(filters.get(), id));
-    else history.pushState(state, "", urlFor(filters.get(), id));
+    const next = { [SELECTED_PARAM]: id };
+    if (ours) history.replaceState(next, "", urlFor(filters.get(), id));
+    else history.pushState(next, "", urlFor(filters.get(), id));
   }
 
   /**
@@ -473,7 +550,15 @@ export function mountApp(root: HTMLElement): void {
   }
 
   window.addEventListener("popstate", () => {
-    const id = (history.state as { s?: string } | null)?.[SELECTED_PARAM];
+    const st = history.state as HistoryState;
+    const id = st?.[SELECTED_PARAM];
+    if (ui.get().page !== undefined && st?.p === undefined) {
+      // Back while a page is open (Android, a browser): to the list, as Back from a card does.
+      const height = ui.get().selectedId === undefined ? beforePage?.height : undefined;
+      endPage();
+      ui.dispatch({ type: "reset" });
+      if (height) panel.setHeight(height);
+    }
     if (id && places.some((p) => p.id === id)) {
       ui.dispatch({ type: "select", id });
     } else {
@@ -483,49 +568,130 @@ export function mountApp(root: HTMLElement): void {
     }
   });
 
-  ui.subscribe(({ selectedId }) => {
-    const place = selectedId ? places.find((p) => p.id === selectedId) : undefined;
-    if (place) {
-      // A card opens at half so the place is visible on the map behind it; remember the list's height for Back.
-      // Height first: it changes the map padding, which would cancel an ease already under way.
-      if (listHeight === undefined) listHeight = panel.getHeight();
-      panel.setHeight("half");
-      view.focus(place.lng, place.lat);
-    } else if (listHeight !== undefined) {
-      // Back to the list at the height it had (a map-browsing "strip" becomes half so the list shows).
-      panel.setHeight(listHeight === "strip" ? "half" : listHeight);
-      listHeight = undefined;
+  /** The card the panel was last arranged for. A page hides a card without closing it, so it doesn't count. */
+  let arrangedFor: string | undefined;
+  ui.subscribe(({ selectedId, page }) => {
+    if (page === undefined && selectedId !== arrangedFor) {
+      const place = selectedId ? places.find((p) => p.id === selectedId) : undefined;
+      if (place) {
+        // A card opens at half so the place is visible on the map behind it; remember the list's height for Back.
+        // Height first: it changes the map padding, which would cancel an ease already under way.
+        if (listHeight === undefined) listHeight = panel.getHeight();
+        panel.setHeight("half");
+        view.focus(place.lng, place.lat);
+      } else if (listHeight !== undefined) {
+        // Back to the list at the height it had (a map-browsing "strip" becomes half so the list shows).
+        panel.setHeight(listHeight === "strip" ? "half" : listHeight);
+        listHeight = undefined;
+      }
+      arrangedFor = selectedId;
     }
     render();
   });
 
+  // ---- filter pages (docs/proposals/filter-pages-and-area-map.md) ----
+
+  /** The height the panel had when a page opened, restored when it closes. */
+  let beforePage: { height: PanelHeight } | undefined;
+
+  /** A footer button: open its page, switch to it from the other page, or close it if it's the one open. */
+  function togglePage(target: FilterPage): void {
+    const { page } = ui.get();
+    if (page === target) return closePage();
+    if (page === undefined) return openPage(target);
+    history.replaceState({ ...(history.state as HistoryState), p: target }, "", location.href);
+    ui.dispatch({ type: "openPage", page: target });
+    panel.lockHeight(target === "area");
+  }
+
+  /** A page opens at Half over the list or the card, sharing the card's one history entry. */
+  function openPage(target: FilterPage): void {
+    beforePage = { height: panel.getHeight() };
+    const st = history.state as HistoryState;
+    const ours = st?.[SELECTED_PARAM] !== undefined && st[SELECTED_PARAM] === ui.get().selectedId;
+    if (ours) history.replaceState({ ...st, p: target }, "", location.href);
+    else history.pushState({ p: target }, "", location.href);
+    ui.dispatch({ type: "openPage", page: target });
+    panel.setHeight("half");
+    // The Area page keeps the map in view; Full would cover it.
+    panel.lockHeight(target === "area");
+  }
+
+  /** Close the open page: back to the card it hid if that place still matches, else to the list. */
+  function closePage(): void {
+    const { page, selectedId } = ui.get();
+    if (page === undefined) return;
+    if (selectedId === undefined || !lastShown.some((p) => p.id === selectedId)) return leaveToList();
+    const height = beforePage?.height;
+    endPage();
+    ui.dispatch({ type: "closePage" });
+    history.replaceState({ [SELECTED_PARAM]: selectedId }, "", urlFor(filters.get(), selectedId));
+    if (height) panel.setHeight(height);
+  }
+
+  /** Close the open page and any card it hid, back to the list at the height it had. */
+  function leaveToList(): void {
+    const { page, selectedId } = ui.get();
+    if (page === undefined) return;
+    // A hidden card remembered the list's height when it opened, and restores it as it closes (ui.subscribe).
+    const height = selectedId === undefined ? beforePage?.height : undefined;
+    endPage();
+    ui.dispatch({ type: "reset" });
+    if (height) panel.setHeight(height);
+    if ((history.state as HistoryState)?.p !== undefined) history.back(); // the popstate finds the list already showing
+    else history.replaceState(null, "", urlFor(filters.get()));
+  }
+
+  /** The page's own bookkeeping, before the UI moves on. */
+  function endPage(): void {
+    panel.lockHeight(false);
+    beforePage = undefined;
+  }
+
   // ---- rendering ----
 
-  function renderSheet(here: HereChip = hereChip(filters.get())): void {
-    const state = filters.get();
-    renderFilterSheet(filterSheet.body, state, {
+  function renderPage(page: FilterPage, state: FilterState, here: PositionChip): void {
+    const ctx: PageContext = {
       layers: layersInRegion(layers, state.region),
       areas: areasOf(state.region),
-      ...(settings().location ? { here } : {}),
+      ...(settings().location ? { here, nearby: nearbyChip(state) } : {}),
       onHere,
+      onNearby,
+      onRadius,
+      onAreaTap: (chip) => {
+        const now = filters.get();
+        filters.dispatch(tapArea(now, chip, applyOpts(now)));
+      },
       dispatch: filters.dispatch,
-    });
+    };
+    if (page === "filters") renderFiltersPage(pageBody, state, ctx);
+    else renderAreaPage(pageBody, state, ctx);
   }
 
   function render(): void {
     const state = filters.get();
+    const { page, selectedId } = ui.get();
     const regionLayers = layersInRegion(layers, state.region);
     const here = hereChip(state);
-    if (filterSheet.isOpen()) renderSheet(here);
 
     header.update({
       region: regions.find((r) => r.id === state.region)!,
       text: state.text,
     });
     searchToggle.querySelector<HTMLElement>(".dot")!.hidden = state.text === "";
-    const filtersActive = hasActiveFilters(state);
-    filtersButton.querySelector<HTMLElement>(".dot")!.hidden = !filtersActive;
-    filtersButton.classList.toggle("is-active", filtersActive);
+    // Each page's button: a dot when it has a selection, pressed while it's open.
+    for (const [button, group] of [
+      [filtersButton, "filters"],
+      [areaButton, "area"],
+    ] as const) {
+      const active = hasGroupSelection(state, group);
+      button.querySelector<HTMLElement>(".dot")!.hidden = !active;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(page === group));
+    }
+    // A region without areas (Hakone today) has no Area page; no special case.
+    areaButton.hidden = areasOf(state.region).chips.length === 0;
+    nearbyCircle.set(state.nearby !== undefined ? position : undefined, previewRadius ?? state.nearby);
 
     const total = places.filter((p) => p.region === state.region).length;
     const matching = applyFilters(places, state, applyOpts(state, here));
@@ -534,8 +700,8 @@ export function mountApp(root: HTMLElement): void {
     orderToggle.setAttribute("aria-label", `List order: ${order === "name" ? "A to Z" : "nearest first"}. Tap to switch.`);
     const sorted = order === "distance" && position ? sortByDistance(matching, position) : sortByName(matching);
     const shown = state.openNow ? sinkUnknownHours(sorted, hoursInput()) : sorted;
-    const selectedId = ui.get().selectedId;
     const selected = selectedId ? shown.find((p) => p.id === selectedId) : undefined;
+    const count = loading && places.length === 0 ? "Loading…" : countLabel(shown.length, total);
     // Returning to the list: remember which place was open so its row can fade in from a highlight.
     flashId = shownMode === "detail" && !selected ? shownDetailId : undefined;
 
@@ -544,9 +710,13 @@ export function mountApp(root: HTMLElement): void {
       filterSummary,
       state,
       regionLayers,
-      loading && places.length === 0 ? "Loading…" : countLabel(shown.length, total),
+      count,
       here.label,
     );
+    if (page !== undefined) {
+      renderPageStrip(pageStrip, page, count, hasGroupSelection(state, page), () => filters.dispatch({ type: "clearGroup", group: page }));
+      renderPage(page, state, here);
+    }
     renderStatus(status, results, loading);
     renderList(placeList, shown, {
       layers: regionLayers,
@@ -579,16 +749,17 @@ export function mountApp(root: HTMLElement): void {
       prevButton.disabled = i <= 0;
       nextButton.disabled = i < 0 || i >= shown.length - 1;
     }
-    // One scroll container holds both contents: save the list's position on the
-    // way into the card (before the list is hidden, or the browser clamps it to
-    // the card's height), open the card at its top, restore on the way back.
-    const mode = selected ? "detail" : "list";
-    if (mode !== shownMode && mode === "detail") listScrollTop = panel.content.scrollTop;
+    // One scroll container holds all three contents: save the list's position
+    // on the way out of it (before the list is hidden, or the browser clamps it
+    // to the next content's height), open a card or a page at its top, restore
+    // the list's position on the way back.
+    const mode = page !== undefined ? "page" : selected ? "detail" : "list";
+    if (mode !== shownMode && shownMode === "list") listScrollTop = panel.content.scrollTop;
     panel.el.dataset["mode"] = mode;
     if (mode !== shownMode) {
-      if (mode === "detail") {
+      if (mode !== "list") {
         panel.content.scrollTop = 0;
-      } else if (openedFrom === "list") {
+      } else if (shownMode === "page" || openedFrom === "list") {
         panel.content.scrollTop = listScrollTop;
       } else {
         // Opened from a pin or a link: bring the closed place's row into view so the highlight is seen.
@@ -722,7 +893,12 @@ export function mountApp(root: HTMLElement): void {
     const regionChanged = state.region !== lastRegion;
     lastRegion = state.region;
     rememberRegion(state.region);
-    if (ui.get().selectedId !== undefined) deselect();
+    if (ui.get().page !== undefined) {
+      // A page stays open while its filters change (the card it hid is checked when it closes); a new region closes it.
+      if (regionChanged) leaveToList();
+    } else if (ui.get().selectedId !== undefined) {
+      deselect();
+    }
     history.replaceState(history.state, "", urlFor(state, ui.get().selectedId));
     view.setRegion(regions.find((r) => r.id === state.region)!);
     if (regionChanged) fittedOnce = true; // setRegion fitted the bbox; don't refit to results
