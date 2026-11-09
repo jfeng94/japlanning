@@ -28,6 +28,8 @@ export interface Settings {
   autoDistanceSort: boolean;
   /** Nearby's radius in metres, set by its slider and remembered here; one of NEARBY_STOPS. */
   nearbyM: number;
+  /** Draw the area shapes over the map, for reviewing them (Part 2 of the filter-pages proposal). */
+  showAreaShapes: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -39,6 +41,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sort: "name",
   autoDistanceSort: false,
   nearbyM: DEFAULT_NEARBY_M,
+  showAreaShapes: false,
 };
 
 /** URL parameter names, kept short for sharing. */
@@ -51,6 +54,7 @@ const URL_KEYS: Record<keyof Settings, string> = {
   sort: "sort",
   autoDistanceSort: "autosort",
   nearbyM: "radius",
+  showAreaShapes: "shapes",
 };
 
 const STORAGE_KEY = "japlanning.settings";
@@ -64,6 +68,7 @@ const VALID: { [K in keyof Settings]: (v: unknown) => v is Settings[K] } = {
   sort: (v): v is SortKey => v === "name" || v === "distance",
   autoDistanceSort: (v): v is boolean => typeof v === "boolean",
   nearbyM: (v): v is number => typeof v === "number" && (NEARBY_STOPS as readonly number[]).includes(v),
+  showAreaShapes: (v): v is boolean => typeof v === "boolean",
 };
 
 /** A URL parameter or `<select>` value as the setting's own type; validated by the caller. */

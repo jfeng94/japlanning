@@ -3,6 +3,7 @@ import { pinRendererKind } from "../config/map.ts";
 import { areasOf, regions } from "../config/regions.ts";
 import { settings, updateSettings, type Settings } from "../config/settings.ts";
 import { createBookmarks, createIdbBookmarkStorage } from "../data/bookmarks.ts";
+import { loadAreaShapes, type AreaShapes } from "../data/area-shapes.ts";
 import { areaAt } from "../data/areas.ts";
 import { browserDeps } from "../data/browser.ts";
 import { loadAllLayersStaged } from "../data/load.ts";
@@ -18,6 +19,7 @@ import { createStore } from "../filter/store.ts";
 import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url.ts";
 import { createWatch, permissionState, type LocateError, type Position } from "../geo/locate.ts";
 import { basemapUrl, ensureProtocol, mountMap, watchFlavor } from "../map/map.ts";
+import { createAreaShapesLayer } from "../map/area-shapes-layer.ts";
 import { createNearbyCircle } from "../map/nearby-circle.ts";
 import { createIdbBasemapStore, registerStoredBasemaps } from "../offline/basemap.ts";
 import { createDownloadManager } from "../offline/downloads.ts";
@@ -236,6 +238,7 @@ export function mountApp(root: HTMLElement): AppHandle {
   );
   view.setBottomPadding(panel.heightPx());
   const nearbyCircle = createNearbyCircle(view);
+  const areaShapesLayer = createAreaShapesLayer(view);
   let pins: PinRenderer = createPinRenderer();
   pins.onSelect(onPinSelect);
 
@@ -332,6 +335,20 @@ export function mountApp(root: HTMLElement): AppHandle {
     render(); // Here's label and the order toggle read the watch's state
   }
 
+  // ---- area shapes: Here goes by them; Settings can draw them for review ----
+  const shapes = new Map<RegionId, AreaShapes>();
+  const shapesRequested = new Set<RegionId>();
+  /** Fetch a region's shapes once, the first time it renders; Here uses nearest centres until they arrive. */
+  function ensureShapes(region: RegionId): void {
+    if (shapesRequested.has(region) || areasOf(region).chips.length === 0) return;
+    shapesRequested.add(region);
+    void loadAreaShapes(region).then((s) => {
+      if (!s) return;
+      shapes.set(region, s);
+      render();
+    });
+  }
+
   // ---- Here ----
   /** Here as the sheet and the tags label it, and the area chip it stands for when it resolves to one. */
   function hereChip(state: FilterState): PositionChip {
@@ -341,7 +358,7 @@ export function mountApp(root: HTMLElement): AppHandle {
     }
     const region = regions.find((r) => r.id === state.region)!;
     const regionPlaces = places.filter((p) => p.region === region.id);
-    const group = areaAt(areasOf(region.id), regionPlaces, position, region.bbox ? { bbox: region.bbox } : {});
+    const group = areaAt(areasOf(region.id), regionPlaces, position, { ...(region.bbox ? { bbox: region.bbox } : {}), shapes: shapes.get(region.id) });
     if (group) return { label: `Here · ${group}`, group };
     return { label: region.bbox && !inBbox(position, region.bbox) ? `Here · outside ${region.label}` : "Here · no area nearby" };
   }
@@ -700,6 +717,8 @@ export function mountApp(root: HTMLElement): AppHandle {
     // A region without areas (Hakone today) has no Area page; no special case.
     areaButton.hidden = areasOf(state.region).chips.length === 0;
     nearbyCircle.set(state.nearby !== undefined ? position : undefined, previewRadius ?? state.nearby);
+    ensureShapes(state.region);
+    areaShapesLayer.set(settings().showAreaShapes ? shapes.get(state.region) : undefined);
 
     const total = places.filter((p) => p.region === state.region).length;
     const matching = applyFilters(places, state, applyOpts(state, here));

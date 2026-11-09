@@ -78,6 +78,15 @@ const FIELDS: Field<keyof Settings>[] = [
       [20, "Never"],
     ],
   },
+  {
+    key: "showAreaShapes",
+    label: "Area shapes on the map",
+    help: "Draws each area's shape, made from the census, over the map, to check them before the Area map uses them. Here already goes by them.",
+    options: [
+      [false, "Off"],
+      [true, "On"],
+    ],
+  },
 ];
 
 export interface SettingsSheetHandlers {
@@ -179,5 +188,27 @@ export function renderSettingsSheet(body: HTMLElement, handlers: SettingsSheetHa
     chip("Diagnostics", { onClick: handlers.onDiagnostics }),
     chip("Reload app", { onClick: () => void reloadFromScratch() }),
   );
-  body.append(actions);
+  body.append(actions, credits());
+}
+
+/** Where the map and the area shapes come from; e-Stat's terms ask for the source and a note that it was processed. */
+function credits(): HTMLParagraphElement {
+  const p = document.createElement("p");
+  p.className = "note credits";
+  const link = (text: string, href: string) => {
+    const a = document.createElement("a");
+    a.href = href;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = text;
+    return a;
+  };
+  p.append(
+    "Map data ",
+    link("© OpenStreetMap contributors", "https://www.openstreetmap.org/copyright"),
+    ". Area shapes processed from the 2020 census boundaries (「国勢調査 境界データ」, Statistics Bureau of Japan), via ",
+    link("e-Stat", "https://www.e-stat.go.jp/"),
+    ".",
+  );
+  return p;
 }
