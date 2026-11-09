@@ -83,9 +83,10 @@ button {
 
 /* ---------- header: one row ---------- */
 
+/* Above the panel (15), so the region menu drops over the list; below the sheets (20, 30) and the toast (50). */
 .topbar {
   position: relative;
-  z-index: 10;
+  z-index: 16;
   flex: none;
   background: var(--bg);
   border-bottom: 1px solid var(--rule);
