@@ -112,6 +112,25 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
   // Debug handle for the browser console; harmless in production.
   (window as unknown as { __japlanning?: unknown }).__japlanning = { map, locate };
 
+  /**
+   * Jump to frame a region as if the panel covered at most half the map.
+   * A fit subtracts the map's padding first, so with the list at Full it
+   * would frame the region in the few pixels left and zoom out to all of
+   * Japan. Framed for Half instead, it is right when the panel comes down.
+   * The padding goes back straight after the jump, which keeps the centre.
+   */
+  function fitRegion(bounds: LngLatBoundsLike): void {
+    const padding = map.getPadding();
+    const cap = Math.round(container.clientHeight / 2);
+    if ((padding.bottom ?? 0) <= cap) {
+      map.fitBounds(bounds, { duration: 0 });
+      return;
+    }
+    map.setPadding({ ...padding, bottom: cap });
+    map.fitBounds(bounds, { duration: 0 });
+    map.setPadding(padding);
+  }
+
   return {
     map,
     locate,
@@ -119,7 +138,7 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
       if (next.id === currentRegion.id) return;
       currentRegion = next;
       map.setStyle(styleFor(next, currentFlavor));
-      map.fitBounds(next.bbox ?? JAPAN_BOUNDS, { duration: 0 });
+      fitRegion(next.bbox ?? JAPAN_BOUNDS);
     },
     setFlavor(next) {
       if (next === currentFlavor) return;
