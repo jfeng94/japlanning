@@ -1,7 +1,8 @@
 # Filter pages and the area map
 
-Status: **draft, decisions recorded** (2026-11-09, two rounds). Jerry's
-answers are folded in below; the open points are listed at the end.
+Status: **decided, awaiting go-ahead** (2026-11-09, three rounds).
+Jerry's answers are folded in below; nothing is open but the slider's
+stops, which are proposed with numbers.
 Jerry framed two sub-milestones: the filter pages in the strip, then the
 area map. The second splits in two here (agreed), because the area
 shapes are a data job of their own and are worth reviewing before any
@@ -97,28 +98,58 @@ in view.
 - **The map on the Filters page** behaves as usual: the results update
   live, and tapping a pin opens its card, which leaves the page.
 
-### Nearby: near me (proposed)
+### Nearby: near me (decided)
 
 Jerry's original meaning: a quick, easy next stop from where you stand.
 It is a different tool from widening the picked areas (below).
 
-- **A flag in Show only**: only places within 1 km of you, as the crow
-  flies. That is about a 15-minute walk. It sits beside Open now because
-  the two together answer "where can I go next", and the Nearest order
-  sorts what is left.
+- **A distance filter in Show only**: only places within a radius of
+  you, as the crow flies. It sits beside Open now because the two
+  together answer "where can I go next", and the Nearest order sorts what
+  is left.
+- **The radius starts at 1 km** and is set with a slider that appears
+  under the chip while Nearby is on, the way Open at's pickers appear
+  under Open now. The chip reads "Nearby · 1 km".
+  - Proposed stops: 500 m, 1 km, 1.5 km, 2 km, 3 km.
+  - The label beside the slider gives the walk: 80 m a minute (the
+    Japanese estate-agent standard) on a route about 1.3 times the
+    straight line.
+  - The last radius is remembered on the device; Nearby itself is filter
+    state.
 - **Hidden** while the Location setting is off, like Here.
 - **Without a fix** it reads "Nearby · locating…" and narrows nothing.
   Turning it on with no fix starts locating.
-- **On the map**, a 1 km circle around the blue dot shows the reach while
-  it is on.
-- **URL:** `near=1`.
+- **On the map**, a circle of the radius around the blue dot shows the
+  reach while it is on, and follows the slider as it moves.
+- **URL:** `near=1000` (metres).
 
-### + Adjacent: widening the picked areas (proposed)
+**Why those stops.** The 61 Tokyo places span about 16 km east to west
+and 12 km north to south. Half of them have another place within 410 m,
+and the loneliest is 2.3 km from its nearest. Places within each radius
+of six landmarks today:
 
-What step 2 calls Include nearby, renamed. The name is open (question A):
-"+ Adjacent" is the word from Jerry's first spec and says exactly what it
-adds. "Fuzzy" could be mistaken for typo-tolerant search, which the
-search box might be expected to do.
+| From | 250 m | 500 m | 1 km | 1.5 km | 2 km | 3 km |
+| --- | --- | --- | --- | --- | --- | --- |
+| Shibuya station | 1 | 3 | 6 | 17 | 22 | 28 |
+| Nakameguro station | 1 | 3 | 6 | 8 | 10 | 23 |
+| Shimokitazawa station | 0 | 3 | 3 | 4 | 8 | 18 |
+| Ginza 4-chome | 0 | 3 | 5 | 5 | 6 | 9 |
+| Asakusa (Sensō-ji) | 1 | 2 | 2 | 5 | 7 | 8 |
+| Kiyosumi-shirakawa station | 0 | 0 | 1 | 1 | 2 | 10 |
+| **Walk** | 4 min | 8 min | 16 min | 24 min | 33 min | 49 min |
+
+- **250 m** finds a place at best, so the slider starts at 500 m. It can
+  come back when the food layer makes the map denser.
+- **1 km** suits the dense areas but leaves Kiyosumi with one place,
+  which is the case for a slider rather than a fixed radius.
+- **3 km** is a 50-minute walk, past the point where a train or the Area
+  page is the better tool, so it is the top stop.
+
+### + Adjacent: widening the picked areas (decided)
+
+What step 2 calls Include nearby, renamed "+ Adjacent", the word from
+Jerry's first spec. "Fuzzy" was considered, but could be mistaken for
+typo-tolerant search, which the search box might be expected to do.
 
 It is a chip at the top of the Area page beside Here, so its effect on
 the chips below shows without scrolling at Half. An area has three looks:
@@ -133,7 +164,7 @@ the chips below shows without scrolling at Half. An area has three looks:
   as map texture. The chip uses the same hatching as its shape, so each
   chip is a legend for its area. The ∗ is a mark that works without
   colour, and in Part 1's neutral greys.
-- **With + Adjacent on, a new pick brings its neighbours too** (proposed).
+- **With + Adjacent on, a new pick brings its neighbours too** (decided).
 - **Turning + Adjacent off** drops the added areas; picks stay.
 - **It covers everything picked at once**, Here's area included.
 - **URL:** the picks stay in `a=`, with `here=1` and `adj=1`. Step 2's
@@ -156,14 +187,14 @@ shown = places in the region
   ∩ (no categories ? all : ∪ selected categories)
   ∩ (nothing picked and no Here ? all
        : area ∈ picked ∪ {Here's} ∪ (adjacent ? their neighbours : ∅))
-  ∩ (nearby and a fix ? within 1 km of you : all)
+  ∩ (nearby and a fix ? within the radius of you : all)
   ∩ every other flag that is on
   ∩ text match
 ```
 
 ## Part 2: area shapes
 
-- **Source: e-Stat for both cities** (proposed), so there is one source,
+- **Source: e-Stat for both cities** (decided), so there is one source,
   one pipeline, and no dependence on the Overpass server, which timed out
   twice while this was being written. Kyoto gets real shapes in the first
   pass and the generated discs are no longer needed. OpenStreetMap stays
@@ -278,12 +309,15 @@ stay the main control.
 ## Icons (2026-11-09)
 
 - **Directions** now uses Jerry's turn arrow.
+- **Copy link** (the card's old Share button, which only ever copied the
+  place's link) now uses Jerry's chain, as `copy-link.webp`. That also
+  ends the two red curved arrows on one card.
 - **The Area button** gets the treasure-map scroll that Directions had.
-  - That scroll is also `trip.webp`, set aside for the M10 trip planner,
-    so M10 will need its own art or will share it.
-- **The new turn arrow and Share's arrow are alike**: both red, both
-  curved, on the same card (Directions in the header, Share in the
-  body). See question F.
+  That scroll is also `trip.webp`; the M10 trip planner gets its own art
+  later (decided).
+- **Resolution.** The arrow and the chain arrived as 72 and 56 px wide.
+  The card draws the chain at about 27 px, which needs about 80 px on an
+  iPhone's 3x screen, so a larger original would sharpen it.
 
 ## Decisions
 
@@ -304,26 +338,22 @@ Decided (2026-11-09):
 11. Nearby (near me) and widening the picked areas are two separate
     tools.
 12. The Area button uses the scroll; Directions uses the turn arrow.
+13. Nearby is a distance filter in Show only, starting at 1 km, with a
+    slider for the radius.
+14. "+ Adjacent" is the name; added areas are hatched, their chips
+    hatched and marked ∗.
+15. With + Adjacent on, a new pick brings its neighbours.
+16. Area shapes come from e-Stat for both cities.
+17. Copy link uses the chain; the trip icon comes later.
 
-Open:
-
-- **A. The two tools, as above.**
-  - Nearby: is 1 km right, and is Show only the right page for it?
-  - The widening chip: is "+ Adjacent" the right name?
-  - Hatching plus ∗ for added areas?
-  - With it on, does a new pick bring its neighbours too? (recommended)
-- **D. Shapes from e-Stat for both cities** (recommended), with
-  OpenStreetMap as the fallback for Tokyo and hand-drawn KML for anything
-  the overrides can't fix?
-- **F. Share and Directions** both being red curved arrows: fine, or new
-  art for one of them?
+Proposed, with numbers above: the slider's stops, 500 m to 3 km.
 
 ## Steps, each deployable
 
-1. **Filter pages** (Part 1): the pages, Nearby, + Adjacent's looks in
-   neutral greys, the Nearby circle on the map, the icons. Wanted
-   whatever happens to the rest. UI plumbing of a few hundred lines; no
-   unknowns.
+1. **Filter pages** (Part 1): the pages, Nearby with its slider and its
+   circle on the map, + Adjacent's looks in neutral greys, the Area
+   button's icon. Wanted whatever happens to the rest. UI plumbing of a
+   few hundred lines; no unknowns.
 2. **Area shapes** (Part 2). A small script; the effort is the review.
 3. **The area map** (Part 3). A few hundred lines across the map, the
    basemap style, the pins and the Area page.
@@ -338,6 +368,7 @@ Open:
     list, history)
   - `src/ui/panel.ts` (a height lock)
   - `src/map/map.ts` (the Nearby circle)
+  - `src/config/settings.ts` (the remembered radius)
   - `src/style.css`
   - `src/ui/icons/area.webp` (the scroll)
 - **Part 2:**
@@ -366,8 +397,8 @@ Open:
       Clear in the upper right; each closes by its own button, another
       footer button or a region change, and returns to the card or the
       list it came from.
-- [ ] Nearby narrows to 1 km around you with the circle on the map, and
-      says so while locating.
+- [ ] Nearby narrows to the slider's radius around you (1 km at first),
+      with the circle on the map, and says so while locating.
 - [ ] + Adjacent's added areas behave as in the table, and a link
       reproduces them.
 - [ ] Every Tokyo and Kyoto area has a shape, reviewed on the phone.
