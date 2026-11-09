@@ -20,7 +20,10 @@ the UI. Each region has:
   are facts (the data's Area column, each with the ward its addresses
   name and its neighbours); merges fold raw areas into the filter chips
   and can change without touching the data; ward sections put the chips
-  under headings on the Area page.
+  under headings on the Area page. Each section has a hue, and each of
+  its chips a shade of it, shared by the chip and its shape on the map
+  (`src/config/area-colors.ts`); a region without sections gives each
+  chip a rainbow hue of its own.
 
 Offline basemaps are downloaded per region on demand from Settings →
 Offline, each with its own status (not on this device, downloading,
@@ -46,7 +49,7 @@ interface RegionConfig {
   label: string;
   areas: AreaConfig[];         // raw areas: { label, ward, adjacent }
   areaGroups?: AreaGroup[];    // merges: { label, areas } -> one chip
-  areaSections?: AreaSection[];// headings: { label, wards }; none = one flat list
+  areaSections?: AreaSection[];// headings: { label, wards, hue? }; none = one flat list
   bbox?: [number, number, number, number];
 }
 ```
@@ -147,7 +150,9 @@ of two kinds matches either kind's chip.
 
 Holds no private information: name, coordinates, address, link, notes, and a
 `Who` column (first names) so the group can see whose hotel a pin is. No
-confirmation numbers, dates or prices. `hasHours: false`.
+confirmation numbers, dates or prices. `hasHours: false`. `onAreaMap:
+true`, so its pins stay on the Area page's map beside the bookmarks,
+whatever the filters say.
 
 ## Filter model
 
@@ -171,7 +176,22 @@ clear:
      chip.
 - **Area** (where): Here and + Adjacent, then the area chips under ward
   headings. The page holds the strip at Half, since it is about the map.
-  Its button shows only in a region with areas.
+  Its button shows only in a region with areas. **The map follows the
+  page** (2026-11-09):
+  - it fits every area shape above the strip and locks: no pan, zoom or
+    rotate, no fit or locate button; the blue dot stays;
+  - the basemap hides its labels and roads, keeping land, water, parks
+    and the rail lines (which the basemap only carries from zoom 11, so a
+    phone's city view has none);
+  - each area is drawn in its chip's colour and look (filled, hatched or
+    outlined) with its name, picked names winning where labels collide,
+    and a tap on it does what its chip does;
+  - the only pins are bookmarks and `onAreaMap` layers (lodging), with the
+    bookmark badge, and they ignore taps;
+  - leaving puts the camera back where it was.
+
+  Settings → Area shapes on the map draws the same areas on the normal
+  map, for checking the shapes.
 
 A page closes by its X, its own button, another footer button (the
 other page, Search) or a region change. It returns to the card it hid if that place

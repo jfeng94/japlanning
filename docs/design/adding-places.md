@@ -29,8 +29,10 @@ if something is ambiguous enough to stop the research.
   share a chip (docs/proposals/filters-and-areas.md). Then
   `npm run areas` regenerates the area shapes (public/areas): its report
   lists each area's blocks and any shapes that touch without being
-  neighbours. Look at the new shape with Settings → Area shapes on the
-  map.
+  neighbours. Look at the new shape, and its neighbours', on the Area
+  page. A new ward joins a section in config (`areaSections`), which
+  gives its chips their colour; a ward in no section gets a heading of
+  its own, in Japanese, and a spare hue.
 - **Hours.** Human-readable plus OSM syntax. `Last verified` is today
   only when the hours were read from the official source; hours from a
   third party go in without a date, so the app shows them as unverified.

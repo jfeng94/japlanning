@@ -1,9 +1,9 @@
 # Filter pages and the area map
 
-Status: **Parts 1 and 2 built** (2026-11-09). Part 2's shapes are a
-draft waiting for Jerry's review on the phone; Part 3 is next. Decided in
-three rounds; Jerry's answers are folded in below. Changes made while
-building are under "As built" at the end of each part.
+Status: **Parts 1, 2 and 3 built** (2026-11-09). The shapes are still a
+draft waiting for Jerry's review on the phone, which the Area page itself
+now serves. Decided in three rounds; Jerry's answers are folded in below.
+Changes made while building are under "As built" at the end of each part.
 Jerry framed two sub-milestones: the filter pages in the strip, then the
 area map. The second splits in two here (agreed), because the area
 shapes are a data job of their own and are worth reviewing before any
@@ -362,6 +362,54 @@ stay the main control.
 - Pan and zoom come back, with the pins, the buttons, and the basemap's
   labels and roads.
 
+### As built (Part 3)
+
+- **Every area is labelled, not only those in.** The page exists to
+  answer "where is that?" before anything is picked, which a name on the
+  map does and a matching shade of orange doesn't. Where labels collide,
+  picked names win, then added, then the rest (smaller); a typical phone
+  shows about two thirds of Tokyo's names with nothing picked.
+- **No rail lines on a phone.** An iPhone fits Tokyo at about zoom 10.4
+  (the "11.5" above counted 256-pixel tiles; MapLibre's are 512), and the
+  basemap only carries rail from zoom 11. MapLibre won't fetch a source's
+  tiles a zoom early (vector tiles must be 512 px), so the restyled rail
+  (solid, grey, a little heavier) shows on an iPad or a desktop only.
+  Drawing rail on the phone would mean shipping the lines as data, like
+  the area shapes.
+- **Colours** (`src/config/area-colors.ts`) are worked out in OKLCH, a
+  colour space where equal steps look equal, and leave as hex for
+  MapLibre:
+  - seven shades per hue, assigned busiest chip first, each taking the
+    unused shade most different from its neighbours' so far (Shibuya's
+    seven chips use all seven);
+  - a shade whose chip text would miss 4.5:1 contrast (mid lightness, too
+    light for white text, too dark for black) moves until it passes;
+  - outlines and labels are at most 0.52 lightness on the light map and
+    at least 0.74 on the dark one, so a pale yellow or a deep red still
+    stands off the land at 3:1 or better;
+  - the hatching on chips is lighter than on the map, so deep shades
+    don't swallow the chip's text.
+- **Section hues are config:** `areaSections[].hue`. A section without
+  one takes the next hue no section names, in rainbow order.
+- **Taps:** a tap within 12 px of an area counts as on it, since areas
+  are 15 to 40 px across at this zoom. The pins don't take taps, so a tap
+  on one reaches the area under it.
+- **The pins wear the bookmark badge** there, even on a closed shop: the
+  page asks where, not when. `LayerConfig.onAreaMap` keeps a layer's pins
+  (lodging, once it exists) on this map.
+- **Nearby's circle** hides on the Area page; it belongs to the Filters
+  page.
+- **The locked map takes no gestures.** With MapLibre's pan and zoom off,
+  the browser would scroll or pinch-zoom the page instead, so the map
+  gets `touch-action: none` and main.ts swallows iOS's pinch on it too.
+- **Camera moves wait for the end of the tap.** Opening or closing the
+  page changes the panel's height, which sets the map's padding, and in
+  MapLibre that is a jump that cancels an ease under way. The fit and the
+  return are queued until the tap's work is done. The fit also straightens
+  a rotated map; the return puts the rotation back.
+- **Settings → Area shapes on the map** now draws the same colours and
+  looks on the normal map, where the pins still take taps.
+
 ## Icons (2026-11-09)
 
 - **Directions** now uses Jerry's turn arrow.
@@ -459,12 +507,13 @@ Proposed, with numbers above: the slider's stops, 500 m to 3 km.
 - [x] + Adjacent's added areas behave as in the table, and a link
       reproduces them.
 - [ ] Every Tokyo and Kyoto area has a shape, reviewed on the phone.
-- [ ] The Area page shows the whole city, locked, without basemap labels
-      or roads but with the rail lines, only bookmarks and lodging pinned
-      and inert, and the blue dot.
-- [ ] Areas are outlined, filled or hatched in colours that match their
+- [x] The Area page shows the whole city, locked, without basemap labels
+      or roads, only bookmarks and lodging pinned and inert, and the blue
+      dot. The rail lines show from zoom 11, so not on a phone (see "As
+      built").
+- [x] Areas are outlined, filled or hatched in colours that match their
       chips, readable in light and dark, and toggle when tapped.
-- [ ] Leaving the Area page puts the camera back where it was.
+- [x] Leaving the Area page puts the camera back where it was.
 
 ## Beyond Japan (a note, not this milestone)
 
