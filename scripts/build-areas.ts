@@ -58,28 +58,69 @@ const MIN_RING_M2 = 1500;
 /** A block of water (水面) rather than land. */
 const WATER = "8154";
 
-/** e-Stat's municipality codes for the wards our areas sit in, by the name the addresses use. */
+/**
+ * e-Stat's municipality codes (the national five-digit codes) for the
+ * wards our areas sit in, by the name the addresses use. Each download's
+ * own city name is checked against the ward it was fetched for.
+ */
 const WARD_CODES: Partial<Record<RegionId, Record<string, string>>> = {
   tokyo: {
     千代田区: "13101",
     中央区: "13102",
     港区: "13103",
     新宿区: "13104",
+    文京区: "13105",
     台東区: "13106",
     墨田区: "13107",
     江東区: "13108",
+    品川区: "13109",
     目黒区: "13110",
+    大田区: "13111",
     世田谷区: "13112",
     渋谷区: "13113",
+    中野区: "13114",
+    杉並区: "13115",
+    豊島区: "13116",
+    北区: "13117",
+    荒川区: "13118",
+    葛飾区: "13122",
+    武蔵野市: "13203",
+    三鷹市: "13204",
   },
   kyoto: {
     北区: "26101",
+    上京区: "26102",
+    左京区: "26103",
     中京区: "26104",
     東山区: "26105",
     下京区: "26106",
+    南区: "26107",
     右京区: "26108",
+    伏見区: "26109",
+    山科区: "26110",
+    西京区: "26111",
     宇治市: "26204",
   },
+  osaka: {
+    // Osaka city's wards (Sakai city has a 北区 and a 西区 of its own: 27146, 27144).
+    都島区: "27102",
+    福島区: "27103",
+    西区: "27106",
+    大正区: "27108",
+    天王寺区: "27109",
+    浪速区: "27111",
+    東淀川区: "27114",
+    城東区: "27118",
+    阿倍野区: "27119",
+    東住吉区: "27121",
+    西成区: "27122",
+    淀川区: "27123",
+    北区: "27127",
+    中央区: "27128",
+    堺区: "27141",
+  },
+  nara: { 奈良市: "29201" },
+  hakone: { 箱根町: "14382" },
 };
 
 interface Block {
@@ -196,6 +237,9 @@ async function wardBlocks(ward: string, code: string): Promise<Block[]> {
   if (!shp || !dbf) throw new Error(`e-Stat ${code}: no shapefile in the download`);
   const shapes = readShp(shp);
   const rows = readDbf(dbf);
+  // A wrong code downloads some other ward without complaint: check the file names the one we asked for.
+  const city = rows.find((r) => r["CITY_NAME"])?.["CITY_NAME"] ?? "";
+  if (!city.replace(/[　 ]/g, "").endsWith(ward)) throw new Error(`e-Stat ${code}: the download is ${city}, not ${ward}; fix WARD_CODES`);
   const blocks: Block[] = [];
   rows.forEach((row, i) => {
     if (row["HCODE"] === WATER) return;
@@ -359,8 +403,11 @@ async function buildRegion(regionId: RegionId, places: Place[]): Promise<void> {
 const TOUCH_M = 30;
 
 const wanted = process.argv.slice(2);
-const drinks = layers.find((l) => l.id === "drinks")!;
-const { places } = parseLayerCsv(await readFile(path.join(ROOT, "data", "drinks.csv"), "utf8"), drinks, regionOptions());
+// An area's centre is the centroid of its places, in every layer.
+const places: Place[] = [];
+for (const layer of layers) {
+  places.push(...parseLayerCsv(await readFile(path.join(ROOT, "data", `${layer.id}.csv`), "utf8"), layer, regionOptions()).places);
+}
 for (const region of regions) {
   if (region.areas.length === 0 || (wanted.length > 0 && !wanted.includes(region.id))) continue;
   await buildRegion(region.id, places);

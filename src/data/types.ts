@@ -3,10 +3,10 @@
  * shapes and docs/proposals/m1-data-layer.md for the record rules.
  */
 
-export type RegionId = "tokyo" | "kyoto" | "hakone";
+export type RegionId = "tokyo" | "kyoto" | "osaka" | "nara" | "hakone";
 
 /** Every layer id, as a tuple so LayerId is a checked string union. */
-export const LAYER_IDS = ["drinks"] as const;
+export const LAYER_IDS = ["drinks", "sweets", "food", "music", "shops", "activities"] as const;
 export type LayerId = (typeof LAYER_IDS)[number];
 
 export interface RegionConfig {

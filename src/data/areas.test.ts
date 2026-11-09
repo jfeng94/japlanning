@@ -7,27 +7,34 @@ describe("the configured areas", () => {
     expect(areaProblems(region)).toEqual([]);
   });
 
-  it("Tokyo: 33 raw areas, 26 chips under five headings; Kyoto: one flat list of 7", () => {
+  it("Tokyo: 81 raw areas, 68 chips under eight headings; Kyoto: 28 chips under seven; Nara and Hakone: flat lists", () => {
     const tokyo = areaIndex(regionById("tokyo"));
-    expect(tokyo.raw).toHaveLength(33);
-    expect(tokyo.chips).toHaveLength(26);
+    expect(tokyo.raw).toHaveLength(81);
+    expect(tokyo.chips).toHaveLength(68);
     expect(tokyo.sections.map((s) => [s.label, s.chips.length])).toEqual([
-      ["Central", 6],
-      ["Shibuya", 7],
-      ["Shinjuku", 2],
-      ["Meguro · Setagaya", 6],
-      ["East", 5],
+      ["Central", 15],
+      ["Shibuya", 10],
+      ["Shinjuku", 5],
+      ["Meguro · Setagaya", 12],
+      ["East", 15],
+      ["North", 5],
+      ["West", 4],
+      ["South", 2],
     ]);
     // A merge across a ward boundary sits under its first-named area's ward: Kuramae (台東区) + Honjo (墨田区).
     expect(tokyo.sections.find((s) => s.label === "East")!.chips.map((c) => c.label)).toContain("Kuramae");
     const kyoto = areaIndex(regionById("kyoto"));
-    expect(kyoto.sections).toEqual([{ chips: kyoto.chips }]);
-    expect(kyoto.chips).toHaveLength(7);
+    expect(kyoto.chips).toHaveLength(28);
+    expect(kyoto.sections.map((s) => s.label)).toEqual(["Downtown", "Higashiyama", "North", "Sakyo", "West", "South", "Uji"]);
+    for (const flat of ["nara", "hakone"] as const) {
+      const ix = areaIndex(regionById(flat));
+      expect(ix.sections).toEqual([{ chips: ix.chips }]);
+    }
   });
 
-  it("a merged chip reaches through its members: Kuramae + nearby gets Asakusa, Oshiage and Nihonbashi", () => {
+  it("a merged chip reaches through its members: Kuramae + nearby gets its neighbours' and Honjo's", () => {
     const tokyo = areaIndex(regionById("tokyo"));
-    expect([...tokyo.neighbours(["Kuramae"])].sort()).toEqual(["Asakusa", "Nihonbashi", "Oshiage"]);
+    expect([...tokyo.neighbours(["Kuramae"])].sort()).toEqual(["Akihabara", "Asakusa", "Kappabashi", "Kinshicho", "Nihonbashi", "Oshiage", "Ueno"]);
   });
 });
 

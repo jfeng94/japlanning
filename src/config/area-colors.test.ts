@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { areaIndex } from "../data/areas.ts";
 import { contrast, deltaE, HUES, hexOf, regionColours, rgbFromHex, shadesOf } from "./area-colors.ts";
-import { areasOf, regionById } from "./regions.ts";
+import { areasOf, regionById, regions } from "./regions.ts";
 
 /** The light map's land and the dark map's (Protomaps' "earth"), which outlines and labels sit on. */
 const EARTH = { light: "#e2dfda", dark: "#1f1f1f" } as const;
@@ -29,10 +29,12 @@ describe("Tokyo: a hue per section, a shade per chip", () => {
   const colours = regionColours(index);
   const region = regionById("tokyo");
 
-  it("colours every chip, each differently", () => {
+  it("colours every chip, a section's chips as differently as its seven shades allow", () => {
     expect(colours.chips.size).toBe(index.chips.length);
-    const fills = [...colours.chips.values()].map((c) => c.fill);
-    expect(new Set(fills).size).toBe(fills.length);
+    for (const s of index.sections) {
+      const fills = new Set(s.chips.map((c) => colours.chips.get(c.label)!.fill));
+      expect(fills.size, s.label).toBe(Math.min(s.chips.length, 7));
+    }
   });
 
   it("gives each chip a shade of its section's hue", () => {
@@ -64,18 +66,19 @@ describe("Tokyo: a hue per section, a shade per chip", () => {
   });
 });
 
-describe("Kyoto: no sections, a rainbow hue per chip", () => {
-  const index = areasOf("kyoto");
+describe("Nara: no sections, a rainbow hue per chip", () => {
+  const index = areasOf("nara");
   const colours = regionColours(index);
 
-  it("takes ROYGBIV in the chips' order", () => {
-    expect(index.chips.map((c) => colours.chips.get(c.label)!.fill)).toEqual(HUES.slice(0, 7).map((h) => hexOf(shadesOf(h)[0]!)));
+  it("takes the rainbow in the chips' order", () => {
+    expect(index.chips.length).toBeGreaterThan(1);
+    expect(index.chips.map((c) => colours.chips.get(c.label)!.fill)).toEqual(HUES.slice(0, index.chips.length).map((h) => hexOf(shadesOf(h)[0]!)));
     expect(colours.sections.size).toBe(0);
   });
 });
 
-describe("readability, both regions", () => {
-  const all = [...regionColours(areasOf("tokyo")).chips, ...regionColours(areasOf("kyoto")).chips];
+describe("readability, every region", () => {
+  const all = regions.flatMap((r) => [...regionColours(areasOf(r.id)).chips]);
 
   it("puts readable text on a filled chip", () => {
     for (const [label, c] of all) expect(contrast(rgbFromHex(c.fill), rgbFromHex(c.on)), label).toBeGreaterThanOrEqual(4.5);

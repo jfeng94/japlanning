@@ -182,15 +182,16 @@ describe("tapArea, on Tokyo's real areas", () => {
 
   it("walks the proposal's example: picks bring their neighbours, a tap on an added area freezes the rest", () => {
     let s = tap(run(ADJ), "Shibuya");
-    expect(["Harajuku", "Omotesando", "Aoyama", "Ebisu", "Tomigaya"].map((c) => look(s, c))).toEqual(Array(5).fill("added"));
+    // Daikanyama joined Shibuya's neighbours with the 2026-11-09 areas; the rest is the proposal's example.
+    expect(["Harajuku", "Omotesando", "Aoyama", "Ebisu", "Tomigaya", "Daikanyama"].map((c) => look(s, c))).toEqual(Array(6).fill("added"));
     expect(look(s, "Shibuya")).toBe("picked");
     expect(look(s, "Ginza")).toBe("out");
     s = tap(s, "Ginza");
-    expect(look(s, "Nihonbashi")).toBe("added");
+    expect(["Nihonbashi", "Hibiya", "Tokyo Station"].map((c) => look(s, c))).toEqual(Array(3).fill("added"));
     s = tap(s, "Ebisu");
     expect(s.adjacent).toBe(false);
     expect(look(s, "Ebisu")).toBe("out");
-    expect(sorted(s)).toEqual(["Aoyama", "Ginza", "Harajuku", "Nihonbashi", "Omotesando", "Shibuya", "Tomigaya"]);
+    expect(sorted(s)).toEqual(["Aoyama", "Daikanyama", "Ginza", "Harajuku", "Hibiya", "Nihonbashi", "Omotesando", "Shibuya", "Tokyo Station", "Tomigaya"]);
   });
 
   it("a picked area goes out, and its added neighbours with it", () => {
@@ -213,6 +214,6 @@ describe("tapArea, on Tokyo's real areas", () => {
   it("freezing keeps Here on: its area stays in through Here, not as a pick", () => {
     const s = tap(run(HERE, ADJ), "Ebisu", "Shibuya");
     expect([s.here, s.adjacent]).toEqual([true, false]);
-    expect(sorted(s)).toEqual(["Aoyama", "Harajuku", "Omotesando", "Tomigaya"]);
+    expect(sorted(s)).toEqual(["Aoyama", "Daikanyama", "Harajuku", "Omotesando", "Tomigaya"]);
   });
 });

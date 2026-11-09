@@ -106,9 +106,10 @@ export function regionColours(index: Pick<AreaIndex, "sections" | "neighbours">)
 
 /**
  * A shade of the section's hue for each chip. Busiest chips first; each
- * takes an unused shade, the one most different from its neighbours'
- * (on the area graph) chosen so far. Shades repeat only when a section has
- * more chips than there are shades.
+ * takes, among the shades most different from its neighbours' (on the area
+ * graph) so far, the least used one. So neighbours stay apart, and shades
+ * repeat only between chips that don't touch, once a section has more
+ * chips than there are shades (Tokyo's Central has 15).
  */
 function shadeSection(hue: AreaHue, chips: readonly AreaChip[], index: Pick<AreaIndex, "neighbours">): Map<string, Lch> {
   const options = shadesOf(hue);
@@ -116,21 +117,19 @@ function shadeSection(hue: AreaHue, chips: readonly AreaChip[], index: Pick<Area
   const near = new Map(chips.map((c) => [c.label, [...index.neighbours([c.label])].filter((n) => inSection.has(n))]));
   const order = [...chips].sort((a, b) => near.get(b.label)!.length - near.get(a.label)!.length || a.label.localeCompare(b.label));
   const picked = new Map<string, number>();
+  const uses = options.map(() => 0);
+  /** A shade this different from every neighbour's is good enough; failing any, those near the best are. */
+  const GOOD = 0.08;
+  const NEAR_BEST = 0.02;
   for (const c of order) {
-    const used = new Set(picked.values());
-    const free = options.map((_, i) => i).filter((i) => !used.has(i));
-    const pool = free.length > 0 ? free : options.map((_, i) => i);
     const taken = near.get(c.label)!.filter((n) => picked.has(n)).map((n) => options[picked.get(n)!]!);
-    let best = pool[0]!;
-    let bestScore = -1;
-    for (const i of pool) {
-      const score = taken.length === 0 ? 0 : Math.min(...taken.map((t) => deltaE(options[i]!, t)));
-      if (score > bestScore) {
-        best = i;
-        bestScore = score;
-      }
-    }
-    picked.set(c.label, best);
+    const scores = options.map((o) => (taken.length === 0 ? 1 : Math.min(...taken.map((t) => deltaE(o, t)))));
+    const best = Math.max(...scores);
+    const floor = best >= GOOD ? GOOD : best - NEAR_BEST;
+    const pool = options.map((_, i) => i).filter((i) => scores[i]! >= floor);
+    const choice = pool.sort((a, b) => uses[a]! - uses[b]! || scores[b]! - scores[a]! || a - b)[0]!;
+    picked.set(c.label, choice);
+    uses[choice] = (uses[choice] ?? 0) + 1;
   }
   return new Map(chips.map((c) => [c.label, options[picked.get(c.label)!]!]));
 }
