@@ -1,4 +1,4 @@
-import type { LayerConfig, RegionId } from "../data/types.ts";
+import type { LayerConfig, Place, RegionId } from "../data/types.ts";
 
 /**
  * Filter state and its transitions. Pure: no DOM, no storage. The list,
@@ -66,6 +66,23 @@ export function layersInRegion(layers: LayerConfig[], region: RegionId): LayerCo
 /** A layer's category chips: one per kind ("drinks/Coffee"), or the layer itself when it has none. */
 export function categoriesOf(layer: LayerConfig): string[] {
   return layer.kinds && layer.kinds.length > 0 ? layer.kinds.map((k) => `${layer.id}/${k}`) : [layer.id];
+}
+
+/**
+ * The category chips with at least one place in the region: "layer/Kind"
+ * for each kind a place has, the layer id for a layer without kinds. The
+ * Filters page shows only these, so a city never offers a kind it has
+ * none of (Tokyo has no tofu places; 2026-11-10).
+ */
+export function categoriesPresent(places: readonly Place[], layers: readonly LayerConfig[], region: RegionId): Set<string> {
+  const withKinds = new Set(layers.filter((l) => l.kinds && l.kinds.length > 0).map((l) => l.id));
+  const present = new Set<string>();
+  for (const p of places) {
+    if (p.region !== region) continue;
+    if (!withKinds.has(p.layerId)) present.add(p.layerId);
+    else for (const k of p.kinds) present.add(`${p.layerId}/${k}`);
+  }
+  return present;
 }
 
 /** The layers with anything selected, or every layer when no category is. */

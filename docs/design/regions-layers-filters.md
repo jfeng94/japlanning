@@ -212,6 +212,11 @@ clear:
      each layer is a heading with its icon, which picks or clears all
      of its kinds, and its kinds are chips under it (Drinks: Coffee ·
      Tea · Bar). A layer without kinds has one chip, its own name.
+     Only chips with a place in the city show, and a layer with none
+     is left out (2026-11-10: Tokyo has no tofu places, Hakone no
+     drinks); a selected chip stays, so a shared link's selection can
+     be turned off. This follows the region, not another selection, so
+     it is no cascade.
 - **Area** (where): Here and + Adjacent, then the area chips under ward
   headings. The page holds the strip at Half, since it is about the map.
   Its button shows only in a region with areas. **The map follows the

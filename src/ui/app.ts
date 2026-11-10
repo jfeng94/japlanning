@@ -15,7 +15,7 @@ import { formatRadius } from "../geo/nearby.ts";
 import { markFor, type Mark } from "../data/marks.ts";
 import { evaluateAll, type HoursState } from "../hours/evaluate-all.ts";
 import { loadParser, tokyoNow, tokyoWallClock, type OpeningHoursCtor } from "../hours/open.ts";
-import { defaultState, hasActiveFilters, hasGroupSelection, layersInPlay, layersInRegion, reduce, type FilterState } from "../filter/state.ts";
+import { categoriesPresent, defaultState, hasActiveFilters, hasGroupSelection, layersInPlay, layersInRegion, reduce, type FilterState } from "../filter/state.ts";
 import { createStore } from "../filter/store.ts";
 import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url.ts";
 import { createWatch, permissionState, type LocateError, type Position } from "../geo/locate.ts";
@@ -774,8 +774,10 @@ export function mountApp(root: HTMLElement): AppHandle {
   // ---- rendering ----
 
   function renderPage(page: FilterPage, state: FilterState, here: PositionChip): void {
+    const regionLayers = layersInRegion(layers, state.region);
     const ctx: PageContext = {
-      layers: layersInRegion(layers, state.region),
+      layers: regionLayers,
+      ...(places.length > 0 ? { present: categoriesPresent(places, regionLayers, state.region) } : {}),
       areas: areasOf(state.region),
       ...(settings().location ? { here, nearby: nearbyChip(state) } : {}),
       colours: coloursOf(state.region),

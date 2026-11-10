@@ -33,6 +33,12 @@ export interface PositionChip {
 export interface PageContext {
   /** The region's layers. */
   layers: LayerConfig[];
+  /**
+   * The category chips with a place in the region (categoriesPresent);
+   * the others are hidden, and a layer with none at all. Undefined while
+   * nothing has loaded: every chip shows.
+   */
+  present?: ReadonlySet<string>;
   /** The region's areas. */
   areas: AreaIndex;
   /** Their colours, shared with the map, so each chip is the legend for its shape. */
@@ -183,13 +189,18 @@ export function renderAreaPage(body: HTMLElement, state: FilterState, ctx: PageC
  * heading with the layer's icon that picks or clears all of its kinds,
  * then a chip per kind. A layer without kinds is one category: its one
  * chip carries the layer's name, so its state shows as plainly as a kind's.
+ * Only chips with a place in the city show (`present`), plus any selected
+ * one, so a shared link's selection can still be turned off.
  */
 function categorySection(state: FilterState, ctx: PageContext): HTMLElement {
   const { dispatch } = ctx;
   const sec = section("Category");
   for (const layer of ctx.layers) {
     const own = categoriesOf(layer);
-    const all = own.every((c) => state.categories.has(c));
+    const shown = new Set(own.filter((c) => !ctx.present || ctx.present.has(c) || state.categories.has(c)));
+    if (shown.size === 0) continue;
+    // The heading reads as on when every kind shown is; it still picks or clears all of them.
+    const all = [...shown].every((c) => state.categories.has(c));
     const heading = document.createElement("button");
     heading.type = "button";
     heading.className = "area-heading category-heading";
@@ -202,7 +213,7 @@ function categorySection(state: FilterState, ctx: PageContext): HTMLElement {
     heading.setAttribute("aria-label", `${all ? "Clear" : "Pick"} every kind of ${layer.label}`);
     heading.addEventListener("click", () => dispatch({ type: "setCategories", categories: own, on: !all }));
 
-    const kinds = layer.kinds && layer.kinds.length > 0 ? layer.kinds : undefined;
+    const kinds = layer.kinds && layer.kinds.length > 0 ? layer.kinds.filter((k) => shown.has(`${layer.id}/${k}`)) : undefined;
     const chips = kinds
       ? kinds.map((kind) => {
           const category = `${layer.id}/${kind}`;

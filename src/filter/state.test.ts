@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   categoriesOf,
+  categoriesPresent,
   defaultState,
   hasActiveFilters,
   hasGroupSelection,
@@ -10,7 +11,8 @@ import {
   type FilterAction,
   type FilterState,
 } from "./state.ts";
-import { allLayers, coffee, kyotoFood, lodging } from "./testing.ts";
+import type { Place } from "../data/types.ts";
+import { allLayers, coffee, kyotoFood, lodging, place } from "./testing.ts";
 
 const run = (...actions: FilterAction[]): FilterState => actions.reduce((s, a) => reduce(s, a), defaultState("tokyo"));
 const COFFEE = "drinks/Coffee";
@@ -31,6 +33,18 @@ describe("categories", () => {
   it("a layer with kinds has a chip per kind; one without is a chip of its own", () => {
     expect(categoriesOf(coffee)).toEqual(["drinks/Coffee", "drinks/Tea", "drinks/Bar"]);
     expect(categoriesOf(lodging)).toEqual(["tokyo-lodging"]);
+  });
+
+  it("categoriesPresent: the chips with a place in the region, kinds by kind and a kindless layer as itself", () => {
+    const places = [
+      place({ name: "a", kinds: ["Coffee", "Bar"] }),
+      place({ name: "b", kinds: ["Coffee"] }),
+      place({ name: "c", kinds: ["Tea"], region: "kyoto" }),
+      place({ name: "d", layerId: "tokyo-lodging" as Place["layerId"], kinds: [] }),
+    ];
+    expect([...categoriesPresent(places, [coffee, lodging], "tokyo")].sort()).toEqual(["drinks/Bar", "drinks/Coffee", "tokyo-lodging"]);
+    expect([...categoriesPresent(places, [coffee, lodging], "kyoto")]).toEqual(["drinks/Tea"]);
+    expect(categoriesPresent([], [coffee], "tokyo").size).toBe(0);
   });
 
   it("layersInPlay: every layer when none is selected, else those with a selection", () => {
