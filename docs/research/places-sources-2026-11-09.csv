@@ -1,0 +1,363 @@
+id,line,name,confidence,hours_source,other_branches,sources
+activities:1,356,teamLab Planets TOKYO,medium,,,https://www.teamlab.art/jp/e/planets/
+activities:2,357,"Ghibli Museum, Mitaka",high,official,,https://www.ghibli-museum.jp/en/hours-and-directions/ https://www.ghibli-museum.jp/en/info/ https://www.ghibli-museum.jp/en/
+activities:3,358,Immersive Fort Tokyo,low,,,
+activities:4,359,Arashiyama Hanatouro,low,other,,
+activities:5,360,Tenryu-ji (Hanatouro night opening),low,,,https://www.tenryuji.com/
+activities:6,361,teamLab Botanical Garden Osaka,medium,other,,https://www.teamlab.art/jp/e/botanicalgarden/
+activities:7,362,Nintendo Museum,high,official,,https://museum.nintendo.com/en/
+drinks:75,93,Acid Coffee Tokyo,medium,other,,https://brutus.jp/en/post-383605 https://www.instagram.com/acidcoffeetokyo
+drinks:76,94,Ignis Coffee (Sendagi),medium,other,,https://www.timeout.jp/tokyo/ja/%E3%83%AC%E3%82%B9%E3%83%88%E3%83%A9%E3%83%B3/ignis-coffee https://www.instagram.com/igniscoffee
+drinks:77,95,Covert Coffee (Shinjuku 3-chome (Musashino Bldg B1F)),high,official,"Covert Coffee Roastery (Kinokuniya Shinjuku Main Store B1F, 新宿3-17-7); Covert Coffee Bar (新宿3-1-32 新宿ビル3号館1F, 9:00-17:00)",https://www.covertcoffee.jp/ https://hamoni.jp/en/shop/Ak2IfO0g4xdpLFa9Ccsb
+drinks:78,96,Apollon's Gold (Akasaka Café & Espresso Bar),low,,,
+drinks:79,97,Brewman Tokyo,medium,tabelog,,https://ssl.tabelog.com/en/tokyo/A1304/A130401/13284694/ https://tabelog.com/en/tokyo/A1304/A130401/13284694/
+drinks:80,98,Cokuun,medium,,,https://cokuun.com https://www.timeout.jp/tokyo/ja/レストラン/cokuun
+drinks:81,99,Lonich,medium,other,,https://rurubu.jp/andmore/spot/80133241
+drinks:82,100,Kurasu Kyoto Stand,high,official,Kurasu Ebisugawa; Kurasu Fushimi roastery,https://kurasu.kyoto/pages/kurasu-kyoto-stand-cafe https://kurasu.kyoto/blogs/kurasu-journal/kyoto-stand-opening-hours-notice-202405
+drinks:83,101,Weekenders Coffee (Shinmachi (moved from Tominokoji)),medium,,"Roastery, 下京区石不動之町682-7 (not open to public)",http://www.weekenderscoffee.com/ https://www.weekenderscoffee.com/
+drinks:84,102,Goodman Roaster (Kyoto),medium,tabelog,,https://tabelog.com/en/kyoto/A2601/A260201/26033336/
+drinks:85,103,Wife&Husband,medium,other,,https://rurubu.jp/andmore/spot/80101533 https://hamoni.jp/shop/EVtXGP8nGnXISRdLYQXG
+drinks:86,104,walden woods kyoto,medium,,,https://wanderlog.com/place/details/419692/walden-woods-kyoto
+drinks:87,106,Fuku Coffee Roastery,low,other,,https://autoreserve.com/en/restaurants/if76tpDP45ezFSz7JHvM
+drinks:88,107,solkatt coffee kyoto,medium,other,,https://www.walkerplus.com/article/1269713/ https://solkatt-coffee-kyoto.stores.jp/ https://www.instagram.com/solkatt_coffee_kyoto/
+drinks:89,108,Geshary Coffee Raku,low,,,
+drinks:90,109,Le Labo Kyoto Machiya,medium,other,,https://www.lelabofragrances.jp/ https://rurubu.jp/andmore/article/17195 https://www.fashionsnap.com/article/2024-03-20/lelabo-kyotomachiya/
+drinks:91,110,here,low,,,
+drinks:92,270,Gen Yamamoto,low,,,
+drinks:93,271,Mixology Laboratory,low,,,
+drinks:94,272,Bar Benfiddich,low,,,
+drinks:95,273,The Bellwood,low,,,
+drinks:96,274,Sodden Frog,medium,other,,https://www.timeout.com/tokyo/bars-and-pubs/sodden-frog https://soddenfrog.com
+drinks:97,275,Bar Libre,low,,,
+drinks:98,276,Folklore,low,,,
+drinks:99,277,Bar Ishinohana,low,,,
+drinks:100,278,Banten,low,,,
+drinks:101,279,Bar Trench,low,,,
+drinks:102,280,The SG Club,low,,,
+drinks:103,281,Punch Room Tokyo,low,,,
+drinks:104,282,Virtù,low,,,
+drinks:105,283,OCHER,low,other,,https://www.timeout.jp/tokyo/ja/news/ocher-shimokitazawa-080426
+drinks:106,284,Bar High Five,low,,,
+drinks:107,285,Nokishita 711,medium,other,,https://www.theworlds50best.com/discovery/Establishments/Japan/Kyoto/Nokishita-711.html https://tablecheck.com/fr/nokishita711
+drinks:108,286,The Roots of All Evil,medium,,,https://www.gltjp.com/ja/directory/item/17491/
+drinks:109,287,Bee's Knees,medium,other,,https://www.theworlds50best.com/discovery/Establishments/Japan/Kyoto/Bees-Knees.html https://www.enprimeurclub.com/bars/bees-knees
+drinks:110,288,Bar Rocking Chair,medium,other,,https://ssl.tabelog.com/en/kyoto/A2601/A260201/26007698/ https://retty.me/restaurant/100000031231/
+drinks:111,289,Bar K6,medium,other,,https://ssl.tabelog.com/en/kyoto/A2601/A260202/26001197/ https://retty.me/restaurant/100000031232/
+drinks:112,290,L'Escamoteur,medium,other,,https://retty.me/restaurant/100001257671/ https://www.theworlds50best.com/discovery/Establishments/Japan/Kyoto/LEscamoteur.html
+drinks:113,291,Ista Coffee Elements,medium,,,https://mk-guide.com/ista-coffee-elements https://www.timeout.com/osaka/bars-and-pubs/ista-coffee-elements
+drinks:114,292,Craftroom,medium,other,,https://www.diffordsguide.com/bars/5x83X5/craftroom https://www.timeout.com/osaka/bars-and-pubs/craftroom
+drinks:115,293,Bar Nayuta,medium,,,https://www.theworlds50best.com/discovery/Establishments/Japan/Osaka/Bar-Nayuta.html https://www.timeout.com/osaka/bars-and-pubs/bar-nayuta
+drinks:116,294,Upstairz (Zentis Osaka 2F),medium,other,,https://restaurant.ikyu.com/115122/ https://guide.michelin.com/jp/ja/osaka-region/osaka/restaurant/upstairz
+drinks:117,295,Lamp Bar,medium,other,,https://kinarino.jp/cat8/31811 https://oceans.tokyo.jp/article/detail/41497?page=2 https://lamp-bar.com/
+food:1,111,Torishiki,medium,other,,https://www.timeout.jp/tokyo/ja/バー/鳥しき
+food:2,112,Yakitori Abe,medium,other,,https://restaurant.ikyu.com/156164/highlights (via search snippet)
+food:3,113,BIRD LAND (Ginza),medium,other,,https://restaurant.ikyu.com/107602/ (via search snippet) https://www.opentable.com/r/bird-land-ginza-chuo-ku
+food:4,114,Toranomon Yakitori Kuniyoshi,medium,tabelog,,https://selection.tabelog.com/tokyo/A1308/A130802/13213940/ https://autoreserve.com/en/restaurants/vmJtx2idvuTMnRmB8d2R https://selection.tabelog.com/tokyo/A1308/A130802/13213940
+food:5,115,Yakitori Imai,medium,other,,https://www.timeout.jp/tokyo/ja/レストラン/yakitoriimai https://gurunavi.com/ja/gf7e500/rev/rst
+food:6,116,Isehiro Kyobashi Honten (Kyobashi Honten),medium,other,,https://www.timeout.jp/tokyo/ja/レストラン/伊勢廣-京橋本店 https://gurunavi.com/ja/g133300/rev/rst
+food:7,117,Shutei Tanaka,medium,other,,https://guide.michelin.com/jp/ja/tokyo-region/tokyo/restaurant/shutei-tanaka
+food:8,118,Fuunji (Shinjuku Honten),low,,Tokyo Ramen Street (Tokyo Station),
+food:9,119,Rokurinsha (Tokyo Ramen Street),medium,other,Tokyo Solamachi (六厘舎TOKYO),https://www.navitime.co.jp/category/0304001/13/ https://www.gltjp.com/ja/directory/item/18696/
+food:10,120,Raa Menya Shima,medium,tabelog,,https://ssl.tabelog.com/en/tokyo/A1304/A130401/13247487/dtlmap/
+food:11,121,Sosakumenkobo Nakiryu,medium,other,,https://san-tatsu.jp/spots/22598/ https://hamoni.jp/shop/VwQgbPBoqcRajDTzl5KN
+food:12,122,Mendokoro Honda (Akihabara Honten),medium,other,,https://san-tatsu.jp/spots/188356/ https://retty.me/restaurant/100001540296/
+food:13,123,Ginza Haru Chan Ramen (Ginza),medium,,Shimbashi (first shop),https://guide.michelin.com/jp/ja/tokyo-region/tokyo/restaurant/ginza-haru-chan-ramen
+food:14,124,Tempura Kondo,medium,other,,https://restaurant.ikyu.com/107810/ (via search snippet) https://omakaseje.com/ja/restaurants/tf278391
+food:15,125,Kyobashi Tempura Fukamachi,medium,other,,https://hitosara.com/0006029535/ https://ssl.tabelog.com/en/tokyo/A1302/A130202/13004105/dtlrvwlst/
+food:16,126,Mikawa Zezankyo,medium,other,,https://hitosara.com/0006074353/
+food:17,127,Tempura Shinjuku Tsunahachi (Shinjuku Sohonten (flagship)),low,,"総本店別館 (annex): 東京都新宿区新宿3-28-4 TRES SHINJUKU 6F・B1F, 11:00–22:00, 03-5315-0320",https://www.tunahachi.co.jp/store/index.html https://www.tunahachi.co.jp/
+food:18,128,Kaneko Hannosuke (Nihonbashi (original)),low,,,https://www.hannosuke.com/
+food:19,129,Tensuke,low,,,
+food:20,130,Dote no Iseya,low,,,
+food:21,131,Nihao,low,,,
+food:22,132,Okei,low,,,
+food:23,133,Kameido Gyoza Honten,low,,,
+food:24,134,Asia Kappou Rengetsu,low,,,
+food:25,135,Harajuku Gyozaro,low,,,
+food:26,136,Monja Kondo Honten (Honten),low,,,
+food:27,137,Tsukishima Monja Moheji Honten (Honten),low,other,,https://r.gnavi.co.jp/2t5cvya20000/ https://www.moheji.co.jp/
+food:28,138,Hantei (Nezu Honten),high,official,Shin-Marunouchi Building,https://www.hantei.co.jp/ https://www.hantei.co.jp/nedu/nedu_access.html
+food:29,139,Onigiri Bongo,medium,,,https://www.timeout.jp/tokyo/ja/レストラン/onigiri-bongo
+food:30,140,Onigiri Asakusa Yadoroku,medium,other,,https://san-tatsu.jp/spots/147995/ https://www.hotpepper.jp/strJ000126816/
+food:31,141,Onigiri Yamataro,medium,other,,https://www.timeout.jp/tokyo/ja/レストラン/yamataro https://foodle.pro/restaurants/tokyo/647778d9c9ef8
+food:32,142,Onigiri Togoshiya (Togoshi-Ginza Honten),medium,other,,https://tabelog.com/tokyo/A1317/A131712/13246698/ https://autoreserve.com/en/restaurants/5Qsc3ToN3X3ktXG4P5Kj
+food:33,143,Tamahide (Ningyocho Honten),medium,other,,https://retty.me/restaurant/100000004438/ https://macaro-ni.jp/8347
+food:34,144,Koharuken,medium,other,,https://www.mec-h.com/town/mh-nihonbashi/124 https://retty.me/restaurant/100000039950/
+food:35,145,Nihonbashi Kaisendon Tsujihan (Nihonbashi Honten),medium,other,,https://www.timeout.jp/tokyo/ja/レストラン/tsujihan-nihonbaashi https://www.tsujihan-jp.com/
+food:36,146,Komefuku,medium,,,https://hamoni.jp/shop/O55uUUZtNWc0I1EmsAvq https://savorjapan.com/0006077517
+food:37,147,AKOMEYA Shokudo Kagurazaka,low,,,
+food:38,148,Salon Ginza Sabou,medium,,,https://retty.me/restaurant/100001250683/ https://hamoni.jp/shop/4bABBKpP9bhM157rnUzr
+food:39,149,Ikushika (Shibuya PARCO B1),medium,,,https://gurunavi.com/en/gj1m300/rst https://ssl.tabelog.com/en/tokyo/A1303/A130301/13241214/dtlmap
+food:40,150,Kamameshi Haru Asakusa Honten,medium,other,,https://r.gnavi.co.jp/g511100/ https://livejapan.com/ja/in-tokyo/in-pref-tokyo/in-asakusa/spot-lj0065870/
+food:41,151,Fukagawajuku (Honten (Miyoshi)),medium,other,Tomioka Hachiman-ten (Monzen-Nakacho),https://www.hotpepper.jp/strJ000245250/ https://r.gnavi.co.jp/g075101/
+food:42,152,Choju-an Kyosho,medium,other,,https://r.gnavi.co.jp/gd7h600/ https://www.tv-tokyo.co.jp/adomachi/backnumber/20150523/114788.html
+food:43,153,Tonkatsu Narikura,medium,other,,https://hitosara.com/0006086568/
+food:44,154,Tonkatsu Tonki (Meguro Honten),medium,other,,https://www.hotpepper.jp/strJ000103390/ https://autoreserve.com/en/restaurants/8Jhb8GmPxqV6fdGDUPee
+food:45,155,Tonkatsu Marugo,low,,,
+food:46,156,Tonkatsu Nanaido,low,,,https://www.timeout.jp/tokyo/ja/レストラン/とんかつ七井戸 https://guide.michelin.com/jp/ja/tokyo-region/tokyo/restaurant/tonkatsu-nanaido
+food:47,157,Butagumi (Nishiazabu),low,,,https://www.butagumi.com/ http://www.butagumi.com/nishiazabu/
+food:48,158,Tonkatsu Maisen Aoyama Honten,high,official,,https://mai-sen.com/shop/shop-9960/
+food:49,159,Gyukatsu Motomura (Shibuya),medium,other,,https://aumo.jp/articles/16546 https://www.funliday.com/pois/26517025 https://www.gyukatsu-motomura.com/
+food:50,160,Gyukatsu Aona,medium,other,,https://r.gnavi.co.jp/m957ye6a0000/ https://www.gltjp.com/ja/directory/item/10434/
+food:51,161,Asakusa Gyukatsu,low,,,
+food:52,162,Kabuto,medium,other,,https://retty.me/restaurant/100000002328/
+food:53,163,Unagi Uomasa,low,,,
+food:54,164,Nodaiwa (Azabu Iikura Honten),medium,,,https://www.nodaiwa.com/ http://www.nodaiwa.co.jp
+food:55,165,Unagi Obana,low,,,
+food:56,166,Yaesu Unagi Hashimoto,low,other,,https://macaro-ni.jp/98453
+food:57,167,Watabe,high,official,,https://unagiyawatabe.com/ https://guide.michelin.com/jp/ja/tokyo-region/tokyo/restaurant/watabe
+food:58,168,Akasaka Raimon,low,,,
+food:59,169,Yoroniku (Minami-Aoyama),medium,other,,https://www.timeout.jp/tokyo/ja/レストラン/yoroniku https://hitosara.com/0006044267/ https://a388101.gorp.jp
+food:60,170,Yakiniku Jumbo Shirokane (Shirokane),medium,tabelog,,https://omakaseje.com/ja/restaurants/kh909116
+food:61,171,Yakiniku Ushigoro (Ginza),low,,,https://restaurant.ikyu.com/110819/
+food:62,172,Yakiniku Tetsu,low,,,
+food:63,173,Ningyocho Imahan Honten,low,,,https://restaurant.imahan.com/
+food:64,174,Sukiyaki Kappou Hiyama,low,,,
+food:65,175,Chinya (Asakusa Honten),high,official,,https://www.chinya.co.jp/location/ https://www.chinya.co.jp/
+food:66,176,subin,low,,,
+food:67,177,Zakuro (Ginza),low,,,
+food:68,178,Imafuku,medium,,,https://s.tabelog.com/en/tokyo/A1316/A131602/13136201/
+food:69,179,Sembikiya Sohonten,low,official,,https://www.sembikiya.co.jp/shop-list/main-store/ https://www.sembikiya.co.jp/shop-list/main-store
+food:70,180,Takano Fruit Parlour (Shinjuku Honten 5F),high,official,,https://takano.jp/parlour/shop/fruitsparlour/
+food:71,181,Shiseido Parlour Ginza (Ginza Honten Salon de Cafe 3F),high,official,,https://parlour.shiseido.co.jp/shoplist/salondecafeginza/ https://parlour.shiseido.co.jp/
+food:72,182,Nishimura Fruits Parlour,medium,other,,https://retty.me/restaurant/100000028769/ https://rurubu.jp/andmore/spot/80065654 https://gurunavi.com/ja/gjmy301/rev/rst
+food:73,183,Ichiman,low,,,
+food:74,184,Okutan Nanzenji,low,,,
+food:75,185,Nanzenji Junsei,low,,,
+food:76,186,Shoraian,low,,,
+food:77,187,Yudofu Sagano,low,,,
+food:78,188,Seizan Sodo,low,,,
+food:79,189,Seigenin,low,,,
+food:80,190,Uchida Tsukemono,low,other,,https://www.funtime.com.tw/blog/funtime/kyoto-nishiki-market
+food:81,191,Murakami Ju Honten,low,,,
+food:82,192,Kyoto Narita,low,,,https://autoreserve.com/en/restaurants/1FfGFZbXZv8wjao2WKM8
+food:83,193,Shibakyu,medium,other,,https://rurubu.jp/andmore/spot/80026240
+food:84,194,Kamado Takitate Gohan Doi,low,,,
+food:85,195,Kintame,low,,,http://kintame.co.jp/
+food:86,197,Ichihana,medium,other,,https://guide.michelin.com/jp/ja/kyoto-region/kyoto/restaurant/ichihana https://tabelog.com/en/kyoto/A2601/A260203/26025178/ https://foodle.pro/restaurants/kyoto/ichihana
+food:87,198,Hisago,medium,other,,https://macaro-ni.jp/27960
+food:88,199,Gochisou Yakimusubi Onimaru (Shijo-Kawaramachi),low,,Nishi-Shinjuku (Tokyo),
+food:89,200,Menya Gokkei (Ichijoji Honten),medium,other,,https://www.gltjp.com/ja/directory/item/15126/ https://s.tabelog.com/en/kyoto/A2601/A260303/26017870/
+food:90,201,Chukasoba Takayasu,medium,tabelog,,https://www.gltjp.com/en/directory/item/15488/ https://tabelog.com/kyoto/A2603/A260303/26001199/
+food:91,202,Tenten Yu (Honten),low,other,,https://aumo.jp/photos/61443779
+food:92,203,Honke Daiichi Asahi (Honten (Takabashi)),medium,other,Karasuma; Tenma; Sanjo-Kawaramachi (opened Feb 2026); Shinjuku (Tokyo),https://www.gltjp.com/ja/directory/item/13170/
+food:93,204,Menya Inoichi,medium,other,,https://www.gltjp.com/ja/directory/item/13198/
+food:94,205,Tsukemen Kirari,medium,other,,https://macaro-ni.jp/84588?page=8 https://retty.me/restaurant/100000031690/
+food:95,206,Sumiyaki Sosai Toriya Hitomi,medium,other,,https://guide.michelin.com/jp/ja/kyoto-region/kyoto/restaurant/sumiyakisosaitoriya-hitomi
+food:96,207,Wabiya Korekido (Gion Hanamikoji Honten),medium,other,,https://restaurant.ikyu.com/111322/highlights https://gurunavi.com/en/kdud002/mp/rst/ https://www.tablecheck.com/shops/wabiya-gion/reserve
+food:97,208,Tori Kago,low,,,
+food:98,209,Baji Tofu,low,,,
+food:99,210,Gion Fuji,low,,,
+food:100,211,Tenjaku,low,,,
+food:101,212,Tempura Yoshikawa,low,,,https://restaurant.ikyu.com/110747/
+food:102,213,Gyoza Hohei Gion Honten (Gion Honten),low,,,https://hamoni.jp/shop/2GcY9jcbCWBTtxYlX8Yd
+food:103,214,Motoi Gyoza,low,,,
+food:104,215,Chao Chao (Sanjo Kiyamachi),low,,,
+food:105,216,Gyoza no Ohsho (Shijo Omiya),low,,,
+food:106,217,Jukusei Buta Kawamura,low,,,
+food:107,218,Kyogoku Kaneyo,low,,,
+food:108,219,Kanesho,medium,other,,https://retty.me/restaurant/100000438151/ https://4travel.jp/dm_shisetsu/10186986
+food:109,220,Unagiya Hirokawa,low,,,
+food:110,221,Shinya Yakiniku Daichan,low,,,https://foodle.pro/005800344/meals/kyoto/66a1274222f82/54030
+food:111,222,Aje Matsubara Honten (Honten),low,,,
+food:112,223,Mishima-tei (Honten),low,,,
+food:113,224,Morita-ya (Kiyamachi),low,,,https://r.gnavi.co.jp/c052703/
+food:114,225,Junidanya Honten (Honten),low,,,
+food:115,226,Sukiyaki Kimura,low,,,
+food:116,227,Fruit Parlor Yaoiso,low,,,
+food:117,228,Mizuno (Dotonbori),medium,other,,https://www.mapple.net/article/5893/ https://livejapan.com/ja/in-kansai/in-pref-osaka/in-namba_dotonbori_shinsaibashi/article-a2000114/
+food:118,229,Kiji (Honten (Shin-Umeda Shokudogai)),medium,other,Kiji Sky (Umeda Sky Building),https://www.nta.co.jp/media/tripa/articles/ziuQm https://retty.me/restaurant/100000004482/
+food:119,230,Negiyaki Yamamoto (Honten),medium,other,Umeda EST,https://rurubu.jp/andmore/spot/80028056 https://kinarino.jp/cat4/37202
+food:120,231,Okonomi Tamachan Viva,medium,,,https://www.enprimeurclub.com/restaurants/okonomi-tamachan-viva-27069514
+food:121,232,Hozenji Sanpei,medium,other,,https://www.mec-h.com/town/mh-nanba/132 https://hozenji-sanpei.gorp.jp
+food:122,233,Ganso Kushikatsu Daruma Shinsekai Sohonten (Shinsekai Sohonten),medium,other,Tsutenkaku branch (恵美須東1-6-8),https://icotto.jp/restaurants/514 https://rurubu.jp/andmore/spot/80027970
+food:123,234,Yaekatsu (Shinsekai Honten),medium,other,,https://www.walkerplus.com/article/188893/ https://retty.me/restaurant/100000013530/
+food:124,235,Tengu,low,,,https://tabelog.com/matome/12892/
+food:125,236,Kushikatsu Bon (Kitashinchi Honkan),medium,other,Kitashinchi Hanare; Ginza,https://restaurant.ikyu.com/108430/ https://omakaseje.com/ja/restaurants/ug953416
+food:126,237,Rokukakutei Kuromon Honten (Kuromon Honten),low,,,https://retty.me/restaurant/100000094656/
+food:127,238,Musubiya,low,,,
+food:128,239,Jinrui Mina Menrui,low,,,
+food:129,240,Kadoya Shokudo Sohonten (Sohonten),low,,,
+food:130,241,Mugi to Mensuke,low,,,
+food:131,242,Torisho Ishii,low,,Ishii Jr.,
+food:132,243,Ayamuya,low,,,
+food:133,244,Sumibiyakitori Ikoka,medium,other,,https://retty.me/restaurant/100001355032/
+food:134,245,Tempura Hiraishi,low,,,
+food:135,246,Tenboshi,low,,,
+food:136,247,Tenpei Kitashinchi Honten (Kitashinchi Honten),medium,other,,https://retty.me/restaurant/100000017210/
+food:137,248,Tenshin no Kimochi,low,,,
+food:138,249,New Babe,low,,,
+food:139,250,Honke Shibato,low,,,
+food:140,251,Tsunechan,medium,tabelog,,https://tabelog.com/en/osaka/A2705/A270501/27079111/
+food:141,252,Kyoshoran (Honten),medium,tabelog,Minamimorimachi (京松蘭 南森町),https://tabelog.com/en/osaka/A2701/A270107/27090232/ https://retty.me/restaurant/100000088297/
+food:142,253,Yakiniku Masachiyan,medium,tabelog,,https://tabelog.com/en/osaka/A2701/A270406/27023255/
+food:143,254,Hariju (Dotonbori Honten),high,official,,https://www.harijyu.co.jp/ https://www.harijyu.co.jp/shop-info/category/doutonbori/
+food:144,255,Yamaguchi Kudamono (Uehonmachi Honten),high,official,,https://tabelog.com/en/osaka/A2701/A270204/27004780/ http://www.fruit-garden.net/
+food:145,256,Parfaiteria PaL (Shinsaibashi),medium,tabelog,,https://tabelog.com/en/osaka/A2701/A270201/27123016/ https://livejapan.com/ja/in-kansai/in-pref-osaka/in-namba_dotonbori_shinsaibashi/spot-lj0107951/ https://yoru-parfait-gaku.com/
+food:146,257,Kakinoha-zushi Honpo Tanaka (Nara Honten),medium,tabelog,Nara Shoppu (Kintetsu-Nara station),https://tabelog.com/en/nara/A2901/A290101/29006750/ https://www.kakinohasushi.co.jp/
+food:147,258,Izasa Nakatani Honpo (Todaiji Yumekaze Hiroba),high,official,,https://izasa.co.jp/shop/todaiji-new/
+food:148,259,Hiraso (Nara),high,official,,https://hiraso.jp/shop/shop-nara/ https://tabelog.com/en/nara/A2901/A290101/29000753/
+food:149,260,Kamameshi Shizuka (Koen-ten),medium,tabelog,Omiya-ten,https://tabelog.com/en/nara/A2901/A290101/29000714/ https://kamameshi-shizuka.jp
+food:150,261,Tou no Chaya (Naramachi),high,official,,http://tounochaya.jp https://tabelog.com/en/nara/A2901/A290101/29000201/
+food:151,262,Sabo Non-non,medium,tabelog,,https://tabelog.com/en/nara/A2901/A290101/29001328/ http://www.creerks.com/
+food:152,263,Ajitei Yamazakiya (Honten (Yamazakiya Honten)),low,tabelog,,https://tabelog.com/en/nara/A2901/A290101/29005188/ http://www.yamazakiya.jp/
+food:153,264,Menya Bibiri,medium,tabelog,,https://tabelog.com/en/nara/A2902/A290202/29010427/ https://www.instagram.com/menya_bibiri_nara
+food:154,265,Yakitori Mochizuki,medium,tabelog,,https://tabelog.com/en/nara/A2901/A290101/29008456/
+food:155,266,Tempura Hattori,medium,tabelog,,https://tabelog.com/en/nara/A2901/A290101/29014140/
+food:156,267,Seikoudoku,high,official,,https://www.seikouudoku-uji.com/ https://tabelog.com/en/kyoto/A2607/A260701/26030760/
+food:157,268,Yubadon Naokichi,medium,tabelog,,https://tabelog.com/en/kanagawa/A1410/A141001/14007598/
+food:158,269,Tamura Ginkatsutei (Honten),medium,tabelog,Kyukan (Gora); Odawara HaRuNe; Gotemba Outlet,https://tabelog.com/en/kanagawa/A1410/A141001/14001492/ http://www.ginkatsutei.jp/
+music:1,296,Meikyoku Kissa Violon,medium,other,,https://news.mynavi.jp/article/syouwafood_chuoLine-59 https://serai.jp/hobby/1128302
+music:2,297,Koga Shoten,low,,,https://4travel.jp/dm_shisetsu/11329810
+music:3,298,Yamaha Ginza,medium,official,,https://retailing.jp.yamaha.com/shop/ginza/experience_area_en/key_between_people_en https://retailing.jp.yamaha.com/shop/ginza/
+music:4,299,Academia Music,low,,,https://discoverjapan-web.com/article/34125
+music:5,300,Sumida Triphony Hall (NJP Beethoven 9 (Daiku)),medium,other,,https://www.suntory.co.jp/suntoryhall/schedule/detail/20261219_M_2.html https://www.njp.or.jp/concerts/
+music:6,300,Tokyo Opera City Concert Hall (NJP Beethoven 9 (Daiku)),medium,other,,https://www.suntory.co.jp/suntoryhall/schedule/detail/20261219_M_2.html https://www.njp.or.jp/concerts/
+music:7,301,Francois Kissashitsu,medium,other,,https://www.gltjp.com/ja/directory/item/12200/ https://rurubu.jp/andmore/spot/80027115
+music:8,302,Meikyoku Kissa Ryugetsudo,low,other,,
+music:9,303,Ongaku Kissa Musik,low,other,,
+music:10,304,Montage,low,,,
+music:11,305,JEUGIA Sanjo Honten,low,,,
+music:12,306,Shimamura Music Grand Front Osaka,low,,,
+shops:1,348,Yellow Submarine RPG Shop,low,,,
+shops:2,349,Yellow Submarine Akihabara Main Store (Mint),low,,,
+shops:3,350,Surugaya Akihabara TCG & Board Game Store,low,,,
+shops:4,351,Role & Roll Station Akihabara,low,,,
+shops:5,352,Yodobashi Camera Multimedia Akiba,low,other,,
+shops:6,353,Sugorokuya,low,,,
+shops:7,354,Dear Spiele,low,,,
+shops:8,355,Amuri Studio,low,,,
+shops:9,337,Tomiz (Tomizawa Shoten) (Jiyugaoka),high,official,,https://tomiz.com/store/detail/46
+shops:10,338,Tomiz (Tomizawa Shoten) (Keio Shinjuku),medium,official,,https://tomiz.com/store/detail/14
+shops:11,339,Tomiz (Tomizawa Shoten) (Shinjuku Takashimaya),medium,official,,https://tomiz.com/store/detail/23
+shops:12,340,Tomiz (Tomizawa Shoten) (Lumine Yurakucho),medium,official,,https://tomiz.com/store/detail/1
+shops:13,341,Tomiz (Tomizawa Shoten) (Shibuya Tokyu Food Show),medium,official,,https://tomiz.com/store/detail/27
+shops:14,342,Cuoca (Jiyugaoka),low,,,
+shops:15,343,Yoshida Confectionery Tools (Kappabashi),low,,,https://www.kappabashi.or.jp/shops/
+shops:16,344,Tomiz (Tomizawa Shoten) (JR Kyoto Isetan),medium,official,,https://tomiz.com/store/detail/62
+shops:17,345,Tomiz (Tomizawa Shoten) (Takashimaya Kyoto),medium,official,,https://tomiz.com/store/detail/63
+shops:18,346,Tomiz (Tomizawa Shoten) (Kintetsu Abeno Harukas),medium,official,,https://tomiz.com/store/detail/70
+shops:19,347,Tomiz (Tomizawa Shoten) (Takashimaya Osaka),medium,official,,https://tomiz.com/store/detail/65
+shops:20,307,Kama-Asa Shoten,medium,,,https://skyticket.jp/guide/339189/ https://kama-asa.co.jp/en/blogs/news/pressrelease-houchouuriba-renewal https://kama-asa.co.jp/
+shops:21,308,Togijin (hand-sharpened knives),low,other,,https://www.kappabashi.or.jp/en/shops/139
+shops:22,308,Kiwami (貴和美) (Kappabashi main store),low,,Toyosu Senkyaku Banrai; Hida-Takayama,https://kiwami.top/
+shops:23,308,Hikari,low,,,
+shops:24,308,Washindo,low,other,,https://kappabashi.or.jp/en/shops/172 https://kiwami.top/
+shops:25,309,Majimaya,low,other,,https://www.timeout.jp/tokyo/ja/ショッピング/馬嶋屋菓子道具店
+shops:26,310,Dengama,high,official,,https://www.dengama.jp/ https://www.gltjp.com/en/directory/item/14279/
+shops:27,311,Fuwari,low,,,
+shops:28,312,Utuwazoshi,low,,,
+shops:29,313,Mikura,high,official,,https://kappabashi-mikura.com/
+shops:30,314,Kanaya Brush (Kappabashi),low,,Denboin-dori; Shin-Nakamise,
+shops:31,315,Union,medium,other,"世界の珈琲ユニオン (beans, across the intersection)",https://www.gltjp.com/ja/directory/item/14333/ https://www.kappabashi.or.jp/shops/169/
+shops:32,316,Kiya (Nihonbashi (COREDO Muromachi)),low,,,https://www.kiya-hamono.co.jp/
+shops:33,317,Tsukiji Masamoto,low,,,
+shops:34,318,Takumi,medium,other,,https://foodsaketokyo.com/2011/05/29/ginza-takumi-%e9%8a%80%e5%ba%a7%e3%81%9f%e3%81%8f%e3%81%bf
+shops:35,319,Utsuwa Kaede,low,,,
+shops:36,320,Amahare,low,,,
+shops:37,321,Gallery & Café Mikado,medium,other,,https://www.chilchinbito-hiroba.jp/japanquality/?p=1589
+shops:38,322,Yumiko Iihoshi Porcelain,low,,,
+shops:39,323,Aritsugu (Nishiki Market),medium,other,,https://rurubu.jp/andmore/spot/80026377
+shops:40,324,Kanaami Tsuji,low,,,
+shops:41,325,Ichihara Heibei Shoten,medium,other,,https://4travel.jp/dm_shisetsu/11286797
+shops:42,326,Kaikado (Main shop),medium,,,https://www.kaikado.jp/japanese/ https://www.kaikado.jp/
+shops:43,327,Kotani,low,,,
+shops:44,328,Yagi Hochoten,low,,,
+shops:45,329,Tohgoro,low,,,
+shops:46,330,Asahido Honten,low,,,
+shops:47,331,Utsuwa Haku,low,,,
+shops:48,332,Kyoto Ceramic Center,medium,official,,https://kyototoujikikaikan.or.jp
+shops:49,333,Sennichimae Doguyasuji,medium,,,https://global.ichimonji.co.jp/pages/store-guide
+shops:50,334,Sakai Ichimonji Mitsuhide (Doguyasuji),medium,official,,https://global.ichimonji.co.jp/pages/store-guide https://global.ichimonji.co.jp/
+shops:51,335,Sachi Kogei,low,other,,https://metronine.osaka/en/spot-details/koukougei
+shops:52,336,Asahiyaki,medium,,,https://www.asahiyaki.com/ https://asahiyaki.com/
+sweets:1,2,Pâtisserie Sadaharu Aoki Paris (Marunouchi),high,official,Tokyo Midtown (Roppongi); Shinjuku Isetan; Shibuya Hikarie ShinQs,https://www.sadaharuaoki.jp/ https://www.sadaharuaoki.jp/marunouchi/
+sweets:2,3,Pâtisserie ease (Nihonbashi Kabutocho),medium,other,"Brick bake bakers (Tokyo Station Gransta, separate bake shop)",https://www.timeout.jp/tokyo/ja/ショッピング/patisserie-ease https://retty.me/restaurant/100001542662/ https://www.instagram.com/ease_tokyo/
+sweets:3,4,Pâtisserie Asako Iwayanagi,medium,other,,https://www.pref.yamanashi.jp/tokyo/yamaaji/asakoiwayanagi.html https://www.ozmall.co.jp/strawberry/restaurant/shortcake/41586/ https://www.timeout.jp/tokyo/ja/レストラン/patti-sully-asako-iwayanagi
+sweets:4,5,Pâtisserie Ryoura (Yoga),high,official,,https://ryoura.com/
+sweets:5,6,365日,medium,other,,https://rurubu.jp/andmore/spot/81267345
+sweets:6,7,"BOUL'ANGE (Shibuya (Tokyu Food Show, Mark City))",low,other,Toranomon Hills; Nihonbashi; Ginza,https://san-tatsu.jp/spots/115548/ https://www.fashionsnap.com/article/2021-05-20/boulange-croissant/
+sweets:7,8,KURAMAE CANNELE (Kuramae),medium,other,Ecute Ueno,https://bestcalendar.jp/press/102335 https://rurubu.jp/andmore/spot/80132934 https://hamoni.jp/en/area/tokyo/taito/kuramae https://www.instagram.com/kuramae_cannele/
+sweets:8,9,Mont St. Clair (Jiyugaoka (main shop)),high,official,,https://ms-clair.co.jp/ https://ms-clair.co.jp/access/
+sweets:9,10,Pâtisserie Asterisque,low,,,https://www.enjoytokyo.jp/article/109680/
+sweets:10,11,Am Stram Gram,low,,,
+sweets:11,12,Okashiya Ucchi,medium,,,https://macaro-ni.jp/87151 https://japanroyalservice.com/blog/okashiya-ucchi
+sweets:12,13,Naniwaya Sohonten (Azabu-Juban (main shop)),medium,other,,https://retty.me/restaurant/100000004032/ https://serai.jp/gourmet/230132 https://macaro-ni.jp/151
+sweets:13,14,Yanagiya (Ningyocho),medium,other,,https://aumo.jp/articles/53214 https://macaro-ni.jp/151 https://kinarino.jp/cat8/16265
+sweets:14,15,Taiyaki Wakaba,low,,,https://intojapanwaraku.com/travel/218497/ https://tabelog.com/tokyo/A1309/A130902/13252086/
+sweets:15,16,Nezu no Taiyaki,medium,tabelog,,https://tabelog.com/tokyo/A1311/A131106/13003570/
+sweets:16,17,Taiyaki Sharaku,low,,,
+sweets:17,18,Himitsudo,medium,other,,https://san-tatsu.jp/spots/122322/ https://www.timeout.jp/tokyo/ja/レストラン/himitsudo http://himitsudo.com/
+sweets:18,19,Azuki to Kouri,low,,Yoyogi Granduo 1F,https://rurubu.jp/andmore/article/16302 https://tablecheck.com/shops/azukitokouri/reserve
+sweets:19,20,Oribe (Shimokitazawa),low,,,https://aumo.jp/articles/46435 https://macaro-ni.jp/130358?page=2
+sweets:20,21,Wa Kitchen Kanna,medium,,,https://www.ozmall.co.jp/restaurant/kakigori/39153/ https://tabelog.com/matome/16023/ https://aumo.jp/articles/20349
+sweets:21,22,Sabo Okuno Shibuya,medium,other,Sabo Okuno Shibuya Miyazaki,https://san-tatsu.jp/spots/302906/ https://rurubu.jp/andmore/article/19309 https://www.timeout.jp/tokyo/ja/レストラン/saboh-okunoshibuya
+sweets:22,23,Asakusa Naniwaya,low,,,https://www.walkerplus.com/article/1424493/ https://www.timeout.jp/tokyo/ja/ショッピング/浅草浪花家
+sweets:23,24,VIGO (Kuramae),medium,other,Shimokitazawa; Tsukiji; Kichijoji; Hamamatsu; Kyoto,https://rurubu.jp/andmore/article/21545 https://www.timeout.jp/tokyo/ja/レストラン/kuramae-yoruparfait-vigo
+sweets:24,25,Parfaiteria beL (Shinjuku-Sanchome),high,official,,https://yoru-parfait-gaku.com/parfait/shop-info https://hamoni.jp/shop/ilXHPbBvascFD3Va4Nd2 https://yoru-parfait-gaku.com/parfait/
+sweets:25,26,Melon and Roman,high,official,,https://melon-roman.com/ https://www.enjoytokyo.jp/spot/l_00062381/
+sweets:26,27,Mr. CHEESECAKE (Gransta Tokyo (Tokyo Station)),medium,other,,https://mr-cheesecake.com/ https://www.fashionsnap.com/article/2024-09-01/mr-cheesecake-tokyo-station/ https://www.mapple.net/spot/13031520/
+sweets:27,28,CinqCinq,medium,tabelog,,http://www.azabu-cheesecake.com/ https://tabelog.com/en/tokyo/A1307/A130702/13140728/
+sweets:28,29,Johann (Honten (Kami-Meguro)),medium,other,,https://kinarino.jp/cat4/23997 https://macaro-ni.jp/56430 https://retty.me/restaurant/100000003519/
+sweets:29,30,Shirotae,medium,other,,https://retty.me/restaurant/100000001795/ https://serai.jp/gourmet/1050416
+sweets:30,31,Pâtisserie TEN& (Hibiya Okuroji),high,official,,https://parola.tokyo/ https://tabelog.com/en/tokyo/A1301/A130103/13252336/
+sweets:31,32,Le Coussinet,medium,other,,https://hamoni.jp/en/area/tokyo/bunkyo/shops/cream-puffs
+sweets:32,33,Shirohige's Cream Puff Workshop (Daita (代田店)),high,official,"Kichijoji (武蔵野市吉祥寺南町2-7-5, 11:00–17:00)",http://www.shiro-hige.net/ https://www.gltjp.com/ja/directory/item/14816/
+sweets:33,34,I'm donut ? (Nakameguro),medium,other,,https://www.gltjp.com/ja/directory/item/17321/ https://retty.me/restaurant/100001628279/ https://hamoni.jp/area/tokyo/meguro/nakameguro/shops/sweets https://www.instagram.com/i.m.donut/
+sweets:34,36,haritts,medium,other,,https://retty.me/restaurant/100000006025/ https://kinarino.jp/cat8/31170 https://tabelog.com/tokyo/A1318/A131811/13023466/
+sweets:35,37,Suzukien x Nanaya (Asakusa Honten),medium,other,,https://rurubu.jp/andmore/spot/80101302 https://tabelog.com/tokyo/A1311/A131102/13153620/
+sweets:36,38,Japanese Ice Ouca (Ebisu Honten),high,official,Kyoto (京都市下京区富永町346),http://www.ice-ouca.com/store https://tabelog.com/en/tokyo/A1303/A130302/13040777/ http://www.ice-ouca.com/
+sweets:37,39,Maison Farmer Nagisa Aoki,medium,other,,https://www.tokyu.co.jp/area/gakugei-daigaku/article/arti-01M3929YBBVK0VAVNRG5735ABQ/ https://www.instagram.com/maison_farmer/
+sweets:38,40,Kasiki,low,,,
+sweets:39,41,Tida,low,,,
+sweets:40,42,Chavaty (Omotesando (flagship)),medium,official,Arashiyama; Hakuba,https://chavaty.jp/pages/shop-omotesando https://chavaty.jp/pages/shop https://chavaty.jp/
+sweets:41,43,Asakusa Chaya Tabane no Shi,low,,Kyoto Shinkyogoku,
+sweets:42,44,Juseian,low,other,,https://san-tatsu.jp/articles/311662/
+sweets:43,45,Natural Crepe (Kyodo Honten),medium,official,Shimokitazawa; Ueno Marui; Minami-Machida; Ariake; Minato Mirai; Kichijoji; Chofu,https://natucre.com/ https://natucre.com/shop/kyodo/
+sweets:44,46,Assemblages Kakimoto,medium,tabelog,,https://tabelog.com/en/kyoto/A2601/A260202/26027283/ https://restaurant.ikyu.com/117458/highlights http://assemblages.jp/
+sweets:45,47,PÂTISSERIE.S salon (Salon),high,official,Main shop (Takatsuji Muromachi); ampersand (2025 annex near Nijo Castle),http://patisserie-s.com/ https://tabelog.com/en/kyoto/A2601/A260202/26029620/
+sweets:46,48,PÂTISSERIE.S (Main shop (takeaway)),high,official,Salon (Asakura-cho); ampersand (2025 annex near Nijo Castle),http://patisserie-s.com/ https://tabelog.com/en/kyoto/A2601/A260201/26012808/
+sweets:47,49,grains de vanille,medium,other,,https://www.grainsdevanille.com/ https://retty.me/restaurant/100000049707/
+sweets:48,50,La Voiture,medium,tabelog,,https://tabelog.com/en/kyoto/A2601/A260302/26001070/ https://www.keihan.co.jp/navi/famous/famous138.html https://voiture.buyshop.jp/
+sweets:49,51,Malebranche Kitayama Honten (Kyoto Kitayama main store),high,official,Daimaru Kyoto; Gion (Kakaa 365),https://www.kyoto-quality.com/s-kitayama https://tabelog.com/en/kyoto/A2601/A260503/26001229/
+sweets:50,52,Le Petit Mec (Imadegawa),high,official,Oike (京都市中京区下妙覚寺町186 ビスカリア光樹1F); OMAKE (中京区池須町418-1 キョーワビル1F),https://lepetitmec.com/ https://retty.me/restaurant/100000068168/
+sweets:51,53,Shinshindo Kyodai Kitamonmae (Kyoto University North Gate),medium,tabelog,,https://tabelog.com/en/kyoto/A2601/A260302/26001845/ https://rurubu.jp/andmore/spot/80026227
+sweets:52,54,Gion Tokuya,medium,other,"Harajuku (United Arrows, Tokyo)",https://retty.me/restaurant/100000744138/ http://gion-tokuya.jp/
+sweets:53,55,Saryo Hosen,medium,other,,https://retty.me/restaurant/100000029516/
+sweets:54,56,Mitsuya,medium,tabelog,,https://tabelog.com/en/kyoto/A2601/A260401/26037111/ https://rurubu.jp/andmore/article/25299
+sweets:55,57,Ichijoji Nakaya,medium,other,,https://www.mapple.net/spot/26012221/
+sweets:56,58,Mamemono to Taiyaki (Arashiyama Honten),medium,tabelog,Nishiki Market,https://tabelog.com/en/kyoto/A2601/A260403/26034817/ https://mamemono.com/
+sweets:57,59,Ichiwa (Ichimonjiya Wasuke),medium,tabelog,,https://tabelog.com/en/kyoto/A2601/A260503/26001669/
+sweets:58,60,Kazariya (Aburi Mochi Honke Nemoto Kazariya),medium,tabelog,,https://tabelog.com/en/kyoto/A2601/A260503/26001670/ https://www.kyoto-kankou.or.jp/info_search/681
+sweets:59,61,Kamo Mitarashi Chaya,medium,tabelog,,https://tabelog.com/en/kyoto/A2601/A260503/26001758/
+sweets:60,62,Demachi Futaba (Main shop),medium,tabelog,JR Kyoto Isetan; Daimaru Kyoto,https://tabelog.com/en/kyoto/A2601/A260302/26001520/
+sweets:61,63,Kawabata Doki,medium,tabelog,JR Kyoto Isetan,https://tabelog.com/en/kyoto/A2601/A260503/26001766/
+sweets:62,64,Kyo no Koriya Sawa,medium,tabelog,,https://tabelog.com/en/kyoto/A2601/A260501/26036303/
+sweets:63,65,Mikazuki Hyokaten,medium,tabelog,,https://tabelog.com/en/kyoto/A2601/A260301/26041155/
+sweets:64,66,Gion Kinana Honten (Honten),medium,tabelog,,https://tabelog.com/en/kyoto/A2601/A260301/26002500/ http://www.kyo-kinana.com/index.htm
+sweets:65,67,Premarché Gelateria (Sanjo (Nijo Castle)),medium,tabelog,Nakameguro (Tokyo),https://tabelog.com/en/kyoto/A2601/A260203/26028807/ https://gelato.organic
+sweets:66,68,Tomomi Gelato,medium,tabelog,,https://tabelog.com/en/kyoto/A2601/A260301/26037172/ http://tomomigelato.com
+sweets:67,69,Hitsuji,low,,,https://aumo.jp/articles/56763
+sweets:68,70,koé donuts kyoto (Shinkyogoku),medium,,,https://kyoto.travel/en/see-and-do/koe_donuts.html https://retty.me/restaurant/100001466170/ https://donuts.koe.com/
+sweets:69,71,DONUTSTAND Arashiyama (Arashiyama (inside Randen Arashiyama Station)),low,,,https://www.leafkyoto.net/en/newstore/230524-kyoto-donutstand/ https://retty.me/restaurant/100001480200/
+sweets:70,72,Fromagerie Harmonie,low,,,
+sweets:71,73,Sanjya (Kawaramachi main shop),low,,,
+sweets:72,74,Petit Bonheur,low,,,
+sweets:73,75,Goma-ya Crepe-Do,low,,,
+sweets:74,76,Année,low,,,https://www.mapple.net/spot/26014136/ https://www.nap-camp.com/mag/102473
+sweets:75,77,Kagizen Yoshifusa (Shijo Main Store),medium,other,Kodaiji,https://tabelog.com/kyoto/A2601/A260301/26001887/ https://www.kagizen.co.jp/en/pages/shops https://www.kagizen.co.jp/
+sweets:76,78,LIBERTÉ PÂTISSERIE BOULANGERIE Kyoto (Higashinotoin (main)),medium,other,Kiyomizu,https://www.leafkyoto.net/en/?p=9214 https://retty.me/restaurant/100001436358/
+sweets:77,79,Gâteau des Bois (Honten (Yamato-Saidaiji)),medium,other,A Ra Maison,https://rurubu.jp/andmore/spot/80031437
+sweets:78,80,Wokashi Tojo,low,,,
+sweets:79,81,Nakatanidou,medium,other,,https://www.mapple.net/region/a0506010000_g02060000/spot/ https://www.navitime.co.jp/category/0203/29/
+sweets:80,82,Senjuan Yoshimune (Nara Sohonten),medium,other,Kintetsu-Nara Station,https://r.gnavi.co.jp/erj02ff70000/ https://s.tabelog.com/en/nara/A2901/A290101/29000697/
+sweets:81,83,Ochanoko,medium,tabelog,,https://tabelog.com/nara/A2901/A290101/29004169/ https://rurubu.jp/andmore/spot/80095534
+sweets:82,84,Nakanishi Yosaburo,medium,other,,https://www.navitime.co.jp/category/0203/29201/
+sweets:83,85,Housekibako,medium,other,,https://rurubu.jp/andmore/article/19922 https://serai.jp/gourmet/1279625 https://www.instagram.com/housekibaco/
+sweets:84,86,Nakamura Tokichi (Honten),medium,other,Byodoin,https://www.gltjp.com/ja/directory/item/14588/ https://kinarino.jp/cat8/25616 https://www.tokichi.jp/
+sweets:85,87,Tsujiri Honten (Uji Honten),medium,other,,https://aumo.jp/articles/46264 https://www.tsujiri.co.jp/
+sweets:86,88,Chez Agata,low,,,https://ssl.tabelog.com/en/kyoto/A2607/A260701/26009042/
+sweets:87,89,Uso to Boku (Lies and I),low,,,https://hamoni.jp/en/shop/gH7qqENg7RboaxcKSEXZ https://www.instagram.com/usotoboku/
+sweets:88,90,Amazake Chaya,medium,other,,https://kanagawa-kankou.or.jp/spot/194 https://rurubu.jp/andmore/spot/80014532
+sweets:89,91,"Chimoto (Ekimae-dori (address found); Honten is on Taki-dori, address not found)",low,other,Honten (Taki-dori),https://rurubu.jp/andmore/spot/80014602 https://www.hakonenavi.jp/spot/1280
+sweets:90,92,Salon de Thé Rosage,medium,other,,https://rurubu.jp/andmore/spot/80014581 https://www.hakonenavi.jp/spot/1269 https://www.hakone-hoteldeyama.jp/
