@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atlasLayers, atlasStyle, DROPPED_LAYERS, KEPT_POI_KINDS, QUIET_RAIL, quietHides, quietRailPaint, RAIL, railPaint, SOURCE_ID } from "./style.ts";
+import { atlasLayers, atlasStyle, DROPPED_LAYERS, KEPT_POI_KINDS, OWN_TRANSIT_REPLACES, QUIET_RAIL, quietHides, quietRailPaint, RAIL, railPaint, SOURCE_ID } from "./style.ts";
 
 type AnyLayer = { id: string; type: string; "source-layer"?: string; filter?: unknown };
 
@@ -55,11 +55,11 @@ describe("atlasLayers", () => {
     expect(byId("landuse_beach").paint["fill-opacity"]).toBe(0.6);
   });
 
-  it("drops the train icon where our own station dots are drawn, keeping the names", () => {
-    const pois = (icons: boolean) => (atlasLayers("light", "en", icons).find((l) => l.id === "pois") as AnyLayer & { layout: Record<string, unknown> }).layout;
-    expect(pois(false)["icon-image"]).toBe("");
-    expect(pois(true)["icon-image"]).not.toBe("");
-    expect(pois(false)["text-field"]).toEqual(pois(true)["text-field"]);
+  it("leaves out the basemap's rail and stations where our own subway lines are drawn, and nothing else", () => {
+    const own = (atlasLayers("light", "en", true) as AnyLayer[]).map((l) => l.id);
+    expect(own).not.toContain(RAIL);
+    expect(own).not.toContain("pois");
+    expect(own).toEqual(light.map((l) => l.id).filter((id) => !OWN_TRANSIT_REPLACES.has(id)));
   });
 
   it("lightens station names on the dark map, where Protomaps' blue doesn't read", () => {

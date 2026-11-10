@@ -127,6 +127,10 @@ style now has 56 layers instead of 69.
     didn't read.
 - **The Area page's quiet basemap** still restyles the rail and restores
   the new style when it closes. Checked in the pane.
+- *Later the same day:* in Tokyo and Kyoto our own subway lines and
+  station names replace the basemap's rail and stations entirely
+  (`m8-transit.md`). The rail styling above now applies only in Osaka,
+  Nara and Hakone.
 
 Compared in the pane at 375 × 812 over Shibuya, before and after, at
 zooms 12, 14 and 16 light and 14 dark. Jerry has the side-by-side image.

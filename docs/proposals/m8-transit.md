@@ -228,5 +228,21 @@ Built, with a Lines toggle Jerry asked for while it was under way.
 - **Not yet:** shared-corridor offsets. No pair of lines hid another
   badly enough to need one.
 
+**The basemap's rail and stations go** where we draw our own (Jerry,
+2026-11-10, after seeing it). In Tokyo and Kyoto the style leaves out
+Protomaps' rail lines and station labels (`OWN_TRANSIT_REPLACES` in
+`src/map/style.ts`):
+
+- **Rail:** the JR and private lines' grey goes with them, so only the
+  subway lines show.
+- **Station names are ours:** blue beside the dot from zoom 12, with the
+  Japanese underneath from zoom 15. Interchanges win where names
+  collide. A hidden line's stations lose their names along with their
+  dots.
+- **Aliases in brackets:** the build writes OpenStreetMap's quoted
+  aliases the way the signs do, as "Meiji-jingumae (Harajuku)".
+- **Osaka, Nara and Hakone,** which have no lines of ours, keep the
+  basemap's rail and station names.
+
 **Next, Part 2: stations as pins**, each with its own card (the old
 Part 3).

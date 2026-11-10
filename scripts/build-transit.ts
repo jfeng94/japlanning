@@ -249,7 +249,8 @@ async function buildRegion(region: RegionId, stops: StopLists): Promise<void> {
       properties: {
         kind: "station",
         name: st.name,
-        en: st.en ?? st.name,
+        // OpenStreetMap writes an alias in quotes ("Meiji-jingumae 'Harajuku'"); signs put it in brackets.
+        en: (st.en ?? st.name).replace(/\s*'([^']+)'/, " ($1)"),
         // In config order, so chips list lines the same way everywhere.
         lines: lines.filter((l) => st.lines.has(l.id)).map((l) => l.id),
       },

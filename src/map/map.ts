@@ -310,9 +310,9 @@ function labelFitButton(container: HTMLElement, areaMap: boolean): void {
 }
 
 function styleFor(region: RegionConfig, flavor: Flavor) {
-  // Where we draw our own station dots (src/map/transit-layers.ts), the basemap's train icons would double them.
-  const stationIcons = !TRANSIT_REGIONS.includes(region.id);
-  const style = atlasStyle({ pmtilesUrl: basemapUrl(region), flavor, assetsOrigin: location.origin, stationIcons });
+  // Where we draw our own subway lines and stations (src/map/transit-layers.ts), the basemap's rail and stations go.
+  const ownTransit = TRANSIT_REGIONS.includes(region.id);
+  const style = atlasStyle({ pmtilesUrl: basemapUrl(region), flavor, assetsOrigin: location.origin, ownTransit });
   if (!region.bbox) {
     // No extract yet: a plain background so the page isn't a wall of tile errors.
     return { ...style, sources: {}, layers: style.layers.filter((l) => l.type === "background") };

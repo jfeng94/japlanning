@@ -4,10 +4,11 @@ import type { MapView } from "./map.ts";
 import { belowPins } from "./pins.ts";
 
 /**
- * The subway lines in their own colours, with white station dots
- * (docs/proposals/m8-transit.md): a thin casing in the land's colour
- * under each line so crossings stay apart, as on a subway diagram. Station
- * names are the basemap's own labels. Lines can be hidden one by one.
+ * The subway lines in their own colours, with white station dots and
+ * their names (docs/proposals/m8-transit.md): a thin casing in the land's
+ * colour under each line so crossings stay apart, as on a subway diagram.
+ * They replace the basemap's rail and stations in these regions
+ * (style.ts, OWN_TRANSIT_REPLACES). Lines can be hidden one by one.
  *
  * Added before the pins, so the pins draw on top, and above whatever was
  * added earlier (the area shapes); re-added after every style load.
@@ -16,6 +17,7 @@ const SOURCE = "transit";
 const CASING = "transit-casing";
 const LINE = "transit-line";
 const STATION = "transit-station";
+const LABEL = "transit-label";
 const EMPTY: TransitData = { type: "FeatureCollection", features: [] };
 
 export interface TransitLayers {
@@ -38,6 +40,7 @@ export function createTransitLayers(view: MapView): TransitLayers {
     m.setFilter(CASING, lines);
     m.setFilter(LINE, lines);
     m.setFilter(STATION, stationFilter(hidden, lineIds()) as FilterSpecification);
+    m.setFilter(LABEL, stationFilter(hidden, lineIds()) as FilterSpecification);
   };
 
   const add = (m: MapLibreMap): void => {
@@ -74,6 +77,27 @@ export function createTransitLayers(view: MapView): TransitLayers {
         "circle-stroke-color": dark ? "#9aa0a8" : "#3b3f45",
         "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 11, 0.8, 16, 1.6],
       },
+    }, before);
+    // Names beside the dots, in the blue the basemap used for stations; the Japanese below from street level.
+    m.addLayer({
+      id: LABEL,
+      type: "symbol",
+      source: SOURCE,
+      minzoom: 12,
+      filter: stationFilter(hidden, lineIds()) as FilterSpecification,
+      layout: {
+        "text-field": ["step", ["zoom"], ["get", "en"], 15, ["format", ["get", "en"], {}, "\n", {}, ["get", "name"], { "font-scale": 0.85 }]],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 12, 10.5, 15, 12, 17, 13],
+        "text-variable-anchor": ["left", "right", "top", "bottom"],
+        "text-radial-offset": 0.75,
+        "text-justify": "auto",
+        "text-max-width": 8,
+        "text-padding": 2,
+        // Interchanges first where names collide.
+        "symbol-sort-key": ["-", 0, ["length", ["get", "lines"]]],
+      },
+      paint: { "text-color": dark ? "#8fb0f5" : "#315bcf", "text-halo-color": dark ? "#1f1f1f" : "#ffffff", "text-halo-width": 1.3 },
     }, before);
   };
   view.onStyleLoad(add);
