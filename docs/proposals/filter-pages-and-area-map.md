@@ -68,6 +68,9 @@ in view.
   | Page | | | Filters, Area, Search |
 
   Each filter button gets its own dot when its page has a selection.
+  Only the dot (2026-11-10): the button used to take an orange ring as
+  well, which read as "this page is open" next to the open page's own
+  pressed look.
 - **The Area button** shows when the region has at least one area chip
   (decided). A region without areas, like Hakone today, has none, with no
   special case for it.

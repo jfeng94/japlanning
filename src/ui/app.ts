@@ -807,9 +807,7 @@ export function mountApp(root: HTMLElement): AppHandle {
       [filtersButton, "filters"],
       [areaButton, "area"],
     ] as const) {
-      const active = hasGroupSelection(state, group);
-      button.querySelector<HTMLElement>(".dot")!.hidden = !active;
-      button.classList.toggle("is-active", active);
+      button.querySelector<HTMLElement>(".dot")!.hidden = !hasGroupSelection(state, group);
       button.setAttribute("aria-pressed", String(page === group));
     }
     // A region without areas (Hakone today) has no Area page; no special case.

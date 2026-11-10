@@ -170,11 +170,7 @@ button {
   pointer-events: none;
 }
 
-.panel-footer .icon-button.is-active {
-  border-color: var(--accent);
-}
-
-/* A filter page's button while its page is open. */
+/* A filter page's button while its page is open. A selection shows only as the dot (an orange ring too read as "open"; 2026-11-10). */
 .panel-footer .icon-button[aria-pressed="true"] {
   background: var(--chip);
   border-color: var(--fg);
@@ -1424,9 +1420,18 @@ button {
   vertical-align: 0.02em;
 }
 
-/* A layer's header chip in Category: selects or clears all of its kinds. */
-.chip.category-header {
-  font-weight: 600;
+/* A layer's heading in Category, laid out as the Area page's ward headings, with the layer's icon for the dot. */
+.category-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.category-heading img {
+  width: 1.2rem;
+  height: 1.2rem;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
 }
 
 /* Under Nearby: the radius slider and the walk it means. */

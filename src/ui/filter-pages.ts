@@ -1,4 +1,5 @@
 import type { AreaColour, RegionColours } from "../config/area-colors.ts";
+import { iconAssetUrl, isIconId } from "../config/icons.ts";
 import type { AreaIndex } from "../data/areas.ts";
 import type { LayerConfig } from "../data/types.ts";
 import { areaLook } from "../filter/apply.ts";
@@ -177,31 +178,38 @@ export function renderAreaPage(body: HTMLElement, state: FilterState, ctx: PageC
   }
 }
 
-/** One row per layer: its header chip (every kind on or off), then a chip per kind. */
+/**
+ * Each layer as the Area page lays out a ward section (2026-11-10): a
+ * heading with the layer's icon that picks or clears all of its kinds,
+ * then a chip per kind. A layer without kinds is one category: its one
+ * chip carries the layer's name, so its state shows as plainly as a kind's.
+ */
 function categorySection(state: FilterState, ctx: PageContext): HTMLElement {
   const { dispatch } = ctx;
   const sec = section("Category");
   for (const layer of ctx.layers) {
     const own = categoriesOf(layer);
     const all = own.every((c) => state.categories.has(c));
-    const chips = [
-      chip(layer.label, {
-        pressed: all,
-        color: layer.color,
-        className: "category-header",
-        onClick: () => dispatch({ type: "setCategories", categories: own, on: !all }),
-      }),
-    ];
-    for (const kind of layer.kinds ?? []) {
-      const category = `${layer.id}/${kind}`;
-      chips.push(
-        chip(kind, {
-          pressed: state.categories.has(category),
-          onClick: () => dispatch({ type: "toggleCategory", category }),
-        }),
-      );
-    }
-    sec.append(row(chips));
+    const heading = document.createElement("button");
+    heading.type = "button";
+    heading.className = "area-heading category-heading";
+    const icon = document.createElement("img");
+    icon.alt = "";
+    icon.draggable = false;
+    icon.src = iconAssetUrl(isIconId(layer.icon) ? layer.icon : "question");
+    heading.append(icon, layer.label);
+    heading.setAttribute("aria-pressed", String(all));
+    heading.setAttribute("aria-label", `${all ? "Clear" : "Pick"} every kind of ${layer.label}`);
+    heading.addEventListener("click", () => dispatch({ type: "setCategories", categories: own, on: !all }));
+
+    const kinds = layer.kinds && layer.kinds.length > 0 ? layer.kinds : undefined;
+    const chips = kinds
+      ? kinds.map((kind) => {
+          const category = `${layer.id}/${kind}`;
+          return chip(kind, { pressed: state.categories.has(category), onClick: () => dispatch({ type: "toggleCategory", category }) });
+        })
+      : [chip(layer.label, { pressed: all, onClick: () => dispatch({ type: "setCategories", categories: own, on: !all }) })];
+    sec.append(heading, row(chips));
   }
   return sec;
 }

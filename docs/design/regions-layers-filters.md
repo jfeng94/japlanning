@@ -208,9 +208,10 @@ clear:
   1. **Show only** (flags): Bookmarked (this device's bookmarks, kept
      outside the filter state and passed in), Open now or Open at a day
      and time, Nearby, Key branches. Each one on narrows the results.
-  2. **Category** (what): each layer is a header chip followed by its
-     kinds (Drinks: Coffee · Tea · Bar). A layer without kinds is one
-     chip.
+  2. **Category** (what): laid out like the Area page (2026-11-10):
+     each layer is a heading with its icon, which picks or clears all
+     of its kinds, and its kinds are chips under it (Drinks: Coffee ·
+     Tea · Bar). A layer without kinds has one chip, its own name.
 - **Area** (where): Here and + Adjacent, then the area chips under ward
   headings. The page holds the strip at Half, since it is about the map.
   Its button shows only in a region with areas. **The map follows the
