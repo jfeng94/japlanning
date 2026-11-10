@@ -21,11 +21,14 @@
     "maps": "node scripts/build-basemap.ts maps",
     "check-maps": "node scripts/check-maps.ts",
     "areas": "node scripts/build-areas.ts",
-    "audit": "node scripts/audit.ts"
+    "audit": "node scripts/audit.ts",
+    "transit": "node scripts/build-transit.ts"
   },
   "devDependencies": {
+    "@mapbox/vector-tile": "^3.0.0",
     "@types/node": "^26.6.6",
     "@types/papaparse": "^5.5.2",
+    "pbf": "^5.1.2",
     "polygon-clipping": "^0.15.7",
     "typescript": "~5.9.3",
     "vite": "^8.3.5",
