@@ -201,3 +201,15 @@ About 250 lines here, plus the new repo's workflow.
   `npm run check-maps` before building.
 - **Not done yet**: the iPhone check (step 3), then dropping the app's
   own copy of the maps (step 4).
+
+**The first iPhone check failed, on an older bug** (2026-11-10). Deleting
+Hakone's map in Settings → Offline, then switching to Hakone, drew
+nothing. Deleting a map left its stored copy registered with the map
+until the next launch (the code's comment said new tiles would "fail
+over to the network"; they didn't), so the map kept reading the deleted
+Blob. Chrome still read it; Safari refuses. A deleted map is now
+unregistered at once (`unregisterStoredBasemap`), and in the pane the
+same sequence, in one session, drew Hakone from 3 range requests to the
+maps site. WebKit made single ranges preflight-free in April 2022
+(r292293), so Safari's range requests to the maps site should be fine;
+the repeat of the phone check confirms it.

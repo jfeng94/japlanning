@@ -138,6 +138,17 @@ export function createIdbBasemapStore(dbName = "japlanning", storeName = "kv"): 
 }
 
 /**
+ * Forget a removed archive: the protocol drops its Blob-backed PMTiles, so
+ * the region's next tiles come from the maps site. Without this the map
+ * kept reading the Blob after its IndexedDB record was deleted, which
+ * Safari refuses (the map went blank until a relaunch; Chrome still read
+ * it). Already-drawn tiles stay.
+ */
+export function unregisterStoredBasemap(protocol: Pick<Protocol, "tiles">, url: string): void {
+  protocol.tiles.delete(url);
+}
+
+/**
  * Point the map's pmtiles protocol at every stored archive, so tile
  * requests for those URLs read the Blob. Called before the first style is
  * set and again after a download. A region with nothing stored keeps the

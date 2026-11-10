@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { archiveUrl, BASEMAP, versionFileUrl, versionFor } from "../config/basemap.ts";
 import type { RegionConfig } from "../data/types.ts";
-import { BlobSource, checkPublished, expectedSidecar, MapNotPublishedError, registerStoredBasemaps, statusFor, type StoredBasemap } from "./basemap.ts";
+import { BlobSource, checkPublished, expectedSidecar, MapNotPublishedError, registerStoredBasemaps, statusFor, unregisterStoredBasemap, type StoredBasemap } from "./basemap.ts";
 
 const tokyo: RegionConfig = { id: "tokyo", label: "Tokyo", areas: [], bbox: [139.6, 35.58, 139.85, 35.75] };
 const hakone: RegionConfig = { id: "hakone", label: "Hakone", areas: [] };
@@ -48,6 +48,15 @@ describe("registerStoredBasemaps", () => {
     const got = await registerStoredBasemaps(protocol, store, [tokyo, kyoto, hakone], (r) => `https://s/basemap/${r.id}.pmtiles`);
     expect(got).toEqual(["tokyo"]);
     expect(added).toEqual(["https://s/basemap/tokyo.pmtiles"]);
+  });
+
+  it("a removed map is forgotten, so the next tiles come from the site, not the deleted Blob", () => {
+    const tiles = new Map([
+      ["https://s/tokyo.pmtiles", {}],
+      ["https://s/kyoto.pmtiles", {}],
+    ]);
+    unregisterStoredBasemap({ tiles } as never, "https://s/tokyo.pmtiles");
+    expect([...tiles.keys()]).toEqual(["https://s/kyoto.pmtiles"]);
   });
 });
 

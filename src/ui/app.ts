@@ -22,7 +22,7 @@ import { createWatch, permissionState, type LocateError, type Position } from ".
 import { basemapUrl, ensureProtocol, mountMap, watchFlavor } from "../map/map.ts";
 import { createAreaLayers, type AreaDrawing } from "../map/area-layers.ts";
 import { createNearbyCircle } from "../map/nearby-circle.ts";
-import { createIdbBasemapStore, registerStoredBasemaps } from "../offline/basemap.ts";
+import { createIdbBasemapStore, registerStoredBasemaps, unregisterStoredBasemap } from "../offline/basemap.ts";
 import { createDownloadManager } from "../offline/downloads.ts";
 import { appUsage, formatMb } from "../offline/usage.ts";
 import { placesToPins, type PinRenderer } from "../map/pins.ts";
@@ -173,8 +173,8 @@ export function mountApp(root: HTMLElement): AppHandle {
           basemaps,
           downloads,
           urlFor: basemapUrl,
-          // Removed: the protocol keeps the old PMTiles until the next launch; new tiles fail over to the network now.
-          onRemoved: (region) => void registerStoredBasemaps(ensureProtocol(), basemaps, [region], basemapUrl),
+          // Removed: drop the Blob-backed PMTiles, so the region's next tiles come from the maps site.
+          onRemoved: (region) => unregisterStoredBasemap(ensureProtocol(), basemapUrl(region)),
           dataSynced: () => {
             if (results.length === 0) return undefined;
             const at = results.map((r) => r.fetchedAt).filter((d): d is Date => d !== undefined).sort((a, b) => b.getTime() - a.getTime())[0];
