@@ -27,6 +27,8 @@ import { createDownloadManager } from "../offline/downloads.ts";
 import { appUsage, formatMb } from "../offline/usage.ts";
 import { placesToPins, type PinRenderer } from "../map/pins.ts";
 import { createDomPinRenderer } from "../map/pins-dom.ts";
+import { createRasterPinRenderer } from "../map/pins-raster.ts";
+import { mountFpsMeter } from "./fps-meter.ts";
 import { createSdfPinRenderer } from "../map/pins-sdf.ts";
 import { chip } from "./chips.ts";
 import { renderDetail, renderDetailStrip } from "./detail.ts";
@@ -240,6 +242,7 @@ export function mountApp(root: HTMLElement): AppHandle {
     },
   );
   view.setBottomPadding(panel.heightPx());
+  if (startParams.get("fps") === "1") mountFpsMeter(view.map);
   const nearbyCircle = createNearbyCircle(view);
   const areaLayers = createAreaLayers(view);
   let pins: PinRenderer = createPinRenderer();
@@ -995,7 +998,14 @@ export function mountApp(root: HTMLElement): AppHandle {
       const css = getComputedStyle(document.documentElement);
       return { label: css.getPropertyValue("--fg").trim(), halo: css.getPropertyValue("--bg-raised").trim() };
     };
-    return pinRendererKind() === "dom" ? createDomPinRenderer(view) : createSdfPinRenderer(view, colors);
+    switch (pinRendererKind()) {
+      case "dom":
+        return createDomPinRenderer(view);
+      case "raster":
+        return createRasterPinRenderer(view, colors);
+      case "sdf":
+        return createSdfPinRenderer(view, colors);
+    }
   }
 
   filters.subscribe((state) => {

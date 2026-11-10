@@ -4,6 +4,7 @@ import lodgingCsv from "./__fixtures__/stub-lodging.csv?raw";
 import { layers } from "../config/layers.ts";
 import { areasOf, regionById, regionOptions } from "../config/regions.ts";
 import { inBbox } from "../geo/distance.ts";
+import { undrawable } from "../map/label-glyphs.ts";
 import { areaAt, areaIndex, wardFromAddress } from "./areas.ts";
 import { ParseError, parseLayerCsv, slug, splitMulti } from "./parse.ts";
 import { repoData } from "./repo-data.testing.ts";
@@ -46,6 +47,11 @@ describe.each(repoData.map((d) => [d.layer.id, d] as const))("%s data (the repo 
       })
       .map((p) => `${p.name}${p.branch ? ` ${p.branch}` : ""} (${p.region})`);
     expect(outside).toEqual([]);
+  });
+
+  it("names only use characters a map label can draw: the shipped glyphs, or the device font for Japanese (src/map/label-glyphs.ts)", () => {
+    const bad = result.places.flatMap((p) => undrawable(p.name).map((ch) => `${p.name}: U+${ch.codePointAt(0)!.toString(16).toUpperCase()} ${ch}`));
+    expect(bad).toEqual([]);
   });
 });
 

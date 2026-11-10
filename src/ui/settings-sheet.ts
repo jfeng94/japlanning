@@ -49,9 +49,10 @@ const FIELDS: Field<keyof Settings>[] = [
   {
     key: "pinRenderer",
     label: "Pin renderer",
-    help: "DOM markers are styled with CSS and full-colour artwork. SDF symbols are tinted silhouettes drawn by the map, lighter with hundreds of pins.",
+    help: "DOM markers are HTML elements styled with CSS; every one moves on every frame, so hundreds get heavy. Map layer draws the same artwork with the map, far lighter; the selected pin stays HTML. SDF symbols are tinted silhouettes drawn by the map.",
     options: [
       ["dom", "DOM markers"],
+      ["raster", "Map layer"],
       ["sdf", "SDF symbols"],
     ],
   },

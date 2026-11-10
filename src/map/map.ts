@@ -116,14 +116,26 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
   map.addControl(locate, "top-left");
 
   let styled = false;
+  /**
+   * The current real style has loaded, so overlays can be added now. Not
+   * map.isStyleLoaded(): that also waits for every tile, so a renderer
+   * created mid-pan (a Settings change) would wait for a style load that
+   * never comes.
+   */
+  let styleReady = false;
+  const setStyle = (style: Parameters<MapLibreMap["setStyle"]>[0]) => {
+    styleReady = false;
+    map.setStyle(style);
+  };
   map.on("style.load", () => {
     if (!styled) return; // the empty placeholder style
+    styleReady = true;
     if (areaMode) quietBasemap(true); // a new style (the theme changed) arrives with everything showing
     for (const cb of styleLoadCallbacks) cb(map);
   });
   void (callbacks.prepareBasemaps?.(proto) ?? Promise.resolve()).finally(() => {
     styled = true;
-    map.setStyle(styleFor(currentRegion, currentFlavor));
+    setStyle(styleFor(currentRegion, currentFlavor));
   });
   // Debug handle for the browser console; harmless in production.
   (window as unknown as { __japlanning?: unknown }).__japlanning = { map, locate };
@@ -219,20 +231,20 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
       if (queued !== undefined) clearTimeout(queued);
       queued = undefined;
       currentRegion = next;
-      map.setStyle(styleFor(next, currentFlavor));
+      setStyle(styleFor(next, currentFlavor));
       fitRegion(next.bbox ?? JAPAN_BOUNDS);
     },
     setFlavor(next) {
       if (next === currentFlavor) return;
       currentFlavor = next;
-      map.setStyle(styleFor(currentRegion, next));
+      setStyle(styleFor(currentRegion, next));
     },
     setBottomPadding(px) {
       map.setPadding({ top: 0, left: 0, right: 0, bottom: Math.max(0, Math.round(px)) });
     },
     onStyleLoad(cb) {
       styleLoadCallbacks.push(cb);
-      if (styled && map.isStyleLoaded()) cb(map);
+      if (styleReady) cb(map);
     },
     focus(lng, lat, minZoom = 15) {
       map.easeTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), minZoom), duration: 500 });

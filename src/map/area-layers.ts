@@ -4,6 +4,7 @@ import { rgbFromHex, type AreaColour } from "../config/area-colors.ts";
 import { labelPoint, type AreaShapes } from "../data/area-shapes.ts";
 import type { AreaLook } from "../filter/apply.ts";
 import type { MapView } from "./map.ts";
+import { belowPins } from "./pins.ts";
 import type { Flavor } from "./style.ts";
 
 /**
@@ -90,6 +91,7 @@ export function createAreaLayers(view: MapView): AreaLayers {
 
   const add = (m: MapLibreMap): void => {
     if (m.getSource(SOURCE)) return;
+    const before = belowPins(m); // beneath the pins, whichever was added first
     const halo = getComputedStyle(document.documentElement).getPropertyValue("--bg-raised").trim() || "#ffffff";
     addImages(m);
     m.addSource(SOURCE, { type: "geojson", data: polygons() });
@@ -100,14 +102,14 @@ export function createAreaLayers(view: MapView): AreaLayers {
       source: SOURCE,
       filter: ["==", ["get", "look"], "picked"],
       paint: { "fill-color": ["get", "fill"], "fill-opacity": FILL_OPACITY },
-    });
+    }, before);
     m.addLayer({
       id: `${SOURCE}-hatch`,
       type: "fill",
       source: SOURCE,
       filter: ["==", ["get", "look"], "added"],
       paint: { "fill-pattern": ["get", "pattern"] },
-    });
+    }, before);
     m.addLayer({
       id: `${SOURCE}-line`,
       type: "line",
@@ -115,14 +117,14 @@ export function createAreaLayers(view: MapView): AreaLayers {
       filter: ["!=", ["get", "look"], "added"],
       layout: { "line-join": "round" },
       paint: { "line-color": ["get", "line"], "line-width": ["match", ["get", "look"], "picked", 2.2, 1.4] },
-    });
+    }, before);
     m.addLayer({
       id: `${SOURCE}-line-added`,
       type: "line",
       source: SOURCE,
       filter: ["==", ["get", "look"], "added"],
       paint: { "line-color": ["get", "line"], "line-width": 1.6, "line-dasharray": [2.5, 1.5] },
-    });
+    }, before);
     m.addLayer({
       id: `${SOURCE}-label`,
       type: "symbol",
@@ -136,7 +138,7 @@ export function createAreaLayers(view: MapView): AreaLayers {
         "symbol-sort-key": ["get", "rank"],
       },
       paint: { "text-color": ["get", "line"], "text-halo-color": halo, "text-halo-width": 1.6 },
-    });
+    }, before);
   };
   view.onStyleLoad(add);
 

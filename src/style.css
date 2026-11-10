@@ -290,6 +290,21 @@ button {
 
 /* ---------- map pane ---------- */
 
+/* ?fps=1: how smoothly the last move drew (src/ui/fps-meter.ts). */
+.fps-meter {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 5;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.35rem;
+  background: var(--bg-raised);
+  color: var(--fg);
+  font: 600 0.75rem/1.3 ui-monospace, "SF Mono", Menlo, monospace;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
 .panes {
   flex: 1;
   position: relative;
@@ -318,7 +333,7 @@ button {
   background: var(--bg-raised);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   cursor: pointer;
-  transition: transform 0.12s ease-out;
+  /* No transition on transform: MapLibre moves markers by transform every frame, so one would make them trail the map. */
 }
 
 .dom-pin img {
@@ -330,10 +345,16 @@ button {
 }
 
 
+/*
+ * Selected: 1.3 times the size. Not transform: scale(), which MapLibre's
+ * inline transform (the marker's position) overrides; nor the separate
+ * `scale` property, which would scale that position too. A bigger box
+ * stays centred, since MapLibre centres a marker on its own size.
+ */
 .dom-pin.is-selected {
-  transform: scale(1.3);
+  width: 2.73rem;
+  height: 2.73rem;
   border-width: 3px;
-  z-index: 1;
 }
 
 /* ?pinstyle=bare: the artwork alone, a soft shadow to lift it off the map. */
@@ -348,6 +369,8 @@ button {
 }
 
 .dom-pin--bare.is-selected {
+  width: 2.47rem; /* 1.3 × 1.9rem */
+  height: 2.47rem;
   border: 0;
   filter: drop-shadow(0 0 5px var(--pin-color)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
 }
@@ -380,8 +403,8 @@ button {
   display: block;
 }
 
-/* Markers inherit MapLibre's default cursor rules; selected ones must stack on top. */
-.maplibregl-marker:has(.dom-pin.is-selected) {
+/* Markers inherit MapLibre's default cursor rules; selected ones must stack on top. The pin is the marker element itself. */
+.dom-pin.maplibregl-marker.is-selected {
   z-index: 2;
 }
 

@@ -3,6 +3,7 @@ import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import type { LatLng } from "../geo/distance.ts";
 import { circleRing } from "../geo/nearby.ts";
 import type { MapView } from "./map.ts";
+import { belowPins } from "./pins.ts";
 
 const SOURCE = "nearby-circle";
 
@@ -30,15 +31,16 @@ export function createNearbyCircle(view: MapView): NearbyCircle {
 
   const add = (m: MapLibreMap): void => {
     if (m.getSource(SOURCE)) return;
+    const before = belowPins(m); // beneath the pins, whichever was added first
     const color = getComputedStyle(document.documentElement).getPropertyValue("--location").trim() || "#2f7cf6";
     m.addSource(SOURCE, { type: "geojson", data: data() });
-    m.addLayer({ id: `${SOURCE}-fill`, type: "fill", source: SOURCE, paint: { "fill-color": color, "fill-opacity": 0.07 } });
+    m.addLayer({ id: `${SOURCE}-fill`, type: "fill", source: SOURCE, paint: { "fill-color": color, "fill-opacity": 0.07 } }, before);
     m.addLayer({
       id: `${SOURCE}-line`,
       type: "line",
       source: SOURCE,
       paint: { "line-color": color, "line-width": 1.5, "line-opacity": 0.8, "line-dasharray": [3, 2] },
-    });
+    }, before);
   };
   view.onStyleLoad(add);
 
