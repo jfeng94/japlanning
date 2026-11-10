@@ -28,7 +28,11 @@ if something is ambiguous enough to stop the research.
   "Adding an area" below.
 - **Hours.** Human-readable plus OSM syntax. `Last verified` is today
   only when the hours were read from the official source; hours from a
-  third party go in without a date, so the app shows them as unverified.
+  third party go in without a date, so the card badges them
+  "unverified". The cell holds times and days only: no source ("per
+  Tabelog"), no doubt ("verify", "sources differ"), no tips (a cover
+  charge goes in Notes). When sources disagree, the cell takes the best
+  one and the follow-up list records the rest.
 - **Kind** always: it is required, and it files the place under its
   category chip. Food has no Kind column: its Type gives the kind
   (`FOOD_KINDS` in `src/config/layers.ts`), so Type is required there,
@@ -36,9 +40,15 @@ if something is ambiguous enough to stop the research.
 - **Facets.** Format, Food, Linger, Reservation, Specialty only when a
   source supports them; blank otherwise. Blank beats a guess: a wrong
   value misleads on the card and in search.
-- **Notes.** Two or three lines in English: what it is known for, the
-  order, practical tips (card only, queues, reservations). Nothing
-  private, ever.
+- **Notes.** Two or three sentences in English, written as a friend's
+  recommendation (2026-11-10, `docs/proposals/content-pass.md`): what
+  it is, why go, what to order, practical tips (card only, queues, how
+  to book, a cover charge, a short walking direction). Definitive and
+  present tense. Never hours, addresses, sources, research dates,
+  "Update:", doubt or where the pin is: hours and addresses have their
+  own cells and badges, and open questions go to the follow-up list
+  (`docs/research/`) or the findings. A test fails on research wording
+  in a note or an Hours cell. Nothing private, ever.
 - **Icon** by Kind (coffee, tea, bar) unless Jerry wants a special one.
 - **Key** only when Jerry says so, or the brand itself calls a branch
   its flagship.

@@ -1,7 +1,7 @@
 # Content pass: notes, hours and addresses
 
-Status: **accepted** (2026-11-10). Part 1's card change is built; the
-notes check waits for Part 2. A ten-note sample is out for review.
+Status: **accepted** (2026-11-10). Parts 1 and 2 are done; Parts 3 and 4
+are next. See "Results" at the end.
 
 ## Why
 
@@ -197,3 +197,31 @@ Part 4  docs/design/adding-places.md; CLAUDE.md's workflow line
    first?
 3. **Closed places:** remove them (recommended), or keep them marked
    closed?
+
+## Results
+
+**Part 1** (2026-11-10): the Hours row carries the "unverified" badge,
+and verified hours read normally. A verified place shows "Hours
+checked <date>" at the end of Details.
+
+**Part 2** (2026-11-10):
+
+- **Rewritten:** 223 notes, and the hours of 112 places, in the voice
+  Jerry approved on the ten-note sample
+  (`docs/research/notes-sample-2026-11-10.md`). Hours moved from notes
+  into the fields where the Hours cell was blank.
+- **Settled:** nothing new was researched. Six helper agents rewrote
+  from each row's own fields. A script checked every change (ids,
+  wording, opening_hours syntax) and every new number and superlative
+  against the old text, then applied them.
+- **Hand-adjusted:** two places whose sources disagree on Mondays (Fuku
+  Coffee, Bee's Knees) keep no OSM hours, so Open now treats them as
+  unknown rather than open. Two branch names the agents added were
+  undone. Two notes that require booking now say Reservation: Required.
+- **Follow-up list:** gained the disagreements and open questions the
+  notes used to carry, and lost its "no hours" tag where hours arrived
+  (271 places now).
+- **Questions for Jerry:** 30 places whose identity or status is in
+  doubt are in `docs/research/findings-2026-11-10.md`.
+- **Enforced:** a test over every data file fails on research wording
+  in a note or an Hours cell. `adding-places.md` states the voice.
