@@ -254,6 +254,13 @@ is used only as the **directions hand-off**.
    script names the newest when the pin is gone). Every region is then
    re-extracted and installed apps download about 115 MB of maps again.
    Re-extracting on every deploy broke the deploy on 2026-11-10.
+12. **GitHub Pages sometimes stalls at "syncing_files".** The build
+   passes, then `deploy-pages` waits on Pages until it times out, with
+   GitHub's status page all green. It hit about half the deploys on
+   2026-11-09 and 10, with the site at about 120 MB of maps. The deploy
+   step now waits 30 minutes instead of 10 (`.github/workflows/deploy.yml`).
+   If it still times out, push an empty commit ("Redeploy: …"): a re-run
+   reuses the stalled deployment's id (the commit) and stalls again.
 
 ## Basemap extracts (starting point)
 

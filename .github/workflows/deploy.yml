@@ -44,3 +44,8 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          # The site is about 120 MB with the offline maps, and Pages has
+          # sat at "syncing_files" past the default 10 minutes (CLAUDE.md,
+          # gotcha 12), so wait 30 before giving up.
+          timeout: 1800000
