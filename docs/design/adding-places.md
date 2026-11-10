@@ -178,6 +178,12 @@ takes two steps, in order:
    wait for it to finish, then re-run the failed deploy (or push the next
    commit). `check-maps` passes, and phones see "update available" for
    their maps.
+3. **Rebuild the subway lines** from the new maps: `npm run maps` to get
+   them locally, then `npm run transit`, and commit
+   `public/transit/*.geojson`. The lines and stations come from the
+   maps' zoom-15 tiles (`docs/proposals/m8-transit.md`), so a new box or
+   build can add or move them. Tests pin the station counts of a few
+   lines; a change there is a prompt to look, not necessarily a fault.
 
 Never the other way round: an app that expects maps the site doesn't
 have would let phones store the old maps under the new label. The phone

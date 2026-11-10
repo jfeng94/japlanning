@@ -87,7 +87,7 @@ function paintFor(id: string, flavor: Flavor): Record<string, unknown> | undefin
  * 17, with the busier stations (the lower `min_zoom` the tiles give them)
  * winning where labels collide.
  */
-function stationsOnly(layer: LayerSpecification): LayerSpecification {
+function stationsOnly(layer: LayerSpecification, icons: boolean): LayerSpecification {
   const l = layer as LayerSpecification & { layout?: Record<string, unknown> };
   return {
     ...l,
@@ -96,6 +96,8 @@ function stationsOnly(layer: LayerSpecification): LayerSpecification {
       ...l.layout,
       "text-size": ["interpolate", ["linear"], ["zoom"], 12, 10.5, 15, 12, 17, 13, 19, 16],
       "symbol-sort-key": ["get", "min_zoom"],
+      // Where our own station dots are drawn (src/map/transit-layers.ts), the name alone, beside the dot.
+      ...(icons ? {} : { "icon-image": "" }),
     },
   } as LayerSpecification;
 }
@@ -116,15 +118,17 @@ export interface StyleOptions {
   lang?: string;
   /** Origin the glyphs and sprites are served from (the site's). Defaults to no origin, i.e. root-relative paths. */
   assetsOrigin?: string;
+  /** The basemap's train icon on stations; off where our own station dots are drawn (M8 Part 2). Default on. */
+  stationIcons?: boolean;
 }
 
 /** The basemap layers after the atlas rules. Pure; the map adds pins on top. */
-export function atlasLayers(flavor: Flavor, lang = "en"): LayerSpecification[] {
+export function atlasLayers(flavor: Flavor, lang = "en", stationIcons = true): LayerSpecification[] {
   const out: LayerSpecification[] = [];
   let rail: LayerSpecification | undefined;
   for (const layer of basemapLayers(SOURCE_ID, namedFlavor(flavor), { lang })) {
     if (DROPPED_LAYERS.has(layer.id)) continue;
-    let l = layer.id === "pois" ? stationsOnly(layer) : layer;
+    let l = layer.id === "pois" ? stationsOnly(layer, stationIcons) : layer;
     const minzoom = MIN_ZOOM[l.id];
     if (minzoom !== undefined) l = { ...l, minzoom } as LayerSpecification;
     const paint = paintFor(l.id, flavor);
@@ -187,7 +191,7 @@ export function atlasStyle(opts: StyleOptions): StyleSpecification {
         attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap</a>',
       },
     },
-    layers: atlasLayers(opts.flavor, opts.lang),
+    layers: atlasLayers(opts.flavor, opts.lang, opts.stationIcons ?? true),
     // Not part of the spec proper; read back by tests and the map for the page background.
     metadata: { background: flavor.background },
   };

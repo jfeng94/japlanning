@@ -16,6 +16,7 @@ import { Protocol } from "pmtiles";
 
 setWorkerUrl(workerUrl);
 import { archiveUrl } from "../config/basemap.ts";
+import { TRANSIT_REGIONS } from "../config/transit.ts";
 import type { RegionConfig } from "../data/types.ts";
 import { createLocateControl, type LocateControl } from "./locate-control.ts";
 import { atlasLayers, atlasStyle, QUIET_RAIL, quietHides, quietRailPaint, type Flavor } from "./style.ts";
@@ -309,12 +310,14 @@ function labelFitButton(container: HTMLElement, areaMap: boolean): void {
 }
 
 function styleFor(region: RegionConfig, flavor: Flavor) {
+  // Where we draw our own station dots (src/map/transit-layers.ts), the basemap's train icons would double them.
+  const stationIcons = !TRANSIT_REGIONS.includes(region.id);
+  const style = atlasStyle({ pmtilesUrl: basemapUrl(region), flavor, assetsOrigin: location.origin, stationIcons });
   if (!region.bbox) {
     // No extract yet: a plain background so the page isn't a wall of tile errors.
-    const style = atlasStyle({ pmtilesUrl: basemapUrl(region), flavor, assetsOrigin: location.origin });
     return { ...style, sources: {}, layers: style.layers.filter((l) => l.type === "background") };
   }
-  return atlasStyle({ pmtilesUrl: basemapUrl(region), flavor, assetsOrigin: location.origin });
+  return style;
 }
 
 /** Follow the system colour scheme; `onChange` fires on runtime switches. */

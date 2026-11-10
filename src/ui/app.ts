@@ -5,6 +5,8 @@ import { areasOf, regions } from "../config/regions.ts";
 import { settings, updateSettings, type Settings } from "../config/settings.ts";
 import { createBookmarks, createIdbBookmarkStorage } from "../data/bookmarks.ts";
 import { loadAreaShapes, nearestChip, shapesBounds, type AreaShapes } from "../data/area-shapes.ts";
+import { loadTransit } from "../data/transit.ts";
+import { TRANSIT_LINES } from "../config/transit.ts";
 import { areaAt } from "../data/areas.ts";
 import { browserDeps } from "../data/browser.ts";
 import { loadAllLayersStaged } from "../data/load.ts";
@@ -21,6 +23,7 @@ import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url
 import { createWatch, permissionState, type LocateError, type Position } from "../geo/locate.ts";
 import { basemapUrl, ensureProtocol, mountMap, watchFlavor } from "../map/map.ts";
 import { createAreaLayers, type AreaDrawing } from "../map/area-layers.ts";
+import { createTransitLayers } from "../map/transit-layers.ts";
 import { createNearbyCircle } from "../map/nearby-circle.ts";
 import { createIdbBasemapStore, registerStoredBasemaps, unregisterStoredBasemap } from "../offline/basemap.ts";
 import { createDownloadManager } from "../offline/downloads.ts";
@@ -39,6 +42,7 @@ import areaIcon from "./icons/area.webp";
 import filtersIcon from "./icons/filters.webp";
 import nextIcon from "./icons/next.webp";
 import prevIcon from "./icons/prev.webp";
+import { createLinesControl } from "./lines-control.ts";
 import { renderList, sortByName } from "./list.ts";
 import { renderOfflineSection } from "./offline-section.ts";
 import { mountPanel, type PanelHeight } from "./panel.ts";
@@ -244,6 +248,19 @@ export function mountApp(root: HTMLElement): AppHandle {
   if (startParams.get("fps") === "1") mountFpsMeter(view.map);
   const nearbyCircle = createNearbyCircle(view);
   const areaLayers = createAreaLayers(view);
+  // The subway lines in their colours (docs/proposals/m8-transit.md), above the area shapes and under the pins;
+  // the Lines button under fit and locate hides or shows them one by one, remembered on this device.
+  const transitLayers = createTransitLayers(view);
+  const linesControl = createLinesControl((hidden) => {
+    saveHiddenLines(hidden);
+    transitLayers.setHidden(hidden);
+  });
+  view.map.addControl(linesControl, "top-left");
+  {
+    const hidden = loadHiddenLines();
+    transitLayers.setHidden(hidden);
+    linesControl.setHidden(hidden);
+  }
   let pins: PinRenderer = createPinRenderer();
   pins.onSelect(onPinSelect);
   // A tap on the Area page's map picks or drops the area under it, as its chip does; the pins there are inert.
@@ -382,6 +399,20 @@ export function mountApp(root: HTMLElement): AppHandle {
   const shapes = new Map<RegionId, AreaShapes>();
   const shapesRequested = new Set<RegionId>();
   /** Fetch a region's shapes once, the first time it renders; Here uses nearest centres until they arrive. */
+  /** The region's subway lines on the map and in the Lines panel; switching region swaps them. */
+  let transitFor: RegionId | undefined;
+  function ensureTransit(region: RegionId): void {
+    if (transitFor === region) return;
+    transitFor = region;
+    const lines = TRANSIT_LINES.filter((l) => l.region === region);
+    linesControl.setLines(lines);
+    transitLayers.set(undefined);
+    if (lines.length === 0) return;
+    void loadTransit(region).then((data) => {
+      if (transitFor === region) transitLayers.set(data);
+    });
+  }
+
   function ensureShapes(region: RegionId): void {
     if (shapesRequested.has(region) || areasOf(region).chips.length === 0) return;
     shapesRequested.add(region);
@@ -847,6 +878,7 @@ export function mountApp(root: HTMLElement): AppHandle {
     const areaMap = page === "area";
     nearbyCircle.set(!areaMap && state.nearby !== undefined ? position : undefined, previewRadius ?? state.nearby);
     ensureShapes(state.region);
+    ensureTransit(state.region);
     const regionShapes = shapes.get(state.region);
     areaLayers.set(regionShapes ? areaDrawing(state, here, regionShapes, !areaMap) : undefined);
     syncAreaMap(areaMap, state, here);
@@ -1187,4 +1219,25 @@ function el(tagName: string, className: string, html = ""): HTMLElement {
   node.className = className;
   node.innerHTML = html;
   return node;
+}
+
+/** The subway lines hidden in the Lines panel, kept on this device (a per-viewer convenience: empty when storage is blocked). */
+const HIDDEN_LINES_KEY = "japlanning.hiddenLines";
+
+function loadHiddenLines(): Set<string> {
+  try {
+    const raw = localStorage.getItem(HIDDEN_LINES_KEY);
+    const ids = raw ? (JSON.parse(raw) as unknown) : [];
+    return new Set(Array.isArray(ids) ? ids.filter((x): x is string => typeof x === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveHiddenLines(hidden: ReadonlySet<string>): void {
+  try {
+    localStorage.setItem(HIDDEN_LINES_KEY, JSON.stringify([...hidden]));
+  } catch {
+    /* storage blocked: the choice lasts this session only */
+  }
 }

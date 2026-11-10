@@ -1,6 +1,24 @@
 # M8 Part 2: lines in their colours, and the station for every place
 
-Status: **proposed** (2026-11-10), waiting for a go-ahead.
+Status: **accepted** (2026-11-10), narrowed: see "Decisions". Part 1 in
+progress.
+
+## Decisions (Jerry, 2026-11-10)
+
+- **Lines:** every subway in Tokyo and Kyoto, for now. That's Tokyo
+  Metro's 9 lines, Toei's 4, and Kyoto's Karasuma and Tozai. Osaka is
+  only a possible day trip, so it isn't worth the effort. JR and the
+  private lines keep the basemap's grey rail.
+- **No nearest stations on the card** (Part 2 below): judging by eye on
+  the map is enough. The old Part 3, stations as pins, becomes Part 2.
+- **No station codes** for now.
+- **Colours, all confirmed:**
+  - Tokyo Metro: Jerry's list. OpenStreetMap agrees except for Chiyoda,
+    which it has as `#00A650`; Jerry's `#00BB85` stays.
+  - Toei: OpenStreetMap's tags, which match the values in the table.
+  - Kyoto: OpenStreetMap's tags, Karasuma `#3CB371` and Tozai `#FF4500`.
+    Kyoto City publishes only the colour names, green (緑) and vermilion
+    (朱); these match them.
 
 ## Why
 
@@ -156,3 +174,59 @@ half a day, Part 3 one to two.
 3. **Order:** Part 1, check on the phone, then Parts 2 and 3? Or Parts 1
    and 2 together, since Part 2 is where the answer to "how do I get
    there" lives?
+
+## Results: Part 1, the lines (2026-11-10)
+
+Built, with a Lines toggle Jerry asked for while it was under way.
+
+- **`npm run transit`** (`scripts/build-transit.ts`) reads each region's
+  zoom-15 tiles from the local archive in about a second, and writes:
+  - Tokyo: 13 lines and 185 stations in 179 KB;
+  - Kyoto: 2 lines and 31 stations in 19 KB.
+
+  Both files are committed and cached for offline use like the area
+  shapes.
+- **The stations are exact.** A first version guessed which lines stop
+  at a station from how close their track runs, and was about 95% right.
+  It put the Keisei-Ueno, the Mukohara tram stop and Keio's Shinsen-
+  Shinjuku on our lines, and dropped Morishita from the Oedo.
+  - **Each line's real stop list** from OpenStreetMap replaced the
+    guess: a station counts for a line when its name is on the line's
+    list and it lies within 300 m of the line's own track.
+  - **Through-running stops** stay off our lines: the Hanzomon's trains
+    run on to Sangenjaya as the Den-en-toshi line, which doesn't make
+    Sangenjaya a Hanzomon station.
+  - **Counts that match the operators':** Ginza 19, Marunouchi 28,
+    Asakusa 20, Hanzomon 14, Karasuma 15, Kyoto Tozai 17. The Oedo has 37
+    of its 38, since Hikarigaoka is outside the map box.
+  - **The stop lists** are cached in `.cache/transit/stops.json`, so the
+    Overpass servers (often busy: they answered on the third try) are
+    needed only with `--refresh`.
+- **On the map** (`src/map/transit-layers.ts`):
+  - each line in its colour over a thin casing, white on the light map
+    and near-black on the dark;
+  - white station dots with a dark ring, from zoom 11;
+  - everything under our pins and above the area shapes, on the Area
+    page too.
+
+  In Tokyo and Kyoto the basemap's station names stay, but without its
+  train icon, so the dot is the only marker.
+- **The Lines button** (`src/ui/lines-control.ts`) sits under fit and
+  locate. Its panel lists the region's lines, each a chip with the
+  line's letter on a badge in its colour:
+  - a tap hides or shows that line, and its stations when no line
+    through them is left;
+  - All and None at the foot;
+  - the choice is kept on the device (`localStorage`, as a convenience)
+    and survives a reload;
+  - the button hides in a region without lines.
+- **Checked in the pane** at phone width:
+  - Tokyo at zooms 12 to 14, light and dark;
+  - Kyoto;
+  - the panel, showing only the Ginza and Oedo lines, then a reload
+    that kept that choice.
+- **Not yet:** shared-corridor offsets. No pair of lines hid another
+  badly enough to need one.
+
+**Next, Part 2: stations as pins**, each with its own card (the old
+Part 3).
