@@ -213,3 +213,14 @@ The "Update ready" toast interrupted whatever Jerry was doing. A waiting
 update now shows as a button with a blue up arrow, beside Settings in the
 header, and nowhere else. It stays until tapped. The tap tells the new
 worker to take over and the page reloads on it, as the toast's tap did.
+
+### Addendum (2026-11-10): the maps moved to their own site
+
+The archives are no longer part of the app's site: they're published at
+<https://jfeng94.github.io/japlanning-maps/> by the `jfeng94/japlanning-maps`
+repo, from this repo's map settings, so the app's deploys don't re-send
+110 MB each time (`docs/proposals/maps-site.md`). Stored maps are kept by
+region, not by address, so nothing was downloaded again. A download now
+first checks the site's version file for the archive, and the app's
+deploy checks the site has the maps its config expects. The service
+worker never sees the archives (they're on another origin).

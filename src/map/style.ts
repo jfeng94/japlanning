@@ -26,7 +26,7 @@ export const GLYPHS_PATH = "/fonts/{fontstack}/{range}.pbf";
 export const SPRITES_PATH = "/sprites";
 
 export interface StyleOptions {
-  /** Full URL of the PMTiles archive, e.g. `${origin}/basemap/tokyo.pmtiles`. */
+  /** Full URL of the PMTiles archive, on the maps site (src/config/basemap.ts archiveUrl). */
   pmtilesUrl: string;
   flavor: Flavor;
   /** Label language; local names are the fallback. */

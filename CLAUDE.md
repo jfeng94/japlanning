@@ -188,6 +188,16 @@ is used only as the **directions hand-off**.
   `jfeng94.github.io`, a `CNAME` file in the deployed site, then "Enforce
   HTTPS" in the Pages settings once the certificate issues (can take up to an
   hour).
+- **The offline maps have their own site** (2026-11-10,
+  `docs/proposals/maps-site.md`): the public repo `jfeng94/japlanning-maps`
+  publishes them at <https://jfeng94.github.io/japlanning-maps/>, from this
+  repo's map settings, by a workflow run by hand
+  (`gh workflow run maps.yml -R jfeng94/japlanning-maps -f ref=<commit>`).
+  The app's deploy checks that site has the maps its config expects
+  (`npm run check-maps`) and fails otherwise. GitHub Pages lets other
+  sites read its files (`Access-Control-Allow-Origin: *`) and serves byte
+  ranges, but answers a preflight with 405; pmtiles' single-range requests
+  need none.
 
 ## Known gotchas (verified or high-likelihood)
 
@@ -201,12 +211,15 @@ is used only as the **directions hand-off**.
    **nth-weekday closures** (`We[3] off`) are already in the data and parse
    correctly. Keep tests for them.
 3. **PMTiles uses HTTP range requests**, which service-worker caching handles
-   poorly. Done in M7 (2026-11-07): the worker passes `/basemap/` through;
-   each region's archive is downloaded whole, by default automatically on
+   poorly. Done in M7 (2026-11-07): the archives live on the maps site
+   (see Hosting), another origin, which the worker never sees; each
+   region's archive is downloaded whole, by default automatically on
    an online launch when missing or outdated ("Download maps
-   automatically" in Settings, else by hand in Settings → Offline), kept
-   as a Blob in IndexedDB with a build/bbox sidecar, and read through a
-   Blob-backed pmtiles Source registered under the archive's URL.
+   automatically" in Settings, else by hand in Settings → Offline), after
+   checking the site's version file matches, kept as a Blob in IndexedDB
+   under the region's id with a build/bbox sidecar, and read through a
+   Blob-backed pmtiles Source registered under the archive's URL (which
+   carries the version, `?v=`).
    `navigator.storage.persist()` is asked before the first download.
    WebKit's `storage.estimate()` does not count those Blobs; the app adds
    up its own usage.
@@ -216,7 +229,7 @@ is used only as the **directions hand-off**.
    install to Home Screen, open **the installed app** once on Wi-Fi before the
    trip, and show an "offline data ready / last synced" indicator per region.
 5. **Fonts/glyphs offline.** MapLibre needs glyph PBFs for labels. Done in
-   M7: `npm run basemap` mirrors the three Noto Sans stacks (Latin ranges
+   M7: `npm run assets` mirrors the three Noto Sans stacks (Latin ranges
    0–1023) and the sprites into the site, pinned in
    `src/config/assets-lock.json`, and the worker precaches them. Japanese
    text uses `localIdeographFontFamily` (device CJK fonts); the airplane-mode
@@ -229,8 +242,9 @@ is used only as the **directions hand-off**.
 7. **Clipboard:** `navigator.clipboard.writeText` needs HTTPS and a user
    gesture. Copy as `Name\nAddress`. If the address starts with `~`, flag it
    as approximate in the UI.
-8. **GitHub Pages file limit** is 100 MB per file. Keep each region's extract
-   well under that by choosing a tight bounding box and a sensible max zoom.
+8. **GitHub Pages file limit** is 100 MB per file, on the maps site as
+   anywhere. Keep each region's extract well under that by choosing a
+   tight bounding box and a sensible max zoom (Tokyo is 65 MB).
 9. **Node version.** The machine shipped with Node 14. Vite needs Node 20+.
    Use nvm-windows so the upgrade doesn't disturb anything else.
 10. **Location in the installed app goes through Safari's settings in
@@ -246,24 +260,27 @@ is used only as the **directions hand-off**.
    "blocked" toast opens Diagnostics, whose Location section lists the
    settings to check for the way the app is running and can test them
    (`src/geo/location-help.ts`).
-11. **Protomaps keeps only about a week of daily builds.** Deploys copy
-   each region's map from the live site while the pinned build, zoom and
-   bbox are unchanged (`scripts/build-basemap.ts`), so the pin can be
+11. **Protomaps keeps only about a week of daily builds.** The maps
+   workflow copies each region's map from the maps site while the pinned
+   build, zoom and bbox are unchanged (`npm run maps`), so the pin can be
    older than that. Changing any of the three extracts again: set `build`
    in `src/config/basemap.ts` to a current build in the same commit (the
-   script names the newest when the pin is gone). Every region is then
-   re-extracted and installed apps download about 115 MB of maps again.
-   Re-extracting on every deploy broke the deploy on 2026-11-10.
+   script names the newest when the pin is gone), then publish the maps
+   before the app deploys ("Changing a map box" in
+   `docs/design/adding-places.md`). Every region is then re-extracted and
+   installed apps download about 115 MB of maps again. Re-extracting on
+   every deploy broke the deploy on 2026-11-10.
 12. **GitHub Pages sometimes stalls at "syncing_files".** The build
    passes, then `deploy-pages` waits on Pages until its 10-minute
    timeout, which can't be raised (a longer `timeout` is capped at 10
    minutes, with a warning). A healthy publish takes 8 to 40 seconds. It
    hit 2 deploys on 2026-11-09, around GitHub incidents with Actions
-   and Pages, and 4 in a row on 2026-11-10 with none listed. The site is
-   about 120 MB of maps, re-sent on every deploy;
-   `docs/proposals/maps-site.md` moves them out. Until then: push an empty
-   commit ("Redeploy: …"); a re-run reuses the stalled deployment's id
-   (the commit) and stalls again.
+   and Pages, and 4 in a row on 2026-11-10 with none listed. The site was
+   about 120 MB of maps, re-sent on every deploy; the maps now have their
+   own site, deployed only when a map changes, so app deploys are about
+   5 MB once the app's copy goes (`docs/proposals/maps-site.md`). If it
+   still stalls: push an empty commit ("Redeploy: …"); a re-run reuses the
+   stalled deployment's id (the commit) and stalls again.
 
 ## Basemap extracts (starting point)
 

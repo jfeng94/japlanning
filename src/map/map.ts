@@ -15,6 +15,7 @@ import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { Protocol } from "pmtiles";
 
 setWorkerUrl(workerUrl);
+import { archiveUrl } from "../config/basemap.ts";
 import type { RegionConfig } from "../data/types.ts";
 import { createLocateControl, type LocateControl } from "./locate-control.ts";
 import { atlasLayers, atlasStyle, QUIET_RAIL, quietHides, quietRailPaint, type Flavor } from "./style.ts";
@@ -85,8 +86,13 @@ export interface MapCallbacks {
   prepareBasemaps?(protocol: Protocol): Promise<void>;
 }
 
+/**
+ * A region's archive on the maps site (docs/proposals/maps-site.md), with
+ * its version in the query. Stored copies are kept by region, not by
+ * address, and registered under this, so the address can change freely.
+ */
 export function basemapUrl(region: RegionConfig): string {
-  return `${location.origin}/basemap/${region.id}.pmtiles`;
+  return archiveUrl(region.id, region.bbox);
 }
 
 export function mountMap(container: HTMLElement, region: RegionConfig, flavor: Flavor, callbacks: MapCallbacks): MapView {

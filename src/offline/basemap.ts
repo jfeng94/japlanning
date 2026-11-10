@@ -1,6 +1,6 @@
 import { createStore, del, get, set } from "idb-keyval";
 import { PMTiles, type Protocol, type Source } from "pmtiles";
-import { BASEMAP } from "../config/basemap.ts";
+import { sameVersion, versionFileUrl, versionFor, type BasemapVersion } from "../config/basemap.ts";
 import type { RegionConfig, RegionId } from "../data/types.ts";
 
 /**
@@ -13,6 +13,12 @@ import type { RegionConfig, RegionId } from "../data/types.ts";
  * Versioning: the sidecar (build, maxzoom, bbox) is compared with the
  * config on every look; a mismatch is "update available", shown and
  * never acted on by itself, since an archive is tens of MB.
+ *
+ * The archives live on their own site (docs/proposals/maps-site.md),
+ * deployed apart from the app, so before downloading, the app reads the
+ * site's version file for the archive and only goes ahead when it is the
+ * version this app expects. Otherwise a phone could store an old map under
+ * the new version's label, and keep it.
  */
 
 /** What the app knows about a stored archive. */
@@ -32,22 +38,38 @@ export type BasemapStatus =
   | { kind: "stale"; meta: StoredBasemap };
 
 /** The sidecar an archive extracted for this build and region would carry. */
-export function expectedSidecar(region: Pick<RegionConfig, "bbox">): Pick<StoredBasemap, "build" | "maxzoom" | "bbox"> | undefined {
-  if (!region.bbox) return undefined;
-  return { build: BASEMAP.build, maxzoom: BASEMAP.maxzoom, bbox: region.bbox };
+export function expectedSidecar(region: Pick<RegionConfig, "bbox">): BasemapVersion | undefined {
+  return region.bbox ? versionFor(region.bbox) : undefined;
 }
 
 /** "ready" when the stored sidecar matches what the app expects for the region. */
 export function statusFor(region: Pick<RegionConfig, "bbox">, meta: StoredBasemap | undefined): BasemapStatus {
   if (!meta) return { kind: "none" };
-  const want = expectedSidecar(region);
-  const same =
-    want !== undefined &&
-    meta.build === want.build &&
-    meta.maxzoom === want.maxzoom &&
-    meta.bbox.length === 4 &&
-    meta.bbox.every((v, i) => v === want.bbox[i]);
-  return same ? { kind: "ready", meta } : { kind: "stale", meta };
+  return sameVersion(meta, expectedSidecar(region)) ? { kind: "ready", meta } : { kind: "stale", meta };
+}
+
+/** The maps site doesn't have the version of a map this app expects (yet): the app's deploy ran ahead of the maps'. */
+export class MapNotPublishedError extends Error {
+  constructor() {
+    super("this version of the map isn't published yet; try again later");
+    this.name = "MapNotPublishedError";
+  }
+}
+
+/**
+ * Throw MapNotPublishedError unless the version file beside the archive
+ * says it is `want`. Network errors pass through, as for the download.
+ */
+export async function checkPublished(archive: string, want: BasemapVersion, fetchFn: typeof fetch = fetch, signal?: AbortSignal): Promise<void> {
+  const res = await fetchFn(versionFileUrl(archive), { signal, cache: "no-store" });
+  if (!res.ok) throw new MapNotPublishedError();
+  let have: BasemapVersion | undefined;
+  try {
+    have = (await res.json()) as BasemapVersion;
+  } catch {
+    throw new MapNotPublishedError();
+  }
+  if (!sameVersion(have, want)) throw new MapNotPublishedError();
 }
 
 /** A pmtiles Source over a Blob, keyed by the archive's URL so the style's `pmtiles://<url>` finds it. */
@@ -87,6 +109,7 @@ export function createIdbBasemapStore(dbName = "japlanning", storeName = "kv"): 
     async download(region, url, onProgress, signal) {
       const want = expectedSidecar(region);
       if (!want) throw new Error(`${region.id} has no bbox, so no basemap`);
+      await checkPublished(url, want, fetch, signal);
       const res = await fetch(url, { signal, cache: "no-store" });
       if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
       const total = Number(res.headers.get("content-length")) || NaN;

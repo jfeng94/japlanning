@@ -136,10 +136,9 @@ A wrong shape is corrected by the area's `shape` in config, then
   can't resolve there. Growing the box makes every device's download
   bigger, and GitHub Pages caps a file at 100 MB. Tokyo's box reaches
   Kichijoji and Kamata but stops short of Akabane and Shibamata.
-  Changing a box also means
-  a new extract, from a Protomaps build that still exists (they keep
-  about a week): set `build` in `src/config/basemap.ts` to a current
-  one in the same commit, and every device downloads all its maps again.
+  Changing a box also means a new extract and publishing the maps
+  first ("Changing a map box", below), and every device downloads all
+  its maps again.
 - **Colours move.** A section's shades go to its busiest chips first,
   so a new chip can change its siblings' shades. Past seven chips in a
   section, shades repeat; neighbours still differ where they can.
@@ -148,6 +147,30 @@ A wrong shape is corrected by the area's `shape` in config, then
   area part of links already shared.
 - **A region's first area** (Hakone, one day) turns its Area button on.
   It needs its census code (箱根町 is 14382) and a `bbox`.
+
+## Changing a map box (2026-11-10)
+
+A region's `bbox` in `src/config/regions.ts`, the `build` pin or the
+`maxzoom` in `src/config/basemap.ts` decide its offline map. The maps
+live on their own site, published from this repo by
+`jfeng94/japlanning-maps` (`docs/proposals/maps-site.md`), so a change
+takes two steps, in order:
+
+1. **Commit the change, with `build` set to a current Protomaps build**
+   (they keep about a week; `npm run maps` names the newest when the pin
+   is gone). Every region is extracted again, since the build is shared.
+   Push: the app's deploy will fail at `npm run check-maps`, which is
+   expected, since the maps site doesn't have the new maps yet.
+2. **Publish the maps, then deploy the app again:**
+   `gh workflow run maps.yml -R jfeng94/japlanning-maps -f ref=<that commit>`,
+   wait for it to finish, then re-run the failed deploy (or push the next
+   commit). `check-maps` passes, and phones see "update available" for
+   their maps.
+
+Never the other way round: an app that expects maps the site doesn't
+have would let phones store the old maps under the new label. The phone
+checks the site's version file before downloading, and `check-maps`
+stops such an app from shipping.
 
 ## Rules that do not bend
 

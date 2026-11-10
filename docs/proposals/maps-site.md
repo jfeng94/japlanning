@@ -1,6 +1,7 @@
 # The offline maps on a site of their own
 
-Status: **proposed** (2026-11-10).
+Status: **in progress** (approved 2026-11-10). Steps 1 and 2 done; step
+3 is the iPhone check (Results, below).
 
 ## Why
 
@@ -181,3 +182,22 @@ About 250 lines here, plus the new repo's workflow.
 - **Wait first?** If the stalls stop by themselves (GitHub's side
   recovering), this becomes an improvement rather than a fix. Smaller,
   faster deploys are worth having either way.
+
+## Results (steps 1 and 2, 2026-11-10)
+
+- **The maps site is up** at <https://jfeng94.github.io/japlanning-maps/>,
+  published by `jfeng94/japlanning-maps` from b5d0d21. Its first run
+  copied all five archives from the app's site (nothing from Protomaps),
+  and each is byte-identical to the app site's (SHA-256 compared). Its
+  publish took 3 minutes; healthy ones take seconds.
+- **The app reads it** (`archiveUrl`, with `?v=`). In the pane: maps
+  already stored stayed "ready" and drew with no request to the maps
+  site; with Hakone's copy removed, the automatic download fetched the
+  version file, then the archive, and stored the same 1.76 MB; a source
+  with nothing stored drew 213 roads from 7 cross-site range requests.
+  No cross-site errors.
+- **The guards**: the download checks the version file (tested: missing,
+  other build, other box, not JSON all refuse), and the deploy runs
+  `npm run check-maps` before building.
+- **Not done yet**: the iPhone check (step 3), then dropping the app's
+  own copy of the maps (step 4).
