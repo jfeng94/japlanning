@@ -533,11 +533,14 @@ export function mountApp(root: HTMLElement): AppHandle {
 
   // The panel's two contents. The header (strip) travels with the panel: the
   // results summary in list mode, the place's name and actions in card mode.
+  // Both carry the panel's open/collapse chevron in their upper right, as a page carries its X.
   const listStrip = el(
     "div",
     "strip-list",
-    `<p class="results-count"></p><p class="filter-summary" hidden></p><p class="status" role="status" hidden></p>`,
+    `<div class="strip-list-main"><p class="results-count"></p><p class="filter-summary" hidden></p><p class="status" role="status" hidden></p></div>`,
   );
+  listStrip.append(panel.toggleButton());
+  const detailToggle = panel.toggleButton();
   const detailStrip = el("div", "strip-detail");
   const pageStrip = el("div", "strip-page");
   // The footer is pinned to the bottom of the screen at every height:
@@ -866,11 +869,12 @@ export function mountApp(root: HTMLElement): AppHandle {
         origin: location.origin,
         at: hoursAt(state),
         from: position,
+        onShowOnMap: () => view.focus(selected.lng, selected.lat),
       });
       renderDetailStrip(detailStrip, selected, {
-        onShowOnMap: () => view.focus(selected.lng, selected.lat),
         isBookmarked: (id) => bookmarks.has(id),
         onToggleBookmark: (id) => bookmarks.toggle(id),
+        toggle: detailToggle,
       });
       const i = shown.findIndex((p) => p.id === selected.id);
       prevButton.disabled = i <= 0;

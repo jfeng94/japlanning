@@ -1073,27 +1073,82 @@ button {
   color: var(--fg);
 }
 
-/* The list header: the results summary alone (the actions live in the footer). */
+/* The list header: the results summary, and the panel's chevron in the upper right (the actions live in the footer). */
 .strip-list {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
 }
 
-/* The card header's action row: Directions, Show on map, Bookmark. */
+.strip-list-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Level with the count line, which is shorter than the button. */
+.strip-list .panel-toggle {
+  margin-top: -0.35rem;
+}
+
+/*
+ * The panel's chevron (list and card headers), styled as a page's X: V
+ * collapses the panel from half or full; turned up (^) while collapsed,
+ * it opens the panel to half.
+ */
+.panel-toggle {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  margin-right: -0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+}
+
+.panel-toggle svg {
+  transition: transform 0.2s ease;
+}
+
+.panel[data-height="strip"] .panel-toggle svg {
+  transform: rotate(180deg);
+}
+
+/* The card header: Bookmark and the name on the left; Directions and the chevron on the right, apart. */
+.strip-lead {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .strip-actions {
   display: flex;
+  align-items: center;
   gap: 0.4rem;
   flex: none;
 }
 
-.strip-actions .icon-button {
+.strip-actions .icon-button,
+.strip-bookmark {
   width: 2.2rem;
   height: 2.2rem;
   background: transparent;
 }
 
-.strip-actions .icon-button img {
+.strip-actions .icon-button img,
+.strip-bookmark img {
   width: 1.45rem;
   height: 1.45rem;
+}
+
+.strip-bookmark {
+  margin-left: -0.35rem;
 }
 
 .strip-title {

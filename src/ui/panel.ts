@@ -29,7 +29,15 @@ export interface Panel {
   relayout(): void;
   /** Hold the current height: drags and handle taps do nothing (the Area page keeps the map in view). */
   lockHeight(locked: boolean): void;
+  /**
+   * A chevron for a header's upper right (2026-11-10): ^ while collapsed
+   * opens the panel to half; V at half or full collapses it. Its face and
+   * label follow the height however it changed, drags included.
+   */
+  toggleButton(): HTMLButtonElement;
 }
+
+const CHEVRON_DOWN = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`;
 
 const NEXT: Record<PanelHeight, PanelHeight> = { strip: "half", half: "full", full: "strip" };
 const ORDER: PanelHeight[] = ["strip", "half", "full"];
@@ -59,6 +67,8 @@ export function mountPanel(root: HTMLElement, onHeightChange?: (h: PanelHeight, 
   const footer = el.querySelector<HTMLElement>(".panel-footer")!;
   let height: PanelHeight = "half";
   let locked = false;
+  const toggles: HTMLButtonElement[] = [];
+  const labelToggle = (b: HTMLButtonElement) => b.setAttribute("aria-label", height === "strip" ? "Open the panel" : "Collapse the panel");
 
   const safeBottom = () => parseFloat(getComputedStyle(el).paddingBottom) || 0;
   const headerPx = () => root.querySelector<HTMLElement>(".topbar")?.offsetHeight ?? 52;
@@ -73,6 +83,7 @@ export function mountPanel(root: HTMLElement, onHeightChange?: (h: PanelHeight, 
     el.dataset["height"] = h;
     el.style.height = `${px[h]()}px`;
     if (h === "strip") content.scrollTop = 0;
+    for (const b of toggles) labelToggle(b);
     if (notify) onHeightChange?.(h, px[h]());
   }
 
@@ -94,6 +105,18 @@ export function mountPanel(root: HTMLElement, onHeightChange?: (h: PanelHeight, 
     lockHeight(on) {
       locked = on;
       el.classList.toggle("is-locked", on);
+    },
+    toggleButton() {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "panel-toggle";
+      b.innerHTML = CHEVRON_DOWN; // CSS turns it up while collapsed
+      labelToggle(b);
+      b.addEventListener("click", () => {
+        if (!locked) apply(height === "strip" ? "half" : "strip");
+      });
+      toggles.push(b);
+      return b;
     },
   };
 

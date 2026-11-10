@@ -19,6 +19,8 @@ export interface DetailHandlers {
   at?: Date;
   /** The device's position, for "1.2 km away" in the meta line. */
   from?: LatLng;
+  /** Ease the map back to this place (after panning away). */
+  onShowOnMap: () => void;
 }
 
 const FLAG_TEXT = { approximate: "approximate", unverified: "unverified", unknown: "" } as const;
@@ -29,8 +31,8 @@ let renderToken = 0;
 /**
  * The selected place in the panel body: the rating snapshot, the notes,
  * the meta line, actions, the street-corner essentials (visible at half
- * height), then everything else. The name, Back, Bookmark and the map actions live in the panel's
- * header and footer (renderDetailStrip and the app).
+ * height), then everything else. The name, Bookmark and Directions live in the panel's header,
+ * Back in its footer (renderDetailStrip and the app).
  */
 export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig | undefined, h: DetailHandlers): void {
   const token = ++renderToken;
@@ -42,7 +44,7 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
   const away = h.from ? `${formatDistance(distanceM(h.from, place))} away` : undefined;
   meta.textContent = [layer?.label, place.kinds.join(", "), place.area, away].filter(Boolean).join(" · ");
 
-  // ---- actions (Directions lives in the strip above the card) ----
+  // ---- actions (Directions lives in the strip above the card): copy link, website, show on map ----
   const actions = document.createElement("div");
   actions.className = "detail-actions";
   // Share copies the place's link, nothing else: no OS share sheet, no name prefix.
@@ -56,6 +58,8 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
     none.setAttribute("aria-disabled", "true");
     actions.append(none);
   }
+  // Show on map: back to the pin after panning away; the map eases, the card stays.
+  actions.append(iconButton("Show on map", centerIcon, h.onShowOnMap));
 
   // ---- essentials ----
   const essentials = document.createElement("dl");
@@ -133,19 +137,26 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
 }
 
 export interface DetailStripHandlers {
-  /** Ease the map back to this place (after panning away). */
-  onShowOnMap: () => void;
   isBookmarked: (id: string) => boolean;
   onToggleBookmark: (id: string) => void;
+  /** The panel's open/collapse chevron, last in the row (Panel.toggleButton). */
+  toggle: HTMLElement;
 }
 
 /**
- * The panel header while a place is selected: the name (star, brand,
- * muted branch) on the left, then Directions, Show on map and Bookmark
- * as icons on the right, so every action on the place is in one row.
+ * The panel header while a place is selected: Bookmark, then the name
+ * (star, brand) on the left; Directions and the panel's chevron on the
+ * right. Bookmark sits apart from Directions so neither is tapped for the
+ * other (2026-11-10).
  */
 export function renderDetailStrip(strip: HTMLElement, place: Place, h: DetailStripHandlers): void {
   strip.replaceChildren();
+  // Bookmark: the seal in colour when set, greyscale when not.
+  const bookmarked = h.isBookmarked(place.id);
+  const bookmark = iconButton(bookmarked ? "Remove bookmark" : "Bookmark this place", bookmarkIcon, () => h.onToggleBookmark(place.id));
+  bookmark.className = "icon-button bookmark-button strip-bookmark";
+  bookmark.setAttribute("aria-pressed", String(bookmarked));
+
   const title = document.createElement("h2");
   title.className = "strip-title";
   if (place.starred) {
@@ -159,20 +170,16 @@ export function renderDetailStrip(strip: HTMLElement, place: Place, h: DetailStr
   }
   title.append(place.name);
 
+  const lead = document.createElement("div");
+  lead.className = "strip-lead";
+  lead.append(bookmark, title);
+
   const actions = document.createElement("div");
   actions.className = "strip-actions";
   const directions = iconAnchor("Directions", directionsIcon, directionsUrl(place));
   directions.className = "icon-button";
-  // Show on map: back to the pin after panning away; the map eases, the card stays.
-  const show = iconButton("Show on map", centerIcon, h.onShowOnMap);
-  show.className = "icon-button";
-  // Bookmark: the seal in colour when set, greyscale when not.
-  const bookmarked = h.isBookmarked(place.id);
-  const bookmark = iconButton(bookmarked ? "Remove bookmark" : "Bookmark this place", bookmarkIcon, () => h.onToggleBookmark(place.id));
-  bookmark.className = "icon-button bookmark-button";
-  bookmark.setAttribute("aria-pressed", String(bookmarked));
-  actions.append(directions, show, bookmark);
-  strip.append(title, actions);
+  actions.append(directions, h.toggle);
+  strip.append(lead, actions);
 }
 
 function rowNodes(row: DetailRow): [HTMLElement, HTMLElement] {

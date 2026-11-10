@@ -66,6 +66,20 @@ still ends cleanly.
 The Share and Link buttons stay in the card body, as they are about the
 place rather than navigation.
 
+**The chevron** (Jerry, 2026-11-10). The filter pages' X in the upper
+right worked well, so the list and card headers got the same spot: a
+chevron, V at half or full (collapse to the strip), turned up as ^ while
+collapsed (open to half). It is one button per header, made by the
+panel (`Panel.toggleButton`), so its face and label follow the height
+however it changed, a drag included. Half to full stays a drag or a tap
+on the handle. To make room in the card header, and to keep Bookmark
+and Directions from being tapped for each other:
+
+- **Bookmark** moved to the left of the name;
+- **Show on map** moved into the body's action row, after the website
+  button (copy link, website, show on map);
+- **Directions** stays on the right, left of the chevron.
+
 ## Search flow
 
 1. **Keyboard closes, panel drops to half.** While the search field is
