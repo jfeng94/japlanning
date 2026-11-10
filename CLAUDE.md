@@ -255,12 +255,15 @@ is used only as the **directions hand-off**.
    re-extracted and installed apps download about 115 MB of maps again.
    Re-extracting on every deploy broke the deploy on 2026-11-10.
 12. **GitHub Pages sometimes stalls at "syncing_files".** The build
-   passes, then `deploy-pages` waits on Pages until it times out, with
-   GitHub's status page all green. It hit about half the deploys on
-   2026-11-09 and 10, with the site at about 120 MB of maps. The deploy
-   step now waits 30 minutes instead of 10 (`.github/workflows/deploy.yml`).
-   If it still times out, push an empty commit ("Redeploy: …"): a re-run
-   reuses the stalled deployment's id (the commit) and stalls again.
+   passes, then `deploy-pages` waits on Pages until its 10-minute
+   timeout, which can't be raised (a longer `timeout` is capped at 10
+   minutes, with a warning). A healthy publish takes 8 to 40 seconds. It
+   hit 2 deploys on 2026-11-09, around GitHub incidents with Actions
+   and Pages, and 4 in a row on 2026-11-10 with none listed. The site is
+   about 120 MB of maps, re-sent on every deploy;
+   `docs/proposals/maps-site.md` moves them out. Until then: push an empty
+   commit ("Redeploy: …"); a re-run reuses the stalled deployment's id
+   (the commit) and stalls again.
 
 ## Basemap extracts (starting point)
 
