@@ -1,25 +1,28 @@
 /**
- * Extract one PMTiles basemap per region that has a bbox, from the pinned
- * Protomaps planet build, into public/basemap/<region>.pmtiles, and mirror
- * the glyphs and sprites the style needs into public/fonts and
- * public/sprites (M7: the map must not depend on a third-party host
- * offline). Mirrored files are verified against src/config/assets-lock.json;
- * run with PIN_ASSETS=1 to (re)write the lock after a deliberate change.
+ * Two jobs, for two sites (docs/proposals/maps-site.md):
  *
- *   node scripts/build-basemap.ts
+ *   node scripts/build-basemap.ts assets   (npm run assets; the app's deploy)
+ *   node scripts/build-basemap.ts maps     (npm run maps; the maps site's workflow)
  *
- * The pmtiles CLI (a Go binary) is downloaded once into .cache/pmtiles/,
- * verified against the SHA-256 pinned in src/config/basemap.ts. Extracts
- * are skipped when the existing file was made with the same build, zoom
- * and bbox (recorded in a sidecar .json), so re-runs are instant locally.
+ * assets: mirror the glyphs and sprites the style needs into public/fonts
+ * and public/sprites (M7: the map must not depend on a third-party host
+ * offline), verified against src/config/assets-lock.json; PIN_ASSETS=1
+ * rewrites the lock after a deliberate change.
  *
- * CI starts clean, so each region is first sought on the live site: when
- * the sidecar there matches, the archive is copied rather than extracted.
- * Protomaps keeps only about a week of daily builds, so re-extracting on
- * every deploy breaks once the pin is a week old (it did, 2026-11-10), and
- * the copy is the same map, so installed apps download nothing new. Only
- * a change to the build, zoom or a bbox extracts, about 10 s per region,
- * and that needs a build Protomaps still has.
+ * maps: one PMTiles archive per region with a bbox, into
+ * public/basemap/<region>.pmtiles with its version file (<region>.pmtiles.json:
+ * build, zoom, bbox). The jfeng94/japlanning-maps repo's workflow runs this
+ * on a checkout of this repo and publishes public/basemap as the maps site.
+ *
+ * An archive whose version is already right is kept (locally) or copied
+ * from the maps site (in CI, which starts clean): Protomaps keeps only
+ * about a week of daily builds, so re-extracting every time breaks once
+ * the pin is a week old (it did, 2026-11-10), and the copy is the same
+ * map, so installed apps download nothing new. Only a change to the
+ * build, zoom or a bbox extracts, about 10 s per region, with the pmtiles
+ * CLI (downloaded once into .cache/pmtiles/, checked against the SHA-256
+ * pinned in src/config/basemap.ts), and that needs a build Protomaps
+ * still has.
  */
 
 import { spawnSync } from "node:child_process";
@@ -29,7 +32,7 @@ import { access, chmod, mkdir, open, readFile, rm, stat, writeFile } from "node:
 import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { BASEMAP } from "../src/config/basemap.ts";
+import { BASEMAP, sameVersion, versionFor, type BasemapVersion } from "../src/config/basemap.ts";
 import { regions } from "../src/config/regions.ts";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
@@ -156,33 +159,17 @@ async function mirrorAssets(): Promise<boolean> {
   return ok;
 }
 
-interface Sidecar {
-  build: string;
-  maxzoom: number;
-  bbox: readonly [number, number, number, number];
-}
-
-/** Where the deployed site serves the archives, from public/CNAME; undefined without one. */
-async function liveBase(): Promise<string | undefined> {
-  try {
-    const host = (await readFile(path.join(ROOT, "public", "CNAME"), "utf8")).trim();
-    return host ? `https://${host}/basemap` : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 /**
- * Copy a region's archive from the live site when the sidecar there says
- * it was made from the same build, zoom and bbox. False, with nothing left
- * behind, when it wasn't or the copy came out incomplete.
+ * Copy a region's archive from a published site when its version file
+ * there says it was made from the same build, zoom and bbox. False, with
+ * nothing left behind, when it wasn't or the copy came out incomplete.
  */
-async function fromLive(base: string, region: string, want: Sidecar, out: string, sidecarPath: string): Promise<boolean> {
+async function fromLive(base: string, region: string, want: BasemapVersion, out: string, sidecarPath: string): Promise<boolean> {
   // identity: Pages gzips on request, and the length check below wants the bytes as stored.
   const headers = { "User-Agent": UA, "Accept-Encoding": "identity" };
   try {
     const meta = await fetch(`${base}/${region}.pmtiles.json`, { headers });
-    if (!meta.ok || JSON.stringify(await meta.json()) !== JSON.stringify(want)) return false;
+    if (!meta.ok || !sameVersion((await meta.json()) as BasemapVersion, want)) return false;
     const res = await fetch(`${base}/${region}.pmtiles`, { headers });
     if (!res.ok || !res.body) return false;
     await pipeline(Readable.fromWeb(res.body as never), createWriteStream(out));
@@ -190,7 +177,7 @@ async function fromLive(base: string, region: string, want: Sidecar, out: string
     await writeFile(sidecarPath, JSON.stringify(want));
     return true;
   } catch (e) {
-    console.error(`${region}: couldn't copy the live map (${e instanceof Error ? e.message : String(e)}); extracting instead`);
+    console.error(`${region}: couldn't copy the map from ${base} (${e instanceof Error ? e.message : String(e)})`);
     await rm(out, { force: true });
     return false;
   }
@@ -233,27 +220,33 @@ async function explainMissingBuild(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  if (!(await mirrorAssets())) process.exit(1);
+  const mode = process.argv[2];
+  if (mode !== "assets" && mode !== "maps") {
+    console.error("usage: node scripts/build-basemap.ts assets|maps");
+    process.exit(2);
+  }
+  if (mode === "assets") {
+    if (!(await mirrorAssets())) process.exit(1);
+    return;
+  }
   const targets = regions.filter((r) => r.bbox);
   if (targets.length === 0) {
     console.log("no regions have a bbox; nothing to extract");
     return;
   }
-  const cli = await ensureCli();
   await mkdir(OUT_DIR, { recursive: true });
-  const live = await liveBase();
+  const sources = [BASEMAP.site, ...BASEMAP.seedSites];
 
   let failed = false;
   for (const region of targets) {
     const bbox = region.bbox!;
     const out = path.join(OUT_DIR, `${region.id}.pmtiles`);
     const sidecarPath = `${out}.json`;
-    const want: Sidecar = { build: BASEMAP.build, maxzoom: BASEMAP.maxzoom, bbox };
+    const want = versionFor(bbox);
 
     if (await exists(out)) {
       try {
-        const have = JSON.parse(await readFile(sidecarPath, "utf8")) as Sidecar;
-        if (JSON.stringify(have) === JSON.stringify(want)) {
+        if (sameVersion(JSON.parse(await readFile(sidecarPath, "utf8")) as BasemapVersion, want)) {
           console.log(`${region.id}: up to date (${await sizeMb(out)} MB)`);
           continue;
         }
@@ -262,10 +255,17 @@ async function main(): Promise<void> {
       }
     }
 
-    if (live && (await fromLive(live, region.id, want, out, sidecarPath))) {
-      console.log(`${region.id}: copied from the live site, made from the same build, zoom and bbox (${await sizeMb(out)} MB)`);
-      continue;
+    let copied = false;
+    for (const base of sources) {
+      if (await fromLive(base, region.id, want, out, sidecarPath)) {
+        console.log(`${region.id}: copied from ${base}, made from the same build, zoom and bbox (${await sizeMb(out)} MB)`);
+        copied = true;
+        break;
+      }
     }
+    if (copied) continue;
+
+    const cli = await ensureCli();
 
     console.log(`${region.id}: extracting ${BASEMAP.build} bbox=${bbox.join(",")} maxzoom=${BASEMAP.maxzoom}`);
     const r = spawnSync(

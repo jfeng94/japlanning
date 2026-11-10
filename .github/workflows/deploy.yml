@@ -29,7 +29,10 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run snapshot
-      - run: npm run basemap
+      - run: npm run assets
+      # The maps move to their own site (docs/proposals/maps-site.md); the
+      # app's site keeps a copy until the move is checked on the phone.
+      - run: npm run maps
       - run: npm run build
       - uses: actions/upload-pages-artifact@v5
         with:

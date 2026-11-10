@@ -17,7 +17,9 @@
     "snapshot": "node scripts/snapshot-data.ts",
     "ids": "node scripts/check-ids.ts",
     "import": "node scripts/import-csv.ts",
-    "basemap": "node scripts/build-basemap.ts",
+    "assets": "node scripts/build-basemap.ts assets",
+    "maps": "node scripts/build-basemap.ts maps",
+    "check-maps": "node scripts/check-maps.ts",
     "areas": "node scripts/build-areas.ts"
   },
   "devDependencies": {

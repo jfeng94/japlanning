@@ -3,15 +3,26 @@
  * Protomaps daily builds are listed at https://build-metadata.protomaps.dev/builds.json.
  * Size experiment (docs/proposals/m3-map.md): Tokyo at maxzoom 15 is 52 MB.
  *
- * Protomaps keeps about a week of daily builds. Deploys copy each region's
- * archive from the live site while `build`, `maxzoom` and its bbox are
- * unchanged, so an old pin is fine until one of them changes. Then set
- * `build` to a current one in the same commit; every region is extracted
- * again and installed apps download their maps again.
+ * The archives live on their own site (docs/proposals/maps-site.md),
+ * published by the jfeng94/japlanning-maps repo's workflow from this
+ * config; the app's deploys carry no maps. Protomaps keeps about a week of
+ * daily builds, and the maps workflow copies each archive from the maps
+ * site while `build`, `maxzoom` and its bbox are unchanged, so an old pin
+ * is fine until one of them changes. Then set `build` to a current one in
+ * the same commit and publish the maps; every region is extracted again
+ * and installed apps download their maps again.
  */
 export const BASEMAP = {
   /** Protomaps planet build, YYYYMMDD. */
   build: "20261103",
+  /** Where the archives and their version files are served: the maps site. */
+  site: "https://jfeng94.github.io/japlanning-maps",
+  /**
+   * Where else an unchanged archive may be copied from when the maps site
+   * lacks it: the app's own site, which carried the maps until the move.
+   * Empty once the move is done.
+   */
+  seedSites: ["https://japan.garbage.house/basemap"] as readonly string[],
   /**
    * Map assets mirrored into the site for offline use (M7): the glyph
    * ranges the style's Latin labels need (Japanese comes from the device's
@@ -42,3 +53,44 @@ export const BASEMAP = {
     } as Record<string, { file: string; sha256: string } | undefined>,
   },
 } as const;
+
+/** What an archive was made from: its version file (`<region>.pmtiles.json`) on the maps site, and what a phone stores with it. */
+export interface BasemapVersion {
+  build: string;
+  maxzoom: number;
+  bbox: readonly [number, number, number, number];
+}
+
+/** The version an archive for this bbox must have, from the config. */
+export function versionFor(bbox: readonly [number, number, number, number]): BasemapVersion {
+  return { build: BASEMAP.build, maxzoom: BASEMAP.maxzoom, bbox };
+}
+
+/** Same build, zoom and bbox. Tolerates extra fields in what a server sent. */
+export function sameVersion(a: BasemapVersion | undefined, b: BasemapVersion | undefined): boolean {
+  return (
+    a !== undefined &&
+    b !== undefined &&
+    a.build === b.build &&
+    a.maxzoom === b.maxzoom &&
+    Array.isArray(a.bbox) &&
+    a.bbox.length === 4 &&
+    a.bbox.every((v, i) => v === b.bbox[i])
+  );
+}
+
+/** A short form for URLs: a changed map gets a new address, so nothing cached for the old one is mixed in. */
+export function versionTag(v: BasemapVersion): string {
+  return `${v.build}-${v.maxzoom}-${v.bbox.join(",")}`;
+}
+
+/** The maps site's address for a region's archive; its version file is this without the query, plus ".json". */
+export function archiveUrl(regionId: string, bbox?: readonly [number, number, number, number]): string {
+  const base = `${BASEMAP.site}/${regionId}.pmtiles`;
+  return bbox ? `${base}?v=${encodeURIComponent(versionTag(versionFor(bbox)))}` : base;
+}
+
+/** The version file's address for an archive address from archiveUrl. */
+export function versionFileUrl(archive: string): string {
+  return `${archive.replace(/\?.*$/, "")}.json`;
+}
