@@ -18,12 +18,6 @@ export const BASEMAP = {
   /** Where the archives and their version files are served: the maps site. */
   site: "https://jfeng94.github.io/japlanning-maps",
   /**
-   * Where else an unchanged archive may be copied from when the maps site
-   * lacks it: the app's own site, which carried the maps until the move.
-   * Empty once the move is done.
-   */
-  seedSites: ["https://japan.garbage.house/basemap"] as readonly string[],
-  /**
    * Map assets mirrored into the site for offline use (M7): the glyph
    * ranges the style's Latin labels need (Japanese comes from the device's
    * own fonts) and the sprite sheets. Verified against

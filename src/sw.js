@@ -5,8 +5,9 @@
  * scripts/build-sw.ts from the built site) into one Cache Storage cache
  * named after this build's VERSION. On a request for one of those files
  * it answers from that cache; a navigation (the page itself) tries the
- * network first and falls back to the cached page offline. Data files and basemaps are never touched here: the app
- * keeps its own copies of those in IndexedDB.
+ * network first and falls back to the cached page offline. Data files are never touched here: the app keeps
+ * its own copies of those in IndexedDB, as of the basemaps, which live on the maps site (another origin, which
+ * a service worker never sees; docs/proposals/maps-site.md).
  *
  * A new deploy means a new sw.js (the list or its hashes changed), which
  * the browser installs beside the old one. It waits until the page says
@@ -17,7 +18,7 @@
 const VERSION = "__VERSION__";
 const PRECACHE = __PRECACHE__;
 const CACHE = `japlanning-${VERSION}`;
-const PASS_THROUGH = ["/data/", "/basemap/"];
+const PASS_THROUGH = ["/data/"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)));

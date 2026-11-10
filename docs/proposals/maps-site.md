@@ -1,7 +1,7 @@
 # The offline maps on a site of their own
 
-Status: **in progress** (approved 2026-11-10). Steps 1 and 2 done; step
-3 is the iPhone check (Results, below).
+Status: **done** (2026-11-10). The app's deploys carry no maps; the
+iPhone check passed on the second try (Results, below).
 
 ## Why
 
@@ -37,16 +37,16 @@ phones: maps already downloaded stay, and nobody downloads 115 MB again.
 
 ## Done when
 
-- [ ] The five maps are served from the maps site, byte for byte the
+- [x] The five maps are served from the maps site, byte for byte the
       ones live today.
-- [ ] The app reads and downloads them from there. On the iPhone: a
+- [x] The app reads and downloads them from there. On the iPhone: a
       region not yet downloaded shows its map online, and downloads; the
       regions already downloaded stay "ready" without downloading again.
-- [ ] A phone can't store a map under the wrong version (see "Keeping
+- [x] A phone can't store a map under the wrong version (see "Keeping
       the two in step").
-- [ ] The app's deploy no longer carries the maps, and it refuses to
+- [x] The app's deploy no longer carries the maps, and it refuses to
       ship when the maps site doesn't have the maps its config expects.
-- [ ] Changing a map box or the build pin is written down as a two-step
+- [x] Changing a map box or the build pin is written down as a two-step
       job in `docs/design/adding-places.md`.
 
 ## Design
@@ -213,3 +213,12 @@ same sequence, in one session, drew Hakone from 3 range requests to the
 maps site. WebKit made single ranges preflight-free in April 2022
 (r292293), so Safari's range requests to the maps site should be fine;
 the repeat of the phone check confirms it.
+
+**Step 3 passed** on the iPhone after the fix: deleting Hakone and
+switching to it drew the map from the maps site, and it downloaded
+again. **Step 4**: the app's deploy no longer builds or ships the maps
+(about 5 MB instead of 116), the first-run copy from the app's site is
+gone from the script, and the service worker no longer mentions
+`/basemap/`. Phones on an older version of the app keep their stored
+maps; a region they haven't stored reads from the old address, gone now,
+until they take the update.

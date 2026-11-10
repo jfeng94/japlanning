@@ -33,9 +33,7 @@ jobs:
       # The maps site must have the maps this commit expects
       # (docs/design/adding-places.md, "Changing a map box").
       - run: npm run check-maps
-      # The maps moved to their own site (docs/proposals/maps-site.md); the
-      # app's site keeps a copy until the move is checked on the phone.
-      - run: npm run maps
+      # No maps here: they're on their own site (docs/proposals/maps-site.md).
       - run: npm run build
       - uses: actions/upload-pages-artifact@v5
         with:

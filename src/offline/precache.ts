@@ -7,7 +7,7 @@
 /** Paths (relative to the site root) that the worker never caches. */
 const PASS_THROUGH_PREFIXES = [
   "data/", // the loader keeps its own copy in IndexedDB with its own freshness rules
-  "basemap/", // range requests; M7 stores whole archives as Blobs instead
+  "basemap/", // only in a local build (npm run maps); the app reads maps from the maps site
 ];
 
 const SKIP_FILES = new Set(["sw.js", "CNAME"]);

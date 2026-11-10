@@ -278,7 +278,7 @@ is used only as the **directions hand-off**.
    and Pages, and 4 in a row on 2026-11-10 with none listed. The site was
    about 120 MB of maps, re-sent on every deploy; the maps now have their
    own site, deployed only when a map changes, so app deploys are about
-   5 MB once the app's copy goes (`docs/proposals/maps-site.md`). If it
+   5 MB (`docs/proposals/maps-site.md`, done 2026-11-10). If it
    still stalls: push an empty commit ("Redeploy: …"); a re-run reuses the
    stalled deployment's id (the commit) and stalls again.
 

@@ -235,7 +235,6 @@ async function main(): Promise<void> {
     return;
   }
   await mkdir(OUT_DIR, { recursive: true });
-  const sources = [BASEMAP.site, ...BASEMAP.seedSites];
 
   let failed = false;
   for (const region of targets) {
@@ -255,15 +254,10 @@ async function main(): Promise<void> {
       }
     }
 
-    let copied = false;
-    for (const base of sources) {
-      if (await fromLive(base, region.id, want, out, sidecarPath)) {
-        console.log(`${region.id}: copied from ${base}, made from the same build, zoom and bbox (${await sizeMb(out)} MB)`);
-        copied = true;
-        break;
-      }
+    if (await fromLive(BASEMAP.site, region.id, want, out, sidecarPath)) {
+      console.log(`${region.id}: copied from the maps site, made from the same build, zoom and bbox (${await sizeMb(out)} MB)`);
+      continue;
     }
-    if (copied) continue;
 
     const cli = await ensureCli();
 
