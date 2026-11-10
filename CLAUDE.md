@@ -344,6 +344,24 @@ proposal in `docs/proposals/` before work starts.
   launch from the Home Screen, map, pins, list and filters all work.
 - **M8. Atlas styling polish.** Tune the basemap until only roads, rail and
   stations, water and parks remain, and make sure our pins pop.
+- **M8b. Day timetable** (added 2026-11-10; details to settle in its
+  proposal). A per-day view of the trip's fixed points, such as "check
+  out of X by 11:00", "reservation at 19:00" or "Sunnie's flight lands".
+  It behaves like the Google Calendar app's day view, which Jerry showed
+  as a screenshot:
+  - the date at the top, with all-day items in a band under it;
+  - an hour grid below, with timed items as blocks spanning their
+    duration;
+  - a way to step between days, and a jump back to today.
+
+  It opens on today's date (Tokyo time). Open questions for the
+  proposal:
+  - **Where the entries live.** The site is public, so a flight time
+    with a name in a data file is public too. Options: first names only,
+    like Lodging's Who, or kept off the public site.
+  - **Whether an entry links to its place's card**, a reservation to
+    its restaurant for example.
+  - **How it relates to M10's trip.**
 - **M9. Wide layout.** List beside map on iPad and desktop.
 - **M10. Trip planner** (after the main milestones; icon in
   `src/ui/icons/trip.webp`). Each card gets "Add to trip" / "Remove from
