@@ -256,13 +256,41 @@ export function mountApp(root: HTMLElement): AppHandle {
     if (chip) onAreaTap(chip);
   });
 
+  /**
+   * A pin tapped on the map (2026-11-10): the first tap selects the place
+   * and leaves the map and the panel's height alone, since the user may be
+   * browsing the area; a second tap on the selected pin presents it.
+   */
   function onPinSelect(id: string | undefined): void {
+    const { selectedId, page } = ui.get();
     if (id === undefined) {
-      if (ui.get().page === undefined) deselect();
+      if (page === undefined) deselect();
+    } else if (id === selectedId && page === undefined) {
+      const place = places.find((p) => p.id === id);
+      if (place) present(place);
     } else {
       openedFrom = "elsewhere";
-      select(id);
+      presentOnSelect = false;
+      try {
+        select(id);
+      } finally {
+        presentOnSelect = true;
+      }
     }
+  }
+
+  /** Whether a new selection presents its place. True except while a pin tap selects (onPinSelect). */
+  let presentOnSelect = true;
+
+  /**
+   * Present a place: the card at half (from the strip, or from full where
+   * the map is hidden) and the map eased to it at presentation zoom.
+   * Height first: it changes the map's padding, which would cancel an ease
+   * already under way.
+   */
+  function present(place: Place): void {
+    if (panel.getHeight() !== "half") panel.setHeight("half");
+    view.focus(place.lng, place.lat);
   }
 
   /** Pin settings need the renderer rebuilt; location starts or stops the watch; anything else (sort) is a plain re-render. */
@@ -695,14 +723,14 @@ export function mountApp(root: HTMLElement): AppHandle {
     if (page === undefined && selectedId !== arrangedFor) {
       const place = selectedId ? places.find((p) => p.id === selectedId) : undefined;
       if (place) {
-        // A card opens at half so the place is visible on the map behind it; remember the list's height for Back.
-        // Height first: it changes the map padding, which would cancel an ease already under way.
+        // Remember the list's height for Back. A list row, Prev/Next or a link presents the place (the card at
+        // half, the map eased to it); a pin tapped on the map leaves both where they are (onPinSelect).
         if (listHeight === undefined) listHeight = panel.getHeight();
-        panel.setHeight("half");
-        view.focus(place.lng, place.lat);
+        if (presentOnSelect) present(place);
       } else if (listHeight !== undefined) {
-        // Back to the list at the height it had (a map-browsing "strip" becomes half so the list shows).
-        panel.setHeight(listHeight === "strip" ? "half" : listHeight);
+        // Back to the list at the height it had. A card that raised the panel from the strip comes back to half, so
+        // the list shows; one still on the strip (pins tapped while browsing the map) stays there.
+        panel.setHeight(listHeight === "strip" && panel.getHeight() !== "strip" ? "half" : listHeight);
         listHeight = undefined;
       }
       arrangedFor = selectedId;
@@ -869,7 +897,7 @@ export function mountApp(root: HTMLElement): AppHandle {
         origin: location.origin,
         at: hoursAt(state),
         from: position,
-        onShowOnMap: () => view.focus(selected.lng, selected.lat),
+        onShowOnMap: () => present(selected),
       });
       renderDetailStrip(detailStrip, selected, {
         isBookmarked: (id) => bookmarks.has(id),

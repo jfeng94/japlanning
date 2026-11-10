@@ -383,7 +383,8 @@ Verified in the browser pane at 375×812 against the production build:
   name labels from zoom 14. DOM pins via `?pins=dom`: white disc, layer
   ring, artwork, ★ badge, label.
 - Row tap: map eases to the pin at zoom 15, panel shows the detail
-  placeholder, URL gains `s=`, one history entry. Back arrow returns to
+  placeholder, URL gains `s=`, one history entry. (Since 2026-11-10 a
+  pin tap only selects; a second tap presents: `strip-footer.md`.) Back arrow returns to
   the list with the URL cleaned. Switching place while open replaces the
   entry rather than stacking. A `?s=` link opens straight to the place and
   its back leaves the page, as it should.

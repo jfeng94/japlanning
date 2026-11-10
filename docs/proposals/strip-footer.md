@@ -93,6 +93,15 @@ and Directions from being tapped for each other:
    the height it had before (full if it was full), with its scroll
    position, as today.
 
+   *Changed 2026-11-10* (Jerry: the jump is distracting while browsing
+   the area): a pin tapped on the map only selects. The card opens at
+   the panel's height, collapsed included, and the map doesn't move. A
+   second tap on the selected pin, or Show on map, **presents** the
+   place: the card at half and the map eased to it at zoom 15. A row,
+   Prev/Next and a link still present, since their pin may be anywhere.
+   Back from a card that never left the strip leaves the panel on the
+   strip.
+
 ## Files
 
 - `src/ui/panel.ts`: a `footer` slot; the strip height counts header plus
