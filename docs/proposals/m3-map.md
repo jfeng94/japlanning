@@ -73,6 +73,12 @@ Jerry's machine and CI use the same tool with no manual install.
 `public/basemap/` and `.cache/` are gitignored.
 
 CI runs `npm run basemap` before the build, like the data snapshot.
+Since 2026-11-10 it first copies each region's archive from the live
+site when the sidecar there matches the pinned build, zoom and bbox.
+Protomaps keeps only about a week of daily builds, so re-extracting on
+every deploy broke once the pin aged out. Changing the build, the zoom
+or a bbox still extracts, which needs a build Protomaps still has; when
+it doesn't, the script names the newest.
 
 ### Serving (`pmtiles://`)
 

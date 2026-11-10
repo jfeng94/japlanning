@@ -12,13 +12,20 @@
  * verified against the SHA-256 pinned in src/config/basemap.ts. Extracts
  * are skipped when the existing file was made with the same build, zoom
  * and bbox (recorded in a sidecar .json), so re-runs are instant locally.
- * CI starts clean and takes about 10 s per region.
+ *
+ * CI starts clean, so each region is first sought on the live site: when
+ * the sidecar there matches, the archive is copied rather than extracted.
+ * Protomaps keeps only about a week of daily builds, so re-extracting on
+ * every deploy breaks once the pin is a week old (it did, 2026-11-10), and
+ * the copy is the same map, so installed apps download nothing new. Only
+ * a change to the build, zoom or a bbox extracts, about 10 s per region,
+ * and that needs a build Protomaps still has.
  */
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
-import { access, chmod, mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { access, chmod, mkdir, open, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -33,6 +40,8 @@ const LOCK_FILE = path.join(ROOT, "src", "config", "assets-lock.json");
 const CACHE_DIR = path.join(ROOT, ".cache", "pmtiles", BASEMAP.cli.version);
 const RELEASE_BASE = `https://github.com/protomaps/go-pmtiles/releases/download/v${BASEMAP.cli.version}`;
 const PLANET_URL = `https://build.protomaps.com/${BASEMAP.build}.pmtiles`;
+const BUILDS_URL = "https://build-metadata.protomaps.dev/builds.json";
+const UA = "japlanning-build/1.0 (+https://japan.garbage.house)";
 
 async function exists(p: string): Promise<boolean> {
   try {
@@ -153,6 +162,76 @@ interface Sidecar {
   bbox: readonly [number, number, number, number];
 }
 
+/** Where the deployed site serves the archives, from public/CNAME; undefined without one. */
+async function liveBase(): Promise<string | undefined> {
+  try {
+    const host = (await readFile(path.join(ROOT, "public", "CNAME"), "utf8")).trim();
+    return host ? `https://${host}/basemap` : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Copy a region's archive from the live site when the sidecar there says
+ * it was made from the same build, zoom and bbox. False, with nothing left
+ * behind, when it wasn't or the copy came out incomplete.
+ */
+async function fromLive(base: string, region: string, want: Sidecar, out: string, sidecarPath: string): Promise<boolean> {
+  // identity: Pages gzips on request, and the length check below wants the bytes as stored.
+  const headers = { "User-Agent": UA, "Accept-Encoding": "identity" };
+  try {
+    const meta = await fetch(`${base}/${region}.pmtiles.json`, { headers });
+    if (!meta.ok || JSON.stringify(await meta.json()) !== JSON.stringify(want)) return false;
+    const res = await fetch(`${base}/${region}.pmtiles`, { headers });
+    if (!res.ok || !res.body) return false;
+    await pipeline(Readable.fromWeb(res.body as never), createWriteStream(out));
+    if (!(await wholeArchive(out))) throw new Error("the copy is incomplete");
+    await writeFile(sidecarPath, JSON.stringify(want));
+    return true;
+  } catch (e) {
+    console.error(`${region}: couldn't copy the live map (${e instanceof Error ? e.message : String(e)}); extracting instead`);
+    await rm(out, { force: true });
+    return false;
+  }
+}
+
+/** A PMTiles v3 archive whose sections all end inside the file and the last at its end: catches a cut-off download. */
+async function wholeArchive(file: string): Promise<boolean> {
+  const fh = await open(file, "r");
+  try {
+    const header = Buffer.alloc(127);
+    const { bytesRead } = await fh.read(header, 0, header.length, 0);
+    if (bytesRead < header.length || header.toString("latin1", 0, 7) !== "PMTiles" || header[7] !== 3) return false;
+    // Offset and length of the root directory, metadata, leaf directories and tile data.
+    let end = 0n;
+    for (const at of [8, 24, 40, 56]) {
+      const sectionEnd = header.readBigUInt64LE(at) + header.readBigUInt64LE(at + 8);
+      if (sectionEnd > end) end = sectionEnd;
+    }
+    return end === BigInt((await fh.stat()).size);
+  } finally {
+    await fh.close();
+  }
+}
+
+/** After a failed extract: if Protomaps has dropped the pinned build, say which builds it still has. */
+async function explainMissingBuild(): Promise<void> {
+  try {
+    const head = await fetch(PLANET_URL, { method: "HEAD", headers: { "User-Agent": UA } });
+    if (head.status !== 404) return;
+    const builds = (await (await fetch(BUILDS_URL, { headers: { "User-Agent": UA } })).json()) as { key: string }[];
+    const newest = builds.map((b) => b.key.replace(".pmtiles", "")).sort().at(-1);
+    console.error(
+      `Protomaps no longer has build ${BASEMAP.build}; it keeps about a week of daily builds. ` +
+        `Set build in src/config/basemap.ts to a current one (newest: ${newest}). ` +
+        "Every region is then extracted again, and installed apps download their maps again.",
+    );
+  } catch {
+    /* the explanation is a courtesy; the extract error above stands */
+  }
+}
+
 async function main(): Promise<void> {
   if (!(await mirrorAssets())) process.exit(1);
   const targets = regions.filter((r) => r.bbox);
@@ -162,6 +241,7 @@ async function main(): Promise<void> {
   }
   const cli = await ensureCli();
   await mkdir(OUT_DIR, { recursive: true });
+  const live = await liveBase();
 
   let failed = false;
   for (const region of targets) {
@@ -182,6 +262,11 @@ async function main(): Promise<void> {
       }
     }
 
+    if (live && (await fromLive(live, region.id, want, out, sidecarPath))) {
+      console.log(`${region.id}: copied from the live site, made from the same build, zoom and bbox (${await sizeMb(out)} MB)`);
+      continue;
+    }
+
     console.log(`${region.id}: extracting ${BASEMAP.build} bbox=${bbox.join(",")} maxzoom=${BASEMAP.maxzoom}`);
     const r = spawnSync(
       cli,
@@ -196,7 +281,10 @@ async function main(): Promise<void> {
     await writeFile(sidecarPath, JSON.stringify(want));
     console.log(`${region.id}: ${await sizeMb(out)} MB -> ${path.relative(ROOT, out)}`);
   }
-  if (failed) process.exit(1);
+  if (failed) {
+    await explainMissingBuild();
+    process.exit(1);
+  }
 }
 
 async function sizeMb(file: string): Promise<string> {

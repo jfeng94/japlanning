@@ -2,6 +2,12 @@
  * Basemap extract settings. Bumping `build` is a deliberate commit; the
  * Protomaps daily builds are listed at https://build-metadata.protomaps.dev/builds.json.
  * Size experiment (docs/proposals/m3-map.md): Tokyo at maxzoom 15 is 52 MB.
+ *
+ * Protomaps keeps about a week of daily builds. Deploys copy each region's
+ * archive from the live site while `build`, `maxzoom` and its bbox are
+ * unchanged, so an old pin is fine until one of them changes. Then set
+ * `build` to a current one in the same commit; every region is extracted
+ * again and installed apps download their maps again.
  */
 export const BASEMAP = {
   /** Protomaps planet build, YYYYMMDD. */

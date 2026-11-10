@@ -246,6 +246,14 @@ is used only as the **directions hand-off**.
    "blocked" toast opens Diagnostics, whose Location section lists the
    settings to check for the way the app is running and can test them
    (`src/geo/location-help.ts`).
+11. **Protomaps keeps only about a week of daily builds.** Deploys copy
+   each region's map from the live site while the pinned build, zoom and
+   bbox are unchanged (`scripts/build-basemap.ts`), so the pin can be
+   older than that. Changing any of the three extracts again: set `build`
+   in `src/config/basemap.ts` to a current build in the same commit (the
+   script names the newest when the pin is gone). Every region is then
+   re-extracted and installed apps download about 115 MB of maps again.
+   Re-extracting on every deploy broke the deploy on 2026-11-10.
 
 ## Basemap extracts (starting point)
 

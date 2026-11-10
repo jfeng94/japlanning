@@ -134,8 +134,12 @@ A wrong shape is corrected by the area's `shape` in config, then
   of its basemap extract (`scripts/build-basemap.ts`, which Actions runs
   on deploy). A place outside it has no map around it offline, and Here
   can't resolve there. Growing the box makes every device's download
-  bigger, and GitHub Pages caps a file at 100 MB. Tokyo's box stops
-  short of Kichijoji, Akabane and Shibamata.
+  bigger, and GitHub Pages caps a file at 100 MB. Tokyo's box reaches
+  Kichijoji and Kamata but stops short of Akabane and Shibamata.
+  Changing a box also means
+  a new extract, from a Protomaps build that still exists (they keep
+  about a week): set `build` in `src/config/basemap.ts` to a current
+  one in the same commit, and every device downloads all its maps again.
 - **Colours move.** A section's shades go to its busiest chips first,
   so a new chip can change its siblings' shades. Past seven chips in a
   section, shades repeat; neighbours still differ where they can.
