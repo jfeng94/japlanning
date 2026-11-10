@@ -172,10 +172,11 @@ function lngLat(p: Position): LatLng {
   return { lng: p[0]!, lat: p[1]! };
 }
 
-/** [west, south, east, north] around every shape; undefined when there are none. */
-export function shapesBounds(shapes: AreaShapes): [number, number, number, number] | undefined {
+/** [west, south, east, north] around every shape, or only those of the `only` chips; undefined when there are none. */
+export function shapesBounds(shapes: AreaShapes, only?: ReadonlySet<string>): [number, number, number, number] | undefined {
   let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
   for (const f of shapes.features) {
+    if (only && !only.has(f.properties.chip)) continue;
     for (const [outline] of polygonsOf(f.geometry)) {
       for (const [lng, lat] of outline ?? []) {
         w = Math.min(w, lng!);

@@ -78,6 +78,17 @@ export function areaScope(state: FilterState, opts: Pick<ApplyOptions, "hereGrou
   return { chosen, added };
 }
 
+/**
+ * What the area filter keeps, as a key: the region, the chips picked and
+ * the chips added. Two states with the same key show the same places as
+ * far as areas go (+ Adjacent with nothing picked is the same as without).
+ */
+export function areaScopeKey(state: FilterState, opts: Pick<ApplyOptions, "hereGroup" | "areas">): string {
+  const scope = areaScope(state, opts);
+  if (!scope) return state.region;
+  return [state.region, [...scope.chosen].sort().join(","), [...scope.added].sort().join(",")].join("|");
+}
+
 /** The rows the list and map show for a state. */
 export function applyFilters(places: Place[], state: FilterState, opts: ApplyOptions = {}): Place[] {
   const scope = areaScope(state, opts);

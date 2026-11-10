@@ -227,7 +227,11 @@ clear:
     and a tap on it does what its chip does;
   - the only pins are bookmarks and `onAreaMap` layers (lodging), with the
     bookmark badge, and they ignore taps;
-  - leaving puts the camera back where it was.
+  - leaving puts the camera back where it was if the areas in play are
+    the same as when the page opened; if they changed, it frames the
+    areas now in play (picked and added), snugly, or the results when
+    none are (2026-11-10: going back to a view with none of the new
+    results in it was disorienting).
 
   On the normal map (2026-11-10) only the areas in play show: picked
   ones lightly filled and outlined, added ones faintly hatched with a

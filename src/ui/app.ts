@@ -9,7 +9,7 @@ import { areaAt } from "../data/areas.ts";
 import { browserDeps } from "../data/browser.ts";
 import { loadAllLayersStaged } from "../data/load.ts";
 import type { LoadResult, Place, RegionId } from "../data/types.ts";
-import { applyFilters, areaLook, sinkUnknownHours, tapArea, type ApplyOptions, type AreaLook, type HoursInput } from "../filter/apply.ts";
+import { applyFilters, areaLook, areaScope, areaScopeKey, sinkUnknownHours, tapArea, type ApplyOptions, type AreaLook, type HoursInput } from "../filter/apply.ts";
 import { inBbox, sortByDistance } from "../geo/distance.ts";
 import { formatRadius } from "../geo/nearby.ts";
 import { markFor, type Mark } from "../data/marks.ts";
@@ -397,10 +397,21 @@ export function mountApp(root: HTMLElement): AppHandle {
   // ---- the Area page's map (docs/proposals/filter-pages-and-area-map.md, Part 3) ----
   /** Whether the map is in the Area page's mode. It follows the page however the page opened or closed. */
   let areaMapOn = false;
-  function syncAreaMap(on: boolean, region: RegionId): void {
+  /** What the area filter kept as the page opened (areaScopeKey), to tell on leaving whether it changed. */
+  let scopeAtOpen = "";
+  function syncAreaMap(on: boolean, state: FilterState, here: PositionChip): void {
     if (on === areaMapOn) return;
     areaMapOn = on;
-    view.setAreaMode(on ? areaBounds(region) : undefined);
+    const scopeOpts = { hereGroup: here.group, areas: areasOf(state.region) };
+    if (on) {
+      scopeAtOpen = areaScopeKey(state, scopeOpts);
+      view.setAreaMode(areaBounds(state.region));
+      return;
+    }
+    // Leaving: back where the camera was if the areas in play are the same; else frame what the filter keeps now.
+    // (A new region closes the page too; its key differs, and setRegion's fit replaces this move.)
+    const changed = areaScopeKey(state, scopeOpts) !== scopeAtOpen;
+    view.setAreaMode(undefined, changed ? keptBounds(state, here) : undefined);
   }
 
   /** The whole city as far as our places go: the area shapes, or before they load the places, or the basemap's box. */
@@ -408,10 +419,21 @@ export function mountApp(root: HTMLElement): AppHandle {
     const regionShapes = shapes.get(region);
     const fromShapes = regionShapes ? shapesBounds(regionShapes) : undefined;
     if (fromShapes) return fromShapes;
-    const inRegion = places.filter((p) => p.region === region);
-    if (inRegion.length === 0) return regions.find((r) => r.id === region)?.bbox;
-    const lngs = inRegion.map((p) => p.lng);
-    const lats = inRegion.map((p) => p.lat);
+    return placesBounds(places.filter((p) => p.region === region)) ?? regions.find((r) => r.id === region)?.bbox;
+  }
+
+  /** The areas in play (picked and added), or with none the results; undefined when there is nothing to frame. */
+  function keptBounds(state: FilterState, here: PositionChip): [number, number, number, number] | undefined {
+    const scope = areaScope(state, { hereGroup: here.group, areas: areasOf(state.region) });
+    const regionShapes = shapes.get(state.region);
+    const fromShapes = scope && regionShapes ? shapesBounds(regionShapes, new Set([...scope.chosen, ...scope.added])) : undefined;
+    return fromShapes ?? placesBounds(applyFilters(places, state, applyOpts(state, here)));
+  }
+
+  function placesBounds(ps: Place[]): [number, number, number, number] | undefined {
+    if (ps.length === 0) return undefined;
+    const lngs = ps.map((p) => p.lng);
+    const lats = ps.map((p) => p.lat);
     return [Math.min(...lngs), Math.min(...lats), Math.max(...lngs), Math.max(...lats)];
   }
 
@@ -796,7 +818,7 @@ export function mountApp(root: HTMLElement): AppHandle {
     ensureShapes(state.region);
     const regionShapes = shapes.get(state.region);
     areaLayers.set(regionShapes ? areaDrawing(state, here, regionShapes, !areaMap) : undefined);
-    syncAreaMap(areaMap, state.region);
+    syncAreaMap(areaMap, state, here);
 
     const total = places.filter((p) => p.region === state.region).length;
     const matching = applyFilters(places, state, applyOpts(state, here));

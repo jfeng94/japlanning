@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { areasOf } from "../config/regions.ts";
 import { areaIndex } from "../data/areas.ts";
-import { applyFilters, areaLook, areaScope, matchesCategories, normalise, sinkUnknownHours, tapArea, type ApplyOptions, type HoursInput } from "./apply.ts";
+import { applyFilters, areaLook, areaScope, areaScopeKey, matchesCategories, normalise, sinkUnknownHours, tapArea, type ApplyOptions, type HoursInput } from "./apply.ts";
 import { defaultState, reduce, type FilterAction, type FilterState } from "./state.ts";
 import { AREAS, place, samplePlaces } from "./testing.ts";
 
@@ -117,6 +117,23 @@ describe("areaScope", () => {
     expect(areaScope(run(area("East"), ADJ), { areas })).toEqual({ chosen: new Set(["East"]), added: new Set(["Central"]) });
     expect(areaScope(run(HERE, ADJ), { areas, hereGroup: "Shibuya" })).toEqual({ chosen: new Set(["Shibuya"]), added: new Set(["Central"]) });
     expect(areaScope(run(area("Central"), ADJ), { areas })).toEqual({ chosen: new Set(["Central"]), added: new Set(["Shibuya", "East"]) });
+  });
+});
+
+describe("areaScopeKey (leaving the Area page: did what the areas keep change?)", () => {
+  const key = (state: FilterState, hereGroup?: string) => areaScopeKey(state, { areas, ...(hereGroup ? { hereGroup } : {}) });
+
+  it("is the same for states that keep the same places, however they got there", () => {
+    expect(key(run(ADJ))).toBe(key(run())); // + Adjacent with nothing picked keeps everywhere
+    expect(key(run(HERE))).toBe(key(run())); // Here with no fix
+    expect(key(run(area("East"), area("Central")))).toBe(key(run(area("Central"), area("East")))); // order
+    expect(key(run(HERE), "East")).toBe(key(run(area("East")))); // Here's area is a pick like any other
+  });
+
+  it("differs when the picks, the added areas or the region differ", () => {
+    expect(key(run(area("East")))).not.toBe(key(run()));
+    expect(key(run(area("East"), ADJ))).not.toBe(key(run(area("East"))));
+    expect(key({ ...run(), region: "kyoto" })).not.toBe(key(run()));
   });
 });
 

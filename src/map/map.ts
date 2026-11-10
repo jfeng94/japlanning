@@ -62,9 +62,11 @@ export interface MapView {
    * 3): ease to fit these bounds ([west, south, east, north]) above the
    * panel, quiet the basemap and hide the locate button. Pan and zoom stay
    * on (2026-11-10), so calling it again while on reframes the city.
-   * Undefined puts everything back, and the camera where it was.
+   * Undefined puts everything back, and the camera where it was; or, with
+   * `leaveTo`, frames those bounds instead (the area filter changed, so
+   * the old view may hold none of the results).
    */
-  setAreaMode(bounds: readonly [number, number, number, number] | undefined): void;
+  setAreaMode(bounds: readonly [number, number, number, number] | undefined, leaveTo?: readonly [number, number, number, number]): void;
   destroy(): void;
 }
 
@@ -73,6 +75,8 @@ type PaintValue = Parameters<MapLibreMap["setPaintProperty"]>[2];
 
 /** Room around the areas: the scale bar sits in the top-left corner. */
 const AREA_PADDING = { top: 40, right: 12, bottom: 12, left: 12 };
+/** Framing the areas in play on leaving the Area page: snug, with room on the left for the buttons. */
+const LEAVE_PADDING = { top: 40, right: 24, bottom: 24, left: 48 };
 
 export interface MapCallbacks {
   /** The fit-to-results button. */
@@ -200,7 +204,7 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
   return {
     map,
     locate,
-    setAreaMode(bounds) {
+    setAreaMode(bounds, leaveTo) {
       if (bounds) {
         if (!areaMode) {
           areaMode = { camera: { center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() } };
@@ -216,7 +220,12 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
         container.classList.remove("is-area-map");
         labelFitButton(container, false);
         quietBasemap(false);
-        afterThisTask(() => map.easeTo({ ...camera, duration: 450 }));
+        if (leaveTo) {
+          const [w, s, e, n] = leaveTo;
+          afterThisTask(() => map.fitBounds([[w, s], [e, n]], { padding: LEAVE_PADDING, maxZoom: 16, bearing: camera.bearing, duration: 450 }));
+        } else {
+          afterThisTask(() => map.easeTo({ ...camera, duration: 450 }));
+        }
       }
     },
     setRegion(next) {

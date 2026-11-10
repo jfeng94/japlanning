@@ -204,4 +204,16 @@ describe.each(Object.entries(generated) as [RegionId, AreaShapes][])("%s's gener
       expect(p.lng >= w && p.lng <= e && p.lat >= s && p.lat <= n, p.name).toBe(true);
     }
   });
+
+  it("bound a few chips more tightly than all of them, and none not at all", () => {
+    const all = shapesBounds(shapes)!;
+    const first = shapes.features[0]!.properties.chip;
+    const [w, s, e, n] = shapesBounds(shapes, new Set([first]))!;
+    expect(w >= all[0] && s >= all[1] && e <= all[2] && n <= all[3]).toBe(true);
+    expect(e - w < all[2] - all[0] || n - s < all[3] - all[1]).toBe(true);
+    for (const p of places.filter((p) => p.region === region && p.areaGroup === first)) {
+      expect(p.lng >= w && p.lng <= e && p.lat >= s && p.lat <= n, p.name).toBe(true);
+    }
+    expect(shapesBounds(shapes, new Set())).toBeUndefined();
+  });
 });

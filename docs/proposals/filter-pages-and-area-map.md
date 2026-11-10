@@ -362,7 +362,8 @@ stay the main control.
 ### Leaving the Area page
 
 - The camera returns to exactly where it was before the page opened
-  (decided).
+  (decided). *Changed 2026-11-10:* only when the areas in play didn't
+  change; see "Leaving frames the new areas" below.
 - Pan and zoom come back, with the pins, the buttons, and the basemap's
   labels and roads.
 
@@ -412,6 +413,15 @@ stay the main control.
   as on the normal map; the frame straightens it. Taps still pick areas
   (a drag isn't a tap), and the slop is in pixels, so it scales with
   zoom.
+- **Leaving frames the new areas** (Jerry, 2026-11-10). Going back to
+  where the camera was could leave you looking at an empty map: pick a
+  place, open the page, pick areas that don't include it, close. So the
+  camera goes back only when the areas in play are the same as when the
+  page opened (`areaScopeKey`: the picks, Here's area and the added
+  ones, so toggling an area and back, or + Adjacent with nothing picked,
+  is no change). If they differ, the map frames the areas now in play
+  (fit with a little padding, at most zoom 16), or every result when
+  the areas were cleared.
 - **Camera moves wait for the end of the tap.** Opening or closing the
   page changes the panel's height, which sets the map's padding, and in
   MapLibre that is a jump that cancels an ease under way. The fit and the
