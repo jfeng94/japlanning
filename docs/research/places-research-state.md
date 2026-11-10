@@ -184,9 +184,19 @@ findings table instead of guessing.
   neighbours. Waiting for Jerry (`AWAITING_DECISION` in
   `src/data/area-shapes.test.ts`;
   `docs/proposals/filter-pages-and-area-map.md`, Part 2).
+- **Area merges** (reviewed 2026-11-10, deferred by Jerry). With the
+  new places, two merges have enough on both sides to split:
+  Nihonbashi (7) / Ningyocho (6) and Okazaki (3) / Nanzenji (2, which
+  needs neighbours of its own). Ginza (17) / Tsukiji (2) could go either
+  way. Keep the ward-line merges (Tokyo Station, Shinjuku with
+  Minami-Shinjuku, Meguro with Kamiosaki, Kyoto's Shijo-* halves), the
+  ones with a single place on a side, and Yanaka · Nezu · Sendagi
+  ("Yanesen"). Splitting follows "Adding an area" in adding-places.md:
+  config, `npm run areas`, review on the Area page.
 - **Layers and kinds:** the 2026-11-09 split is a first cut from the
   list's categories (`docs/design/regions-layers-filters.md`,
-  "Layers").
+  "Layers"). Food got 17 kinds from Type on 2026-11-10
+  (`docs/proposals/food-kinds.md`).
 - **Lodging:** its schema is still to come (same doc, "Lodging").
 
 ## Scratch data
