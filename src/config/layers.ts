@@ -4,10 +4,38 @@ import type { LayerConfig, LayerId } from "../data/types.ts";
  * One entry per layer. Adding a layer: add its id to LAYER_IDS in
  * data/types.ts, put its CSV at data/<id>.csv (npm run import normalises
  * one), add an entry here, push. `kinds` are the category chips on the
- * Filters page. Facet `values` are the column's enum in display order;
- * values in the data but not here still render (after these) and fail the
- * build's data check so typos are visible.
+ * Filters page, read from the Kind column or derived from a facet
+ * (`kindsFrom`, as Food does from Type). Facet `values` are the column's
+ * enum in display order; values in the data but not here still render
+ * (after these) and fail the build's data check so typos are visible.
  */
+/**
+ * Food's kinds, the category chips, in chip order, each with the Type
+ * values that make it (docs/proposals/food-kinds.md). A place's kinds
+ * follow from its Type, and this is also the Type column's list of
+ * values, so a new type goes into one of these groups; a Type value in
+ * none of them fails the build.
+ */
+const FOOD_KINDS: Record<string, string[]> = {
+  Ramen: ["Ramen", "Tsukemen", "Tantanmen"],
+  Yakitori: ["Yakitori"],
+  Yakiniku: ["Yakiniku"],
+  Katsu: ["Tonkatsu", "Gyukatsu", "Katsudon"],
+  Kushikatsu: ["Kushikatsu", "Kushiage"],
+  Tempura: ["Tempura", "Tendon"],
+  Gyoza: ["Gyoza"],
+  Okonomiyaki: ["Okonomiyaki", "Negiyaki", "Monjayaki"],
+  "Hot pot": ["Sukiyaki", "Shabu-shabu"],
+  Unagi: ["Unagi"],
+  Tofu: ["Yudofu", "Tofu", "Yuba"],
+  Rice: ["Rice", "Kamameshi", "Donabe rice", "Fukagawa-meshi", "Chagayu", "Teishoku"],
+  Onigiri: ["Onigiri"],
+  Donburi: ["Donburi", "Oyakodon", "Kaisendon"],
+  Sushi: ["Kakinoha-zushi"],
+  Pickles: ["Tsukemono"],
+  Fruit: ["Fruit parlor", "Fruit sando", "Parfait", "Strawberries"],
+};
+
 export const layers: LayerConfig[] = [
   {
     // Coffee, tea and bars in every region: Kind says which, Region says where, Icon picks the artwork.
@@ -93,57 +121,18 @@ export const layers: LayerConfig[] = [
     ],
   },
   {
+    // Kinds come from Type through FOOD_KINDS (above), so the rows need no Kind column.
     id: "food",
     label: "Food",
     dataUrl: "/data/food.csv",
     color: "#c77b14",
     icon: "fork",
     hasHours: true,
+    kinds: Object.keys(FOOD_KINDS),
+    kindsFrom: { column: "Type", groups: FOOD_KINDS },
     rowFacets: ["Type"],
     facets: [
-      {
-        column: "Type",
-        values: [
-          "Ramen",
-          "Tsukemen",
-          "Tantanmen",
-          "Yakitori",
-          "Yakiniku",
-          "Tonkatsu",
-          "Gyukatsu",
-          "Kushiage",
-          "Kushikatsu",
-          "Tempura",
-          "Tendon",
-          "Gyoza",
-          "Okonomiyaki",
-          "Negiyaki",
-          "Monjayaki",
-          "Sukiyaki",
-          "Shabu-shabu",
-          "Yudofu",
-          "Tofu",
-          "Yuba",
-          "Unagi",
-          "Rice",
-          "Onigiri",
-          "Donburi",
-          "Oyakodon",
-          "Katsudon",
-          "Kaisendon",
-          "Kamameshi",
-          "Donabe rice",
-          "Fukagawa-meshi",
-          "Chagayu",
-          "Teishoku",
-          "Kakinoha-zushi",
-          "Tsukemono",
-          "Fruit parlor",
-          "Fruit sando",
-          "Parfait",
-          "Strawberries",
-        ],
-      },
+      { column: "Type", values: Object.values(FOOD_KINDS).flat() },
       { column: "Reservation", values: ["Required", "Optional", "No"] },
     ],
   },

@@ -117,6 +117,31 @@ describe("drinks data", () => {
   });
 });
 
+describe("food data (kinds derived from Type, docs/proposals/food-kinds.md)", () => {
+  const food = layers.find((l) => l.id === "food")!;
+  const { places } = repoData.find((d) => d.layer.id === "food")!.result;
+
+  it("files every Type value under exactly one kind, and the kinds are the chips", () => {
+    const groups = food.kindsFrom!.groups;
+    expect(Object.keys(groups)).toEqual(food.kinds);
+    const all = Object.values(groups).flat();
+    expect(new Set(all).size).toBe(all.length);
+    expect(food.facets.find((f) => f.column === "Type")!.values).toEqual(all);
+  });
+
+  it("gives every place a kind, with the counts the proposal agreed (update these when rows change on purpose)", () => {
+    expect(places.filter((p) => p.kinds.length === 0).map((p) => p.name)).toEqual([]);
+    const count = (k: string) => places.filter((p) => p.kinds.includes(k)).length;
+    expect(Object.fromEntries(food.kinds!.map((k) => [k, count(k)]))).toEqual({
+      Ramen: 17, Yakitori: 15, Yakiniku: 10, Katsu: 12, Kushikatsu: 6, Tempura: 13, Gyoza: 11, Okonomiyaki: 7,
+      "Hot pot": 11, Unagi: 10, Tofu: 8, Rice: 14, Onigiri: 6, Donburi: 5, Sushi: 3, Pickles: 6, Fruit: 8,
+    });
+    const koharuken = places.find((p) => p.name === "Koharuken")!;
+    expect(koharuken.facets["Type"]).toEqual(["Donburi", "Katsudon"]);
+    expect(koharuken.kinds).toEqual(["Katsu", "Donburi"]);
+  });
+});
+
 describe("lodging fixture (different schema, deliberate problems)", () => {
   const { places, warnings } = parseLayerCsv(lodgingCsv, lodging);
 
@@ -300,6 +325,34 @@ describe("edge cases", () => {
     const without = parseLayerCsv(csv(["Name,Latitude,Longitude,Kind", "a,35.6,139.7,Hotel"]), lodging);
     expect(without.places[0]!.kinds).toEqual([]);
     expect(without.places[0]!.extra).toEqual({ Kind: "Hotel" });
+  });
+
+  it("derives kinds from a facet column for a layer with kindsFrom: every kind a value is in, in chip order; none warns", () => {
+    const groups = { Noodles: ["Ramen", "Soba"], Rice: ["Onigiri", "Donburi"] };
+    const derived: LayerConfig = {
+      ...minimal,
+      kinds: Object.keys(groups),
+      kindsFrom: { column: "Type", groups },
+      facets: [{ column: "Type", values: Object.values(groups).flat() }],
+    };
+    const { places, warnings } = parseLayerCsv(
+      csv([
+        "Name,Latitude,Longitude,Type,Kind",
+        "a,35.6,139.7,Donburi; Soba,Bar",
+        "b,35.6,139.7,Onigiri; Donburi,",
+        "c,35.6,139.7,,",
+        "d,35.6,139.7,Curry,",
+      ]),
+      derived,
+    );
+    expect(places.map((p) => p.kinds)).toEqual([["Noodles", "Rice"], ["Rice"], [], []]);
+    // The Kind column isn't read, so it lands in extra like any unknown column.
+    expect(places[0]!.extra).toEqual({ Kind: "Bar" });
+    expect(warnings.map((w) => [w.row, w.column, w.message])).toEqual([
+      [3, "Type", "c: Type is blank, so it has no kind"],
+      [4, "Type", 'd: Type "Curry" is in none of the kinds, so it has no kind'],
+      [4, "Type", 'd: Type "Curry" is not a configured value'],
+    ]);
   });
 
   it("reads the Icon column and drops unknown icons with a warning", () => {

@@ -30,7 +30,9 @@ if something is ambiguous enough to stop the research.
   only when the hours were read from the official source; hours from a
   third party go in without a date, so the app shows them as unverified.
 - **Kind** always: it is required, and it files the place under its
-  category chip.
+  category chip. Food has no Kind column: its Type gives the kind
+  (`FOOD_KINDS` in `src/config/layers.ts`), so Type is required there,
+  and a new type goes into one of those groups first.
 - **Facets.** Format, Food, Linger, Reservation, Specialty only when a
   source supports them; blank otherwise. Blank beats a guess: a wrong
   value misleads on the card and in search.

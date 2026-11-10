@@ -109,7 +109,10 @@ Jerry's trip list (`docs/design/regions-layers-filters.md`, "Layers"):
 the same core columns, a `Kind` where the layer has kinds (Sweets: Pastry
 · Wagashi · Ice; Music: Café · Shop · Concert; Shops: Kitchen · Baking ·
 Games), and a **Type** facet saying what the place is ("Kakigori",
-"Ramen; Tsukemen"), multi-valued from the layer's list. Places still
+"Ramen; Tsukemen"), multi-valued from the layer's list. Food's kinds
+(Ramen, Katsu, Donburi… 17 of them, 2026-11-10) come from its Type
+instead of a Kind column: `FOOD_KINDS` in `src/config/layers.ts` groups
+the types under each kind (`docs/proposals/food-kinds.md`). Places still
 waiting for fitting pin art use the `question` icon. The list's research
 gaps are in `docs/research/places-followup-2026-11-09.csv`.
 

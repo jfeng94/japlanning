@@ -99,10 +99,18 @@ export interface LayerConfig {
   hasHours: boolean;
   /**
    * The layer's kinds, from its Kind column (required when set: a blank or
-   * unknown value fails the build). They are the category chips under the
-   * layer's header on the Filters page. Absent: the layer is one category.
+   * unknown value fails the build), or from `kindsFrom`. They are the
+   * category chips under the layer's header on the Filters page. Absent:
+   * the layer is one category.
    */
   kinds?: string[];
+  /**
+   * Derive each place's kinds from a facet column instead of a Kind
+   * column: each kind lists the column's values that make it (Food:
+   * Ramen is Ramen, Tsukemen or Tantanmen). A row whose values make no
+   * kind fails the build. Its keys are `kinds`, in the same order.
+   */
+  kindsFrom?: { column: string; groups: Record<string, string[]> };
   /** Columns shown on the row and the card, and matched by search; not filters (docs/proposals/filters-and-areas.md). */
   facets: FacetConfig[];
   /** Facet columns shown as chips on a list row. Defaults to the first two facets. */

@@ -71,7 +71,7 @@ repo (`src/config/layers.ts`):
 | --- | --- | --- | --- |
 | Drinks | Coffee · Tea · Bar | Format, Roasting, Food, Linger, Specialty, Reservation | coffee |
 | Sweets | Pastry · Wagashi · Ice | Type, Reservation | pastry |
-| Food | none: one chip | Type, Reservation | fork |
+| Food | Ramen · Yakitori · Yakiniku · Katsu · Kushikatsu · Tempura · Gyoza · Okonomiyaki · Hot pot · Unagi · Tofu · Rice · Onigiri · Donburi · Sushi · Pickles · Fruit, from Type | Type, Reservation | fork |
 | Music | Café · Shop · Concert | Type, Reservation | musicbox |
 | Shops | Kitchen · Baking · Games | Type | question |
 | Activities | none: one chip | Type, Reservation | bingbong |
@@ -84,6 +84,14 @@ column became **Type**, what the place is ("Kakigori", "Ramen; Tsukemen",
 "Knives"), multi-valued and from a fixed list per layer like any facet.
 Lodging is still to come, with `onAreaMap` (below).
 
+**Food's kinds** (2026-11-10, `docs/proposals/food-kinds.md`) come from
+its Type rather than a Kind column: the config groups the Type values
+under each kind (Ramen is Ramen, Tsukemen or Tantanmen), and that
+grouping is also the Type column's list of values, so a new type goes
+into a group or fails the build. A place of two types in different
+kinds has both (Koharuken: Katsu and Donburi). Anything finer than a
+kind (tsukemen only) is the search box's job.
+
 ```ts
 interface LayerConfig {
   id: string;                  // "drinks"
@@ -94,6 +102,8 @@ interface LayerConfig {
   icon: string;                // pin glyph
   hasHours: boolean;           // participates in "open now"
   kinds?: string[];            // the Kind column's values: the layer's category chips
+  kindsFrom?: { column: string; groups: Record<string, string[]> };
+                               // derive kinds from a facet column instead (Food, from Type)
   facets: FacetConfig[];       // shown on rows and the card, matched by search; not filters
   rowFacets?: string[];        // facet columns shown as chips on a row
 }
@@ -146,7 +156,9 @@ prefix on Name still works and is stripped for display, so a sheet can
 move to the column at its own pace.
 
 **Kind** (2026-11-09): for a layer with `kinds`, which of them the row is
-(several allowed: `Coffee; Bar`). Required there: a blank or unknown value
+(several allowed: `Coffee; Bar`). A layer with `kindsFrom` (Food) has no
+Kind column: its rows' kinds follow from the facet named there, and a
+row whose values make no kind warns. Required there: a blank or unknown value
 warns, so the build fails, and an unknown value is dropped rather than
 becoming a category. The kinds are the layer's category chips in the
 Filters page and show in the card's meta line ("Drinks · Coffee ·

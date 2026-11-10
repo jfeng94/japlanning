@@ -21,7 +21,7 @@ const REQUIRED_COLUMNS = ["Name", "Latitude", "Longitude"] as const;
 /** The sheet's stable integer id column; optional per sheet, required per row once present. */
 export const ID_COLUMN = "ID";
 
-/** A layer with `kinds` reads them from this column; one without leaves it in `extra`. */
+/** A layer with `kinds` reads them from this column (unless it derives them, `kindsFrom`); one without leaves it in `extra`. */
 const KIND_COLUMN = "Kind";
 
 /** Core optional columns, by header text. */
@@ -88,7 +88,7 @@ export function parseLayerCsv(
     ...REQUIRED_COLUMNS,
     ...Object.values(COL),
     ...facetColumns,
-    ...(kinds ? [KIND_COLUMN] : []),
+    ...(kinds && !layer.kindsFrom ? [KIND_COLUMN] : []),
   ]);
   const extraColumns = headers.filter((h) => h !== "" && !knownColumns.has(h));
   const icons = options.icons ? new Set(options.icons) : undefined;
@@ -207,7 +207,15 @@ export function parseLayerCsv(
 
     // Kind: required for a layer with kinds; the category chips select on it.
     let placeKinds: string[] = [];
-    if (kinds) {
+    if (kinds && layer.kindsFrom) {
+      // Derived from a facet column: every kind one of the row's values belongs to.
+      const { column, groups } = layer.kindsFrom;
+      const values = splitMulti(cell(column));
+      placeKinds = kinds.filter((k) => groups[k]?.some((v) => values.includes(v)));
+      if (placeKinds.length === 0) {
+        warn(`${name}: ${column} ${values.length === 0 ? "is blank" : `"${values.join("; ")}" is in none of the kinds`}, so it has no kind`, column);
+      }
+    } else if (kinds) {
       const raw = splitMulti(cell(KIND_COLUMN));
       if (raw.length === 0) warn(`${name}: Kind is blank`, KIND_COLUMN);
       for (const k of raw) {
