@@ -80,18 +80,31 @@ positioning does not. Permission is per origin and persists in the
 installed app. The map's own tiles are M7's business; the dot renders
 regardless.
 
-**Blocked in the installed app** (found 2026-11-09). On the iPhone the
-installed app asks iOS for location as "Safari Websites" (Settings →
-Privacy & Security → Location Services), whichever browser added it.
-With that entry on Never, the app is refused at once and never prompts,
-while the same site in a Chrome tab works, and re-adding the app changes
-nothing. So that it can be fixed on the trip without help:
+**Blocked in the installed app** (found 2026-11-09; the second cause
+2026-11-10). On the iPhone the installed app goes through Safari's
+location settings, whichever browser added it. Either of two refuses at
+once with no prompt, while the same site in a Chrome tab works:
+- Settings → Privacy & Security → Location Services → **Safari
+  Websites** on Never refuses every web app.
+- Settings → Apps → Safari → **Location** on Ask can keep refusing a
+  site after an earlier "Don't Allow", without asking again. Other
+  developers report the same stuck refusal on iOS 26 and 27 after
+  location had been allowed. Allow skips it. This was the cause on
+  Jerry's phone, where Safari Websites was already While Using the App.
+
+The refusal is kept outside the app's own data, so re-adding the app
+changes nothing, and `navigator.permissions` can still report "prompt".
+Settings → General → Transfer or Reset iPhone → Reset → Reset Location
+& Privacy clears it as well, along with every app's permissions. So that
+it can be fixed on the trip without help:
 - the "blocked" toast says the phone is blocking location and, tapped,
   opens Diagnostics;
 - Diagnostics starts with a Location section: the permission as the
-  browser reports it, the setting to change for the way the app is
-  running (installed app, Chrome tab or Safari tab), and a **Test
-  location** button that makes one real request and says what happened;
+  browser reports it (on an iPhone, with a warning that it can be
+  wrong), a **Test location** button that makes one real request and
+  says what happened, and the settings to check, in order, for the way
+  the app is running (installed app, Chrome tab or Safari tab), ending
+  with a relaunch or reload;
 - the Location setting's help points there.
 
 ### Files

@@ -1,11 +1,19 @@
 /**
- * Where to unblock location, for whichever way the app is running. The
- * case that bites: on an iPhone, a Home Screen app runs in Apple's web-app
- * container, not in the browser that added it, so iOS asks the "Safari
- * Websites" entry in Location Services, even for an app added from Chrome.
- * With that entry on Never, every web app is refused at once and no prompt
- * ever shows, while the same site in a Chrome tab (which asks as "Chrome")
- * works. Deleting and re-adding the Home Screen app doesn't change it.
+ * Where to unblock location, for whichever way the app is running. On an
+ * iPhone, a Home Screen app runs in Apple's web-app container, not in the
+ * browser that added it, so Safari's settings decide, even for an app added
+ * from Chrome. Either of two can refuse at once with no prompt, while the
+ * same site in a Chrome tab (which asks as "Chrome") works:
+ *
+ * - Location Services → Safari Websites: on Never, every web app is refused.
+ * - Safari → Location (Ask · Deny · Allow): on Ask, iOS can keep refusing a
+ *   site after an earlier "Don't Allow", without asking again. Developers
+ *   report the same stuck refusal on iOS 26 and 27 after location had been
+ *   allowed. Allow skips it; that was the fix on Jerry's phone (2026-11-10).
+ *
+ * The refusal is kept outside the app's own data, so deleting and re-adding
+ * the Home Screen app changes nothing, and navigator.permissions can still
+ * say "prompt" while every request is refused.
  */
 export interface Runtime {
   /** navigator.userAgent */
@@ -16,20 +24,22 @@ export interface Runtime {
   maxTouchPoints?: number;
 }
 
-const SETTINGS = "Settings → Privacy & Security → Location Services";
+const LOCATION_SERVICES = "Settings → Privacy & Security → Location Services";
+const SAFARI_LOCATION = "Settings → Apps → Safari → Location";
 
 export function isIOS({ userAgent, maxTouchPoints = 0 }: Runtime): boolean {
   return /iPhone|iPad|iPod/.test(userAgent) || (/Macintosh/.test(userAgent) && maxTouchPoints > 1);
 }
 
-/** One sentence saying where location is allowed for this app, in the order to check. */
-export function unblockLocationHint(rt: Runtime): string {
-  if (!isIOS(rt)) return "Allow location for this site in the browser's site settings.";
-  if (rt.standalone) {
-    return `On the iPhone: ${SETTINGS} → Safari Websites → While Using the App. The Home Screen app counts as Safari there, even when Chrome added it.`;
-  }
-  if (/CriOS/.test(rt.userAgent)) return `On the iPhone: ${SETTINGS} → Chrome → While Using the App.`;
-  return `On the iPhone: ${SETTINGS} → Safari Websites → While Using the App.`;
+/** Where to allow location for this app: the settings to check, in order, then how to try again. */
+export function unblockLocationSteps(rt: Runtime): string[] {
+  if (!isIOS(rt)) return ["Allow location for this site in the browser's site settings, then reload the page."];
+  if (!rt.standalone && /CriOS/.test(rt.userAgent)) return [`${LOCATION_SERVICES} → Chrome → While Using the App.`, "Reload the page."];
+  return [
+    `${LOCATION_SERVICES} → Safari Websites → While Using the App.${rt.standalone ? " The Home Screen app counts as Safari there, even when Chrome added it." : ""}`,
+    `${SAFARI_LOCATION} → Allow. On Ask, the iPhone can keep refusing after an earlier "Don't Allow" without asking again.`,
+    rt.standalone ? "Close the app fully (swipe it away in the app switcher) and open it again." : "Reload the page.",
+  ];
 }
 
 /** This device, now. */

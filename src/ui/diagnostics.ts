@@ -1,6 +1,6 @@
 import type { LoadResult } from "../data/types.ts";
 import { renderCapabilities, type Capability } from "../capabilities.ts";
-import { currentRuntime, unblockLocationHint } from "../geo/location-help.ts";
+import { currentRuntime, isIOS, unblockLocationSteps } from "../geo/location-help.ts";
 import { permissionState } from "../geo/locate.ts";
 import { renderDataStatus } from "./data-status.ts";
 
@@ -21,6 +21,8 @@ export function mountDiagnostics(body: HTMLElement, onRefresh: () => void, extra
       </div>
       <p class="note location-state"></p>
       <p class="note location-result" role="status" hidden></p>
+      <p class="note">If the locate button says location is blocked, check these in order:</p>
+      <ol class="note location-steps"></ol>
     </section>
     <section class="diag-data">
       <div class="data-head">
@@ -36,7 +38,8 @@ export function mountDiagnostics(body: HTMLElement, onRefresh: () => void, extra
     <p class="build">build <code>${__BUILD_SHA__}</code> · ${__BUILD_TIME__}</p>
   `;
   const list = body.querySelector<HTMLElement>(".layer-list")!;
-  const refresh = body.querySelector<HTMLButtonElement>(".refresh")!;
+  // Scoped: Test location shares the .refresh look and comes first.
+  const refresh = body.querySelector<HTMLButtonElement>(".diag-data .refresh")!;
   refresh.addEventListener("click", onRefresh);
   const caps = body.querySelector<HTMLDListElement>("#cap-list")!;
   void renderCapabilities(caps, extraCaps);
@@ -45,10 +48,14 @@ export function mountDiagnostics(body: HTMLElement, onRefresh: () => void, extra
   const locationState = body.querySelector<HTMLElement>(".location-state")!;
   const locationResult = body.querySelector<HTMLElement>(".location-result")!;
   const locationTest = body.querySelector<HTMLButtonElement>(".location-test")!;
+  const locationSteps = body.querySelector<HTMLOListElement>(".location-steps")!;
   const STATE_TEXT = { granted: "allowed", denied: "blocked", prompt: "not asked yet", unknown: "not reported by this browser" } as const;
   async function renderLocationState(): Promise<void> {
+    const rt = currentRuntime();
+    locationSteps.replaceChildren(...unblockLocationSteps(rt).map((step) => Object.assign(document.createElement("li"), { textContent: step })));
     const state = await permissionState();
-    locationState.textContent = `Permission, as the browser reports it: ${STATE_TEXT[state]}. If the locate button says location is blocked: ${unblockLocationHint(currentRuntime())}`;
+    const doubt = isIOS(rt) ? " iPhones don't always report this correctly; Test location says for sure." : "";
+    locationState.textContent = `Permission, as the browser reports it: ${STATE_TEXT[state]}.${doubt}`;
   }
   /**
    * One real request, which is also the permission prompt when there hasn't been one.
@@ -71,7 +78,7 @@ export function mountDiagnostics(body: HTMLElement, onRefresh: () => void, extra
     navigator.geolocation.getCurrentPosition(
       (p) => done(`Working: a position within ±${Math.round(p.coords.accuracy)} m.`),
       (e) => {
-        if (e.code === 1) done(`Blocked by the phone (permission denied). ${unblockLocationHint(currentRuntime())} Then close the app fully and open it again.`);
+        if (e.code === 1) done("Blocked by the phone (permission denied). Work through the steps below.");
         else if (e.code === 2) done("No position available. Location Services may be off for the whole phone, or there is no signal.");
         else done("Timed out after 15 seconds without a position. Try again, ideally outdoors.");
       },

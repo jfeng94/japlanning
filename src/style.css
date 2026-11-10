@@ -1469,6 +1469,14 @@ button {
   opacity: 0.5;
 }
 
+.location-steps {
+  padding-left: 1.25rem;
+}
+
+.location-steps li + li {
+  margin-top: 0.3rem;
+}
+
 .layer-list {
   list-style: none;
   margin: 0;
