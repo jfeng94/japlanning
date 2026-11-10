@@ -17,7 +17,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import Papa from "papaparse";
 import { layers } from "../src/config/layers.ts";
-import { regionOptions, regions } from "../src/config/regions.ts";
+import { areasOf, regionById, regionOptions } from "../src/config/regions.ts";
 import { parseLayerCsv } from "../src/data/parse.ts";
 import type { Place, RegionId } from "../src/data/types.ts";
 
@@ -26,12 +26,40 @@ const QUEUE = "docs/research/audit-queue.csv";
 const DECISIONS = "docs/research/audit-decisions.md";
 const SOURCES = "docs/research/places-sources-2026-11-09.csv";
 
+/** A stop on the trip: a region, or one of its area sections (by its heading on the Area page). */
+interface Stop {
+  region: RegionId;
+  section?: string;
+}
+
 /**
- * The order the group visits the regions; the queue works through them
- * in this order. The regions' config order until Jerry names the
- * itinerary's.
+ * The trip in the order the group visits (Jerry, 2026-11-10): Tokyo, then
+ * Nara and Uji on a day trip, then the rest of Kyoto. Osaka and Hakone
+ * aren't placed yet, so they come last. The queue works through the
+ * stops in this order; a place belongs to the first stop it matches.
  */
-const TRIP_ORDER: RegionId[] = regions.map((r) => r.id);
+const TRIP: Stop[] = [
+  { region: "tokyo" },
+  { region: "nara" },
+  { region: "kyoto", section: "Uji" },
+  { region: "kyoto" },
+  { region: "osaka" },
+  { region: "hakone" },
+];
+
+const stopLabel = (s: Stop): string => (s.section ? `${s.region}·${s.section.toLowerCase()}` : s.region);
+
+/** The index in TRIP of the stop a place belongs to. */
+function stopOf(p: Place): number {
+  const ward = p.area ? areasOf(p.region).wardOf(p.area) : undefined;
+  const i = TRIP.findIndex((s) => {
+    if (s.region !== p.region) return false;
+    if (!s.section) return true;
+    const section = regionById(s.region).areaSections?.find((x) => x.label === s.section);
+    return ward !== undefined && (section?.wards.includes(ward) ?? false);
+  });
+  return i >= 0 ? i : TRIP.length;
+}
 
 /** What keeps a place from being scrubbed, worst first: the order the queue works in within a region. */
 const GAPS = [
@@ -128,13 +156,14 @@ async function main(): Promise<void> {
     return;
   }
 
-  // The scorecard, one line per region in trip order.
+  // The scorecard, one line per stop in trip order.
   const cols: Gap[] = ["decide", "locate", "identity", "status", "address", "pin", "no-hours", "disagree", "other", "unverified"];
-  const header = ["region", "places", "scrubbed", "ready*", ...cols];
+  const header = ["stop", "places", "scrubbed", "ready*", ...cols];
   const table: string[][] = [header];
-  for (const region of TRIP_ORDER) {
-    const inRegion = rows.filter((r) => r.p.region === region);
+  for (const [i, stop] of [...TRIP.entries(), [TRIP.length, { region: "unplaced" as RegionId }] as const]) {
+    const inRegion = rows.filter((r) => stopOf(r.p) === i);
     if (inRegion.length === 0) continue;
+    const region = stopLabel(stop);
     const scrubbed = inRegion.filter((r) => r.gaps.size === 0).length;
     const ready = inRegion.filter((r) => [...r.gaps].every((g) => g === "unverified")).length;
     table.push([region, String(inRegion.length), String(scrubbed), String(ready), ...cols.map((g) => String(inRegion.filter((r) => r.gaps.has(g)).length))]);
@@ -154,7 +183,7 @@ async function main(): Promise<void> {
     const only = flag("region") as RegionId | undefined;
     const PRIORITY: Record<string, number> = { high: 0, medium: 1, low: 2 };
     const order = (r: (typeof rows)[number]) => [
-      TRIP_ORDER.indexOf(r.p.region),
+      stopOf(r.p),
       worst(r.gaps),
       PRIORITY[queue.get(r.p.id)?.priority ?? "low"] ?? 3,
     ];
