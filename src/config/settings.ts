@@ -33,7 +33,7 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   location: true,
   autoDownloadMaps: true,
-  pinRenderer: "dom",
+  pinRenderer: "raster",
   pinStyle: "bare",
   pinLabelMinZoom: 14,
   sort: "name",

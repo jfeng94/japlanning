@@ -1,8 +1,8 @@
 # Pins drawn by the map, with Jerry's art
 
-Status: **Part 1 built** (2026-11-10), behind Settings → Pin renderer →
-Map layer; waiting for the phone comparison (Results, below). Parts 2
-and 3 are decided after that.
+Status: **Part 1 done** (2026-11-10): the map layer is the default after
+Jerry found it "way smoother" on the iPhone. Parts 2 (declutter) and 3
+(retire SDF) are open, to decide.
 
 ## Why
 
@@ -57,8 +57,9 @@ element, so it keeps its glow and its scale-up.
       since the pane can't fire the real theme change.
 - [x] `?fps=1` shows the frame rate while the map moves, so the two
       renderers can be compared on the phone.
-- [ ] On the iPhone, panning and zooming Tokyo is smooth with the map
-      layer, and Jerry accepts its look. Then it becomes the default.
+- [x] On the iPhone, panning and zooming Tokyo is smooth with the map
+      layer, and Jerry accepts its look. Then it becomes the default
+      (2026-11-10).
 
 ## Design
 
@@ -300,3 +301,10 @@ phone is the real test.
   rewrites the address bar on the first tap, dropping `?pins=raster`
   (and `?fps=1`) from it; they hold until a reload. The Settings choice
   is saved on the device.
+
+**Default** (2026-11-10): Jerry found the map layer "way smoother" on the
+iPhone, so it is the default; a choice saved in Settings still wins. On
+the way, the art now loads by the image's load event rather than
+`decode()` (which waits for the page to render, so it hung in a hidden
+tab), and a file that fails to load falls back to the `?` art instead of
+leaving the whole map without pins.

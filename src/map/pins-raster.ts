@@ -17,12 +17,26 @@ const TAP_SLACK_PX = 12;
 /** Hidden while the HTML pin stands in for it. */
 const HIDE_WHEN_SELECTED: ExpressionSpecification = ["case", ["boolean", ["feature-state", "selected"], false], 0, 1];
 
-/** Every icon's and badge's file, decoded once per session, whichever renderer asked first. */
+/**
+ * Every icon's and badge's file, loaded once per session, whichever
+ * renderer asked first. A file that fails is left out, never the lot: its
+ * pins fall back to the `?` art (src/config/icons.ts), so one bad file
+ * can't empty the map.
+ */
 let decoded: Promise<{ icons: Map<IconId, Art>; badges: Map<Mark, Art> }> | undefined;
 function decodeAll() {
   return (decoded ??= (async () => {
-    const icons = new Map(await Promise.all(ICON_IDS.map(async (id) => [id, await loadArt(iconAssetUrl(id, "dom"))] as const)));
-    const badges = new Map(await Promise.all((Object.keys(BADGES) as Mark[]).map(async (m) => [m, await loadArt(BADGES[m])] as const)));
+    const load = async <K>(entries: readonly (readonly [K, string])[]): Promise<Map<K, Art>> => {
+      const settled = await Promise.allSettled(entries.map(async ([key, url]) => [key, await loadArt(url)] as const));
+      const out = new Map<K, Art>();
+      for (const s of settled) {
+        if (s.status === "fulfilled") out.set(s.value[0], s.value[1]);
+        else console.warn(s.reason);
+      }
+      return out;
+    };
+    const icons = await load(ICON_IDS.map((id) => [id, iconAssetUrl(id, "dom")] as const));
+    const badges = await load((Object.keys(BADGES) as Mark[]).map((m) => [m, BADGES[m]] as const));
     return { icons, badges };
   })());
 }
@@ -61,7 +75,7 @@ export function createRasterPinRenderer(view: MapView, colorsNow: () => { label:
     const key = `${e.id}|${halo}`;
     let pixels = drawn.get(key);
     if (!pixels) {
-      const icon = art.icons.get(pair.icon);
+      const icon = art.icons.get(pair.icon) ?? art.icons.get("question");
       if (!icon) return;
       pixels = drawPinArt(icon, pair.mark ? art.badges.get(pair.mark) : undefined, pixelRatio, halo);
       drawn.set(key, pixels);

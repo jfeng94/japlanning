@@ -124,11 +124,16 @@ export function drawPinArt(art: Art, badge: Art | undefined, pixelRatio: number,
   return out.getImageData(0, 0, size, size);
 }
 
-/** Decode an image file for drawing. */
-export async function loadArt(url: string): Promise<Art> {
-  const image = new Image();
-  image.decoding = "async";
-  image.src = url;
-  await image.decode();
-  return { image, width: image.naturalWidth, height: image.naturalHeight };
+/**
+ * Load an image file for drawing. The load event, not `decode()`: decode
+ * waits for the page to render, so it hangs in a page that isn't drawing
+ * (a hidden tab), while drawImage decodes a loaded image on the spot.
+ */
+export function loadArt(url: string): Promise<Art> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve({ image, width: image.naturalWidth, height: image.naturalHeight });
+    image.onerror = () => reject(new Error(`could not load ${url}`));
+    image.src = url;
+  });
 }
