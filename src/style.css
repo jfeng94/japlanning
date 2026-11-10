@@ -975,6 +975,13 @@ button {
   display: none;
 }
 
+.lines-button img {
+  width: 1.45rem;
+  height: 1.45rem;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 .lines-panel {
   position: absolute;
   top: 0;

@@ -1,4 +1,5 @@
 import type { IControl } from "maplibre-gl";
+import linesIcon from "./icons/lines.webp";
 
 /**
  * The Lines button under fit and locate (docs/proposals/m8-transit.md):
@@ -20,7 +21,6 @@ export interface LinesControl extends IControl {
   setHidden(hidden: ReadonlySet<string>): void;
 }
 
-const ICON = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17c4-1 6-5 9-5s5 4 9 5"/><path d="M3 7c4 1 6 5 9 5s5-4 9-5"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg>`;
 
 export function createLinesControl(onChange: (hidden: Set<string>) => void): LinesControl {
   const root = document.createElement("div");
@@ -28,7 +28,7 @@ export function createLinesControl(onChange: (hidden: Set<string>) => void): Lin
   const button = document.createElement("button");
   button.type = "button";
   button.className = "lines-button";
-  button.innerHTML = ICON;
+  button.innerHTML = `<img alt="" draggable="false" src="${linesIcon}">`;
   button.setAttribute("aria-label", "Subway lines");
   button.setAttribute("aria-expanded", "false");
   button.title = "Subway lines";

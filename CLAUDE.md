@@ -393,6 +393,19 @@ proposal in `docs/proposals/` before work starts.
 
 ## Wishlist (not scheduled)
 
+- **One pin for places that share a spot** (Jerry, 2026-11-10). Shops in
+  one building, and above all in station malls (Tokyo Station, Tokyu Food
+  Show in Shibuya), stack their pins on top of each other, so only the top
+  one can be tapped.
+  - **The idea:** a combined pin for a stack that shows how many it
+    holds. Tapping it opens a small widget listing them, and choosing one
+    selects that place.
+  - **To decide when it's picked up:** what counts as "the same spot" (a
+    few metres? the same pixels at the current zoom?), and how the
+    combined pin looks.
+  - The research doc counts 17 spots holding 44 places (as of the
+    import).
+
 - **Images in the card.** A sheet column of Drive image references; a
   build step that downloads, resizes to ~800 px and converts to WebP under
   the site with a manifest per place; a thumbnail row on the card with an
