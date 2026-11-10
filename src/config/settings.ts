@@ -9,7 +9,7 @@
 
 import { DEFAULT_NEARBY_M, NEARBY_STOPS } from "../geo/nearby.ts";
 
-export type PinRendererKind = "dom" | "raster" | "sdf";
+export type PinRendererKind = "dom" | "raster";
 export type PinStyle = "disc" | "bare";
 export type SortKey = "name" | "distance";
 
@@ -58,7 +58,7 @@ const STORAGE_KEY = "japlanning.settings";
 const VALID: { [K in keyof Settings]: (v: unknown) => v is Settings[K] } = {
   location: (v): v is boolean => typeof v === "boolean",
   autoDownloadMaps: (v): v is boolean => typeof v === "boolean",
-  pinRenderer: (v): v is PinRendererKind => v === "dom" || v === "raster" || v === "sdf",
+  pinRenderer: (v): v is PinRendererKind => v === "dom" || v === "raster",
   pinStyle: (v): v is PinStyle => v === "disc" || v === "bare",
   pinLabelMinZoom: (v): v is number => typeof v === "number" && v >= 0 && v <= 20,
   sort: (v): v is SortKey => v === "name" || v === "distance",

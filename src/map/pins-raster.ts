@@ -35,7 +35,7 @@ function decodeAll() {
       }
       return out;
     };
-    const icons = await load(ICON_IDS.map((id) => [id, iconAssetUrl(id, "dom")] as const));
+    const icons = await load(ICON_IDS.map((id) => [id, iconAssetUrl(id)] as const));
     const badges = await load((Object.keys(BADGES) as Mark[]).map((m) => [m, BADGES[m]] as const));
     return { icons, badges };
   })());

@@ -29,7 +29,6 @@ import { placesToPins, type PinRenderer } from "../map/pins.ts";
 import { createDomPinRenderer } from "../map/pins-dom.ts";
 import { createRasterPinRenderer } from "../map/pins-raster.ts";
 import { mountFpsMeter } from "./fps-meter.ts";
-import { createSdfPinRenderer } from "../map/pins-sdf.ts";
 import { chip } from "./chips.ts";
 import { renderDetail, renderDetailStrip } from "./detail.ts";
 import { mountDiagnostics } from "./diagnostics.ts";
@@ -1003,8 +1002,6 @@ export function mountApp(root: HTMLElement): AppHandle {
         return createDomPinRenderer(view);
       case "raster":
         return createRasterPinRenderer(view, colors);
-      case "sdf":
-        return createSdfPinRenderer(view, colors);
     }
   }
 

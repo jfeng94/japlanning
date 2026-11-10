@@ -54,18 +54,16 @@ export interface PinProperties {
   id: string;
   name: string;
   icon: IconId;
-  color: string;
   /** "" when there is no mark; expressions can't read undefined. */
   mark: Mark | "";
-  selected: boolean;
   /** The map-layer renderer's image for this pin's art and badge (pinImageId). */
   image: string;
   /** Draw order on the map layer (pinRank): higher draws on top. */
   rank: number;
 }
 
-/** GeoJSON for the symbol-layer renderers; `selected` is baked in so the SDF layer's expressions can read it. */
-export function pinsToGeoJson(pins: Pin[], selectedId?: string): FeatureCollection<Point, PinProperties> {
+/** GeoJSON for the map-layer renderer. Selection isn't in it: that's feature state, so selecting needs no new data. */
+export function pinsToGeoJson(pins: Pin[]): FeatureCollection<Point, PinProperties> {
   return {
     type: "FeatureCollection",
     features: pins.map((p) => ({
@@ -76,9 +74,7 @@ export function pinsToGeoJson(pins: Pin[], selectedId?: string): FeatureCollecti
         id: p.id,
         name: p.name,
         icon: p.icon,
-        color: p.color,
         mark: p.mark ?? "",
-        selected: p.id === selectedId,
         image: pinImageId(p.icon, p.mark),
         rank: pinRank(p.mark),
       },

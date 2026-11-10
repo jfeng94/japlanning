@@ -133,6 +133,9 @@ export const ICONS = {
 export type IconId = keyof typeof ICONS;
 ```
 
+(2026-11-10: the SDF renderer and its silhouettes are gone, and the
+artwork moved to `src/map/icons/`; docs/proposals/webgl-pins.md, Part 3.)
+
 Assets live in `src/map/icons/sdf/` (monochrome shapes) and
 `src/map/icons/dom/` (full-colour artwork). The two sets will differ in
 practice: a tintable silhouette and a detailed illustration are different

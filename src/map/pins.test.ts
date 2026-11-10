@@ -38,13 +38,13 @@ describe("placesToPins", () => {
 });
 
 describe("pinsToGeoJson", () => {
-  it("builds point features with the selected flag baked in", () => {
+  it("builds one point feature per pin, keyed by the place's id", () => {
     const pins = placesToPins([place({ name: "a" }), place({ name: "b" })], [coffeeLayer]);
-    const fc = pinsToGeoJson(pins, pins[1]!.id);
+    const fc = pinsToGeoJson(pins);
     expect(fc.features).toHaveLength(2);
     expect(fc.features[0]!.geometry).toEqual({ type: "Point", coordinates: [139.7, 35.6] });
-    expect(fc.features.map((f) => f.properties.selected)).toEqual([false, true]);
     expect(fc.features[1]!.id).toBe(pins[1]!.id);
+    expect(fc.features[1]!.properties.id).toBe(pins[1]!.id);
   });
 });
 

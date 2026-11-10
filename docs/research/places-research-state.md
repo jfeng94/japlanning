@@ -161,8 +161,9 @@ findings table instead of guessing.
   of its older rows have a snapshot. None of the new rows do; whether
   the other layers get the columns is open.
 - **Icons:** 119 places wait for art under `question` (`,question,` in
-  `data/` finds them). Adding art is three steps, listed at the top of
-  `src/config/icons.ts`; then point the rows' Icon at it.
+  `data/` finds them). Adding art is two steps, listed at the top of
+  `src/config/icons.ts` (the file in src/map/icons/, a line in the
+  list); then point the rows' Icon at it.
 
 | Group | Places | Types |
 | --- | --- | --- |

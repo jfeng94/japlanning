@@ -28,7 +28,7 @@ export function renderFilterSummary(
     img.alt = layer.label;
     img.title = layer.label;
     img.draggable = false;
-    img.src = iconAssetUrl(isIconId(layer.icon) ? layer.icon : "coffee", "dom");
+    img.src = iconAssetUrl(isIconId(layer.icon) ? layer.icon : "coffee");
     icons.append(img);
   }
   if (icons.childElementCount > 0) countEl.append(icons);

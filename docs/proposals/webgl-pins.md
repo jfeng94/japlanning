@@ -1,8 +1,8 @@
 # Pins drawn by the map, with Jerry's art
 
-Status: **Part 1 done** (2026-11-10): the map layer is the default after
-Jerry found it "way smoother" on the iPhone. Parts 2 (declutter) and 3
-(retire SDF) are open, to decide.
+Status: **done** (2026-11-10). Part 1: the map layer is the default
+after Jerry found it "way smoother" on the iPhone. Part 2 (declutter):
+not needed, Jerry decided, with the speed-up. Part 3 (retire SDF): done.
 
 ## Why
 
@@ -167,6 +167,9 @@ while the map moves. It costs nothing when off.
 
 ## Part 2 (optional): declutter
 
+*Declined 2026-11-10: with the map layer the overview is smooth enough
+that every pin can stay drawn.*
+
 After Part 1 is on the phone, if the overview still reads as a pile:
 
 - Every place also gets a small dot in its layer colour, in a circle
@@ -182,6 +185,12 @@ art fading in and out while zooming feels busy. The fade time can be
 tuned.
 
 ## Part 3: retire SDF
+
+*Done 2026-11-10: the renderer, `sdf.ts` and its test, the 26
+silhouettes and `scripts/pin-silhouettes.py` are gone; the artwork moved
+from `src/map/icons/dom/` to `src/map/icons/`, one file per icon; the
+Pin renderer setting offers Map layer and DOM markers. A saved "SDF
+symbols" choice is no longer valid and falls back to the default.*
 
 Once the map layer is the default, delete the SDF renderer, its distance
 transform and the silhouettes (`src/map/icons/sdf/`,

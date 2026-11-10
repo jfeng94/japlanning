@@ -36,7 +36,7 @@ export function showPinOn(el: HTMLElement, pin: Pin, selected: boolean): void {
   const art = pin.mark ? BADGES[pin.mark] : undefined;
   if (art && badge.getAttribute("src") !== art) badge.src = art;
   el.classList.toggle("is-selected", selected);
-  const icon = iconAssetUrl(pin.icon, "dom");
+  const icon = iconAssetUrl(pin.icon);
   const img = el.querySelector("img")!;
   if (img.getAttribute("src") !== icon) img.src = icon;
   el.querySelector(".dom-pin-label")!.textContent = pin.name;

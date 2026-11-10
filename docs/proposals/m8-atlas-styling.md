@@ -49,9 +49,10 @@ Keep the mechanism, extend the lists, add a third rule for paint. All in
    `pois` layer keeps only `station` (ferry terminals and aerodromes are
    not where coffee is) with a larger station glyph and the name always
    on, in the device CJK font for Japanese.
-4. **Pins pop**: the DOM pins already lift off with a shadow; the SDF
-   pins get a slightly wider halo. Check both renderers against the
-   calmed background in light and dark.
+4. **Pins pop**: the pins already lift off with a baked-in shadow (the
+   map layer, docs/proposals/webgl-pins.md; the SDF renderer this once
+   named is gone). Check them against the calmed background in light
+   and dark.
 5. **Dark flavour** gets the same list; Protomaps' dark palette does most
    of the work, and the one thing to check is rail contrast.
 
@@ -73,7 +74,7 @@ line; the test pins the list so an upgrade that renames one fails loudly.
   layer id, rail reorder), applied in `atlasLayers()`.
 - `src/map/style.test.ts`: the kept and dropped ids, the rail position,
   the station-only POI filter.
-- `src/map/pins-sdf.ts`: halo width.
+- `src/map/pin-art.ts`: the shadow, if the pins need more lift.
 - Docs: this file; CLAUDE.md milestone line.
 
 Roughly 120 lines, one commit, half a day with the eye-tuning. Nothing
