@@ -11,7 +11,9 @@ import type { Flavor } from "./style.ts";
  * The areas on the map (docs/proposals/filter-pages-and-area-map.md, Part
  * 3), in the looks of their chips: picked areas filled, areas added by
  * + Adjacent hatched with a dashed edge, the rest outlined; each in its
- * chip's colour, with its name. Drawn only while the Area page is open.
+ * chip's colour, with its name. That is the Area page; elsewhere the map
+ * shows only the picked and added areas, lighter and unnamed, so the
+ * streets read through (`selectedOnly`, 2026-11-10).
  *
  * Added before the pins, so the pins draw on top; re-added, with the
  * hatch images, after every style load (a theme switch loads a new style).
@@ -19,14 +21,17 @@ import type { Flavor } from "./style.ts";
 const SOURCE = "areas";
 const LABELS = "areas-labels";
 const FONT = ["Noto Sans Medium"];
-/** How strongly a picked area's colour covers the map. */
-const FILL_OPACITY = 0.4;
+/** How strongly a picked area's colour covers the map, and an added area's hatching: on the Area page, and elsewhere. */
+const FILL_OPACITY = { page: 0.4, map: 0.18 };
+const HATCH_OPACITY = { page: 1, map: 0.5 };
 
 export interface AreaDrawing {
   shapes: AreaShapes;
   /** Each chip's look; a chip missing here is out. */
   looks: ReadonlyMap<string, AreaLook>;
   colours: ReadonlyMap<string, AreaColour>;
+  /** Only the picked and added areas, lighter and without names: the map away from the Area page. */
+  selectedOnly?: boolean;
 }
 
 export interface AreaLayers {
@@ -41,26 +46,10 @@ export function createAreaLayers(view: MapView): AreaLayers {
   let drawing: AreaDrawing | undefined;
   const flavor = (): Flavor => (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 
-  const polygons = (): FeatureCollection<Polygon | MultiPolygon> => {
-    if (!drawing) return { type: "FeatureCollection", features: [] };
-    const { shapes, looks, colours } = drawing;
-    const f = flavor();
-    return {
-      type: "FeatureCollection",
-      features: shapes.features.map((s) => {
-        const chip = s.properties.chip;
-        const colour = colours.get(chip);
-        return {
-          type: "Feature",
-          geometry: s.geometry,
-          properties: { chip, look: looks.get(chip) ?? "out", fill: colour?.fill ?? "#888888", line: colour?.line[f] ?? "#666666", pattern: hatchId(chip) },
-        };
-      }),
-    };
-  };
+  const polygons = (): FeatureCollection<Polygon | MultiPolygon> => areaPolygons(drawing, flavor());
 
   const labels = (): FeatureCollection<Point> => {
-    if (!drawing) return { type: "FeatureCollection", features: [] };
+    if (!drawing || drawing.selectedOnly) return { type: "FeatureCollection", features: [] };
     const { shapes, looks, colours } = drawing;
     const f = flavor();
     const points = labelPoints(shapes);
@@ -101,14 +90,14 @@ export function createAreaLayers(view: MapView): AreaLayers {
       type: "fill",
       source: SOURCE,
       filter: ["==", ["get", "look"], "picked"],
-      paint: { "fill-color": ["get", "fill"], "fill-opacity": FILL_OPACITY },
+      paint: { "fill-color": ["get", "fill"], "fill-opacity": ["get", "fillOpacity"] },
     }, before);
     m.addLayer({
       id: `${SOURCE}-hatch`,
       type: "fill",
       source: SOURCE,
       filter: ["==", ["get", "look"], "added"],
-      paint: { "fill-pattern": ["get", "pattern"] },
+      paint: { "fill-pattern": ["get", "pattern"], "fill-opacity": ["get", "hatchOpacity"] },
     }, before);
     m.addLayer({
       id: `${SOURCE}-line`,
@@ -153,6 +142,37 @@ export function createAreaLayers(view: MapView): AreaLayers {
       src.setData(polygons());
       (m.getSource(LABELS) as GeoJSONSource | undefined)?.setData(labels());
     },
+  };
+}
+
+/**
+ * The area shapes as the map draws them, each with its look, colours and
+ * opacities. With `selectedOnly`, only the picked and added areas, lighter.
+ */
+export function areaPolygons(drawing: AreaDrawing | undefined, f: Flavor): FeatureCollection<Polygon | MultiPolygon> {
+  if (!drawing) return { type: "FeatureCollection", features: [] };
+  const { shapes, looks, colours, selectedOnly } = drawing;
+  const where = selectedOnly ? "map" : "page";
+  const shown = selectedOnly ? shapes.features.filter((s) => (looks.get(s.properties.chip) ?? "out") !== "out") : shapes.features;
+  return {
+    type: "FeatureCollection",
+    features: shown.map((s) => {
+      const chip = s.properties.chip;
+      const colour = colours.get(chip);
+      return {
+        type: "Feature",
+        geometry: s.geometry,
+        properties: {
+          chip,
+          look: looks.get(chip) ?? "out",
+          fill: colour?.fill ?? "#888888",
+          line: colour?.line[f] ?? "#666666",
+          pattern: hatchId(chip),
+          fillOpacity: FILL_OPACITY[where],
+          hatchOpacity: HATCH_OPACITY[where],
+        },
+      };
+    }),
   };
 }
 

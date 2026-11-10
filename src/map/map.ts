@@ -60,9 +60,9 @@ export interface MapView {
   /**
    * The Area page's map (docs/proposals/filter-pages-and-area-map.md, Part
    * 3): ease to fit these bounds ([west, south, east, north]) above the
-   * panel, turn off pan, zoom and rotate, quiet the basemap and hide the
-   * fit and locate buttons. Undefined puts everything back, and the camera
-   * where it was.
+   * panel, quiet the basemap and hide the locate button. Pan and zoom stay
+   * on (2026-11-10), so calling it again while on reframes the city.
+   * Undefined puts everything back, and the camera where it was.
    */
   setAreaMode(bounds: readonly [number, number, number, number] | undefined): void;
   destroy(): void;
@@ -166,18 +166,7 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
   }
 
   // ---- the Area page's map ----
-  type Gesture = { enable(): void; disable(): void; isEnabled(): boolean };
-  const gestures = (): Gesture[] => [
-    map.dragPan,
-    map.scrollZoom,
-    map.boxZoom,
-    map.dragRotate,
-    map.keyboard,
-    map.doubleClickZoom,
-    map.touchZoomRotate,
-    map.touchPitch,
-  ];
-  let areaMode: { camera: { center: LngLat; zoom: number; bearing: number; pitch: number }; disabled: Gesture[] } | undefined;
+  let areaMode: { camera: { center: LngLat; zoom: number; bearing: number; pitch: number } } | undefined;
 
   /**
    * Camera moves wait for the end of the current task. The app changes the
@@ -214,19 +203,18 @@ export function mountMap(container: HTMLElement, region: RegionConfig, flavor: F
     setAreaMode(bounds) {
       if (bounds) {
         if (!areaMode) {
-          const disabled = gestures().filter((g) => g.isEnabled());
-          areaMode = { camera: { center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() }, disabled };
-          for (const g of disabled) g.disable();
+          areaMode = { camera: { center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() } };
           container.classList.add("is-area-map");
+          labelFitButton(container, true);
           quietBasemap(true);
         }
         const [w, s, e, n] = bounds;
         afterThisTask(() => map.fitBounds([[w, s], [e, n]], { padding: AREA_PADDING, bearing: 0, pitch: 0, duration: 450 }));
       } else if (areaMode) {
-        const { camera, disabled } = areaMode;
+        const { camera } = areaMode;
         areaMode = undefined;
-        for (const g of disabled) g.enable();
         container.classList.remove("is-area-map");
+        labelFitButton(container, false);
         quietBasemap(false);
         afterThisTask(() => map.easeTo({ ...camera, duration: 450 }));
       }
@@ -291,14 +279,24 @@ function fitControl(onFit: () => void): IControl {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "maplibregl-ctrl fit-button";
-  button.setAttribute("aria-label", "Fit map to results");
-  button.title = "Fit to results";
   button.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
       <path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/>
       <circle cx="12" cy="12" r="2.5"/>
     </svg>`;
   button.addEventListener("click", onFit);
+  labelButton(button, false);
   return { onAdd: () => button, onRemove: () => button.remove() };
+}
+
+/** The fit button frames the results, or on the Area page the whole city. */
+function labelButton(button: HTMLElement, areaMap: boolean): void {
+  button.setAttribute("aria-label", areaMap ? "Fit map to the city" : "Fit map to results");
+  button.title = areaMap ? "Fit to the city" : "Fit to results";
+}
+
+function labelFitButton(container: HTMLElement, areaMap: boolean): void {
+  const button = container.querySelector<HTMLElement>(".fit-button");
+  if (button) labelButton(button, areaMap);
 }
 
 function styleFor(region: RegionConfig, flavor: Flavor) {

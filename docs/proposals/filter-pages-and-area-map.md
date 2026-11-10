@@ -406,6 +406,12 @@ stay the main control.
 - **The locked map takes no gestures.** With MapLibre's pan and zoom off,
   the browser would scroll or pinch-zoom the page instead, so the map
   gets `touch-action: none` and main.ts swallows iOS's pinch on it too.
+  *Unlocked 2026-11-10* (Jerry: the whole city is hard to see on a
+  phone): pan and zoom stay on, so that CSS and the pinch exception are
+  gone, and the fit button shows again, framing the city. Rotation is on
+  as on the normal map; the frame straightens it. Taps still pick areas
+  (a drag isn't a tap), and the slop is in pixels, so it scales with
+  zoom.
 - **Camera moves wait for the end of the tap.** Opening or closing the
   page changes the panel's height, which sets the map's padding, and in
   MapLibre that is a jump that cancels an ease under way. The fit and the
@@ -415,6 +421,10 @@ stay the main control.
   Settings switch that drew them on the normal map for Part 2's review
   is gone; the Area page serves that review now. A device that had it
   on simply forgets it (unknown settings are dropped when read).
+  *Changed 2026-11-10* (Jerry): the normal map highlights the areas in
+  play, picked ones filled at 0.18 (against 0.4 on the page) with their
+  edge, added ones hatched at half strength with the dashed edge, no
+  names (the basemap has its own) and no unpicked areas.
 
 ## Icons (2026-11-09)
 

@@ -215,11 +215,13 @@ clear:
   headings. The page holds the strip at Half, since it is about the map.
   Its button shows only in a region with areas. **The map follows the
   page** (2026-11-09):
-  - it fits every area shape above the strip and locks: no pan, zoom or
-    rotate, no fit or locate button; the blue dot stays;
+  - it fits every area shape above the strip; pan and zoom stay on
+    (2026-11-10: the whole city is hard to read on a phone), and the fit
+    button frames the city again; the locate button hides, the blue dot
+    stays;
   - the basemap hides its labels and roads, keeping land, water, parks
-    and the rail lines (which the basemap only carries from zoom 11, so a
-    phone's city view has none);
+    and the rail lines (which the basemap only carries from zoom 11, so
+    they appear on a phone once you zoom in);
   - each area is drawn in its chip's colour and look (filled, hatched or
     outlined) with its name, picked names winning where labels collide,
     and a tap on it does what its chip does;
@@ -227,7 +229,9 @@ clear:
     bookmark badge, and they ignore taps;
   - leaving puts the camera back where it was.
 
-  The shapes show only there, never on the normal map.
+  On the normal map (2026-11-10) only the areas in play show: picked
+  ones lightly filled and outlined, added ones faintly hatched with a
+  dashed edge, no names, no other areas. Nothing picked, nothing drawn.
 
 A page closes by its X, its own button, another footer button (the
 other page, Search) or a region change. It returns to the card it hid if that place

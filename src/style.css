@@ -988,20 +988,9 @@ button {
   display: none;
 }
 
-/* The Area page's map holds its camera, so fit and locate step aside; the blue dot stays. */
-.is-area-map .fit-button,
+/* The Area page's map frames the city, so locate steps aside (the blue dot stays); fit frames the city again. */
 .is-area-map .locate-button {
   display: none;
-}
-
-/*
- * The locked map takes no gestures at all. MapLibre sets touch-action only
- * while its own pan and zoom are on; with them off the browser would scroll
- * or pinch-zoom the page instead. Taps still arrive as clicks.
- */
-.is-area-map .maplibregl-canvas-container,
-.is-area-map .maplibregl-canvas {
-  touch-action: none;
 }
 
 /* The Area page's pins are for reference: a tap goes through them to the area underneath. */

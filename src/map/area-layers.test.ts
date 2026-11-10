@@ -1,5 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { HATCH_TILE, hatchTile } from "./area-layers.ts";
+import type { AreaColour } from "../config/area-colors.ts";
+import type { AreaShapes } from "../data/area-shapes.ts";
+import type { AreaLook } from "../filter/apply.ts";
+import { HATCH_TILE, areaPolygons, hatchTile } from "./area-layers.ts";
+
+describe("areaPolygons", () => {
+  const square = (x: number) => ({ type: "Polygon" as const, coordinates: [[[x, 0], [x + 1, 0], [x + 1, 1], [x, 1], [x, 0]]] });
+  const shapes: AreaShapes = {
+    type: "FeatureCollection",
+    features: ["Ginza", "Tsukiji", "Ueno"].map((chip, i) => ({ type: "Feature", geometry: square(i), properties: { chip, members: [chip] } })),
+  };
+  const colour: AreaColour = { fill: "#ff0000", on: "#ffffff", hatch: "#ff000080", line: { light: "#990000", dark: "#ff9999" } };
+  const looks = new Map<string, AreaLook>([["Ginza", "picked"], ["Tsukiji", "added"], ["Ueno", "out"]]);
+  const drawing = { shapes, looks, colours: new Map([["Ginza", colour], ["Tsukiji", colour], ["Ueno", colour]]) };
+  const props = (selectedOnly: boolean) => areaPolygons({ ...drawing, selectedOnly }, "light").features.map((f) => f.properties!);
+
+  it("on the Area page draws every area in its look, at full strength", () => {
+    expect(props(false).map((p) => [p["chip"], p["look"], p["fillOpacity"], p["hatchOpacity"]])).toEqual([
+      ["Ginza", "picked", 0.4, 1],
+      ["Tsukiji", "added", 0.4, 1],
+      ["Ueno", "out", 0.4, 1],
+    ]);
+  });
+
+  it("elsewhere draws only the picked and added areas, lighter, so the streets read through", () => {
+    expect(props(true).map((p) => [p["chip"], p["look"], p["fillOpacity"], p["hatchOpacity"]])).toEqual([
+      ["Ginza", "picked", 0.18, 0.5],
+      ["Tsukiji", "added", 0.18, 0.5],
+    ]);
+    expect(props(true)[0]!["line"]).toBe("#990000");
+  });
+
+  it("draws nothing without a drawing", () => {
+    expect(areaPolygons(undefined, "dark").features).toEqual([]);
+  });
+});
 
 describe("hatchTile", () => {
   const n = HATCH_TILE;

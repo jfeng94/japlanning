@@ -234,7 +234,7 @@ export function mountApp(root: HTMLElement): AppHandle {
     regions.find((r) => r.id === filters.get().region)!,
     watchFlavor((flavor) => view.setFlavor(flavor)),
     {
-      onFit: fitToResults,
+      onFit: onFitButton,
       onLocateRequest: () => watch.start(),
       // Stored archives first, so an offline launch never asks the network for tiles it has.
       prepareBasemaps: (protocol) => registerStoredBasemaps(protocol, basemaps, regions, basemapUrl).then(() => undefined),
@@ -383,13 +383,13 @@ export function mountApp(root: HTMLElement): AppHandle {
 
   /** The last drawing handed to the map, reused while nothing in it changes, so renders don't re-send the shapes. */
   let lastDrawing: { key: string; drawing: AreaDrawing } | undefined;
-  function areaDrawing(state: FilterState, here: PositionChip, regionShapes: AreaShapes): AreaDrawing {
+  function areaDrawing(state: FilterState, here: PositionChip, regionShapes: AreaShapes, selectedOnly: boolean): AreaDrawing {
     const areas = areasOf(state.region);
     const opts = { hereGroup: here.group, areas };
     const looks = new Map<string, AreaLook>(areas.chips.map((c) => [c.label, areaLook(state, c.label, opts)]));
-    const key = `${state.region}|${[...looks].filter(([, l]) => l !== "out").join(",")}`;
+    const key = `${state.region}|${selectedOnly}|${[...looks].filter(([, l]) => l !== "out").join(",")}`;
     if (lastDrawing?.key === key && lastDrawing.drawing.shapes === regionShapes) return lastDrawing.drawing;
-    const drawing = { shapes: regionShapes, looks, colours: coloursOf(state.region).chips };
+    const drawing = { shapes: regionShapes, looks, colours: coloursOf(state.region).chips, selectedOnly };
     lastDrawing = { key, drawing };
     return drawing;
   }
@@ -789,13 +789,13 @@ export function mountApp(root: HTMLElement): AppHandle {
     }
     // A region without areas (Hakone today) has no Area page; no special case.
     areaButton.hidden = areasOf(state.region).chips.length === 0;
-    // The Area page drives the map: the whole city, locked and quiet, with the areas in their chips' colours.
-    // Nearby's circle belongs to the Filters page and stays off it.
+    // The Area page drives the map: the whole city, quiet, with every area in its chip's colour.
+    // Elsewhere the map shows only the areas in play, lightly. Nearby's circle belongs to the Filters page.
     const areaMap = page === "area";
     nearbyCircle.set(!areaMap && state.nearby !== undefined ? position : undefined, previewRadius ?? state.nearby);
     ensureShapes(state.region);
     const regionShapes = shapes.get(state.region);
-    areaLayers.set(regionShapes && areaMap ? areaDrawing(state, here, regionShapes) : undefined);
+    areaLayers.set(regionShapes ? areaDrawing(state, here, regionShapes, !areaMap) : undefined);
     syncAreaMap(areaMap, state.region);
 
     const total = places.filter((p) => p.region === state.region).length;
@@ -911,8 +911,14 @@ export function mountApp(root: HTMLElement): AppHandle {
     return marks;
   }
 
+  /** The fit button: the results, or on the Area page the whole city again, after a pan or a zoom. */
+  function onFitButton(): void {
+    if (areaMapOn) view.setAreaMode(areaBounds(filters.get().region));
+    else fitToResults();
+  }
+
   function fitToResults(): void {
-    if (areaMapOn) return; // the Area page holds the camera (data arriving late must not move it)
+    if (areaMapOn) return; // the Area page frames the city (data arriving late must not move it)
     const state = filters.get();
     const shown = applyFilters(places, state, applyOpts(state));
     view.fitPoints(shown.map((p) => [p.lng, p.lat]));
