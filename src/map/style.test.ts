@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atlasLayers, atlasStyle, KEPT_POI_KINDS, QUIET_RAIL, quietHides, quietRailPaint, SOURCE_ID } from "./style.ts";
+import { atlasLayers, atlasStyle, DROPPED_LAYERS, KEPT_POI_KINDS, QUIET_RAIL, quietHides, quietRailPaint, RAIL, railPaint, SOURCE_ID } from "./style.ts";
 
 type AnyLayer = { id: string; type: string; "source-layer"?: string; filter?: unknown };
 
@@ -18,9 +18,48 @@ describe("atlasLayers", () => {
     }
   });
 
-  it("restricts POIs to transport kinds", () => {
-    const pois = light.find((l) => l.id === "pois")!;
-    expect(pois.filter).toEqual(["in", ["get", "kind"], ["literal", [...KEPT_POI_KINDS]]]);
+  it("restricts POIs to stations, named a little larger, busier stations first", () => {
+    const pois = light.find((l) => l.id === "pois")! as AnyLayer & { layout: Record<string, unknown> };
+    expect(KEPT_POI_KINDS).toEqual(["station"]);
+    expect(pois.filter).toEqual(["in", ["get", "kind"], ["literal", ["station"]]]);
+    expect(pois.layout["symbol-sort-key"]).toEqual(["get", "min_zoom"]);
+    expect(pois.layout["text-size"]).toEqual(["interpolate", ["linear"], ["zoom"], 12, 10.5, 15, 12, 17, 13, 19, 16]);
+  });
+
+  it("drops what a trip atlas doesn't need (M8): land-use tints, boundaries, arrows, shields, minor road names, sea and island names, country and region names", () => {
+    const ids = new Set(light.map((l) => l.id));
+    for (const id of DROPPED_LAYERS) expect(ids.has(id), id).toBe(false);
+    for (const id of ["landuse_hospital", "boundaries", "roads_oneway", "roads_shields", "roads_labels_minor", "places_country", "places_region"]) {
+      expect(DROPPED_LAYERS.has(id), id).toBe(true);
+    }
+    // Ward and district names stay: they're how the group orients.
+    for (const id of ["places_locality", "places_subplace", "roads_labels_major", "water_waterway_label"]) expect(ids.has(id), id).toBe(true);
+  });
+
+  it("draws rail above every road, before the first label, solid and heavier", () => {
+    const at = (id: string) => light.findIndex((l) => l.id === id);
+    const rail = at(RAIL);
+    const lastRoad = Math.max(...light.map((l, i) => (l.id.startsWith("roads_") && l.id !== RAIL && l.type === "line" ? i : -1)));
+    const firstLabel = light.findIndex((l) => l.type === "symbol");
+    expect(rail).toBe(lastRoad + 1);
+    expect(rail).toBeLessThan(firstLabel);
+    const paint = (light[rail] as AnyLayer & { paint: Record<string, unknown> }).paint;
+    expect(paint).toMatchObject(railPaint("light"));
+  });
+
+  it("hides service roads until zoom 15 and calms the land-use fills that stay", () => {
+    const byId = (id: string) => light.find((l) => l.id === id) as AnyLayer & { minzoom?: number; paint: Record<string, unknown> };
+    expect(byId("roads_minor_service").minzoom).toBe(15);
+    expect(byId("roads_minor_service_casing").minzoom).toBe(15);
+    expect(byId("landuse_urban_green").paint["fill-opacity"]).toBe(0.45);
+    expect(byId("landuse_beach").paint["fill-opacity"]).toBe(0.6);
+  });
+
+  it("lightens station names on the dark map, where Protomaps' blue doesn't read", () => {
+    const dark = atlasLayers("dark") as (AnyLayer & { paint: Record<string, unknown> })[];
+    expect(dark.find((l) => l.id === "pois")!.paint["text-color"]).toBe("#8fb0f5");
+    const lightPois = light.find((l) => l.id === "pois") as AnyLayer & { paint: Record<string, unknown> };
+    expect(lightPois.paint["text-color"]).not.toBe("#8fb0f5");
   });
 
   it("every vector layer reads from the basemap source", () => {
