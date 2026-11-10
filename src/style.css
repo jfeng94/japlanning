@@ -858,8 +858,8 @@ button {
   text-underline-offset: 0.15em;
 }
 
-.detail-rows dd[data-flag="unknown"],
-.detail-rows dd[data-flag="unverified"] {
+/* Unknown hours read as absent; unverified hours read normally, with their badge, as an approximate address does. */
+.detail-rows dd[data-flag="unknown"] {
   color: var(--muted);
 }
 

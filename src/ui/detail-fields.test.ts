@@ -26,13 +26,20 @@ describe("detailFields", () => {
     ]);
     expect(f.chips).toEqual(["Café", "Pour-over", "Espresso"]);
     expect(f.notes).toBe("Queues on weekends.");
-    expect(f.details.map((s) => s.title)).toEqual(["Details", "Also in the sheet", "Verified"]);
+    expect(f.details.map((s) => s.title)).toEqual(["Details", "Also in the sheet"]);
     expect(f.details[0]!.rows).toEqual([
       { label: "Format", value: "Café" },
       { label: "Specialty", value: "Pour-over, Espresso" },
+      { label: "Hours checked", value: "2026-11-04" },
     ]);
     expect(f.details[1]!.rows).toEqual([{ label: "Floor", value: "2F" }]);
-    expect(f.details[2]!.rows).toEqual([{ label: "Last verified", value: "2026-11-04" }]);
+  });
+
+  it("badges hours on the Hours row unless they were verified (docs/proposals/content-pass.md)", () => {
+    const unverified = detailFields(place({ name: "x", hours: "8:00–18:00" }), layer);
+    expect(unverified.essentials).toEqual([{ label: "Hours", value: "8:00–18:00", flag: "unverified" }]);
+    const verified = detailFields(place({ name: "x", hours: "8:00–18:00", lastVerified: "2026-11-10" }), layer);
+    expect(verified.essentials).toEqual([{ label: "Hours", value: "8:00–18:00" }]);
   });
 
   it("puts the rating snapshot first and keeps its columns out of the extras; branch leads the details", () => {
@@ -50,12 +57,11 @@ describe("detailFields", () => {
     expect(detailFields(place({ name: "x" }), layer).rating).toBeUndefined();
   });
 
-  it("sparse place: blanks are omitted, including the whole Details section; hours and verification say so", () => {
+  it("sparse place: blanks are omitted, including every section; the hours say they're unknown", () => {
     const f = detailFields(place({ name: "Mystery", facets: {} }), layer);
     expect(f.essentials).toEqual([{ label: "Hours", value: "Hours unknown", flag: "unknown" }]);
     expect(f.chips).toEqual([]);
-    expect(f.details.map((s) => s.title)).toEqual(["Verified"]);
-    expect(f.details[0]!.rows).toEqual([{ label: "Last verified", value: "Hours unverified", flag: "unverified" }]);
+    expect(f.details).toEqual([]);
   });
 
   it("lists only the facets with a value", () => {
@@ -77,6 +83,6 @@ describe("detailFields", () => {
   it("works with no layer at all", () => {
     const f = detailFields(place({ name: "x" }), undefined);
     expect(f.chips).toEqual([]);
-    expect(f.details.map((s) => s.title)).toEqual(["Verified"]);
+    expect(f.details).toEqual([]);
   });
 });

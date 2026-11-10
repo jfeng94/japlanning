@@ -52,8 +52,12 @@ export function detailFields(place: Place, layer: LayerConfig | undefined): Deta
   if (place.address) {
     essentials.push({ label: "Address", value: place.address, ...(place.addressApproximate ? { flag: "approximate" as const } : {}) });
   }
+  // Hours not read from the shop's own site or Instagram carry their badge here, as an approximate address does
+  // (docs/proposals/content-pass.md, 2026-11-10).
   essentials.push(
-    place.hours ? { label: "Hours", value: place.hours } : { label: "Hours", value: "Hours unknown", flag: "unknown" },
+    place.hours
+      ? { label: "Hours", value: place.hours, ...(place.lastVerified ? {} : { flag: "unverified" as const }) }
+      : { label: "Hours", value: "Hours unknown", flag: "unknown" },
   );
 
   const rowFacets = layer?.rowFacets ?? layer?.facets.slice(0, 2).map((f) => f.column) ?? [];
@@ -62,27 +66,19 @@ export function detailFields(place: Place, layer: LayerConfig | undefined): Deta
   const details: DetailSection[] = [];
 
   // Branch first, then only the facets this place has a value for; a blank is nothing to read, so it
-  // says nothing (2026-11-05). Hours and verification stay even when unknown, since that is itself worth knowing.
+  // says nothing (2026-11-05). Verified hours end the list with the date they were read, to judge freshness.
   const rows: DetailRow[] = place.branch ? [{ label: "Branch", value: place.branch }] : [];
   for (const f of layer?.facets ?? []) {
     const values = place.facets[f.column] ?? [];
     if (values.length > 0) rows.push({ label: f.label ?? f.column, value: values.join(", ") });
   }
+  if (place.lastVerified) rows.push({ label: "Hours checked", value: place.lastVerified });
   if (rows.length > 0) details.push({ title: "Details", rows });
 
   const extra = Object.entries(place.extra).filter(([k]) => !RATING_COLUMNS.includes(k));
   if (extra.length > 0) {
     details.push({ title: "Also in the sheet", rows: extra.map(([label, value]) => ({ label, value })) });
   }
-
-  details.push({
-    title: "Verified",
-    rows: [
-      place.lastVerified
-        ? { label: "Last verified", value: place.lastVerified }
-        : { label: "Last verified", value: "Hours unverified", flag: "unverified" },
-    ],
-  });
 
   return { ...(rating ? { rating } : {}), ...(place.notes ? { notes: place.notes } : {}), essentials, chips, details };
 }

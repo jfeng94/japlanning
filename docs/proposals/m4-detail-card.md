@@ -59,7 +59,9 @@ detailFields(place, layer): { essentials: DetailRow[]; details: DetailSection[] 
 - **details** (full height): Notes; a "Details" section with every facet
   of the layer as label and joined values (blank ones say "Unknown"); an
   "Also in the sheet" section for `extra` columns; a "Verified" row with
-  the date, or an unverified flag when blank.
+  the date, or an unverified flag when blank. *Changed 2026-11-10*
+  (`content-pass.md`): the unverified badge sits on the Hours row, and
+  a verified date is "Hours checked" at the end of Details.
 
 Blank core fields are omitted, not shown as empty rows, except hours and
 verification, which are worth saying "unknown" about.
