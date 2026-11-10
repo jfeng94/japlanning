@@ -104,7 +104,7 @@ follow-up list stands in for it.
 
 ### The follow-up list
 
-`docs/research/places-followup-2026-11-09.csv`, 215 places, one row
+`docs/research/audit-queue.csv`, 215 places, one row
 each, sorted by priority, then line. A place whose only gap is
 unverified hours isn't in it; that is normal.
 

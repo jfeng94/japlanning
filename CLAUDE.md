@@ -114,7 +114,16 @@ Games), and a **Type** facet saying what the place is ("Kakigori",
 instead of a Kind column: `FOOD_KINDS` in `src/config/layers.ts` groups
 the types under each kind (`docs/proposals/food-kinds.md`). Places still
 waiting for fitting pin art use the `question` icon. The list's research
-gaps are in `docs/research/places-followup-2026-11-09.csv`.
+gaps are in `docs/research/audit-queue.csv`.
+
+**Auditing** (2026-11-10, `docs/design/auditing-places.md`): the goal is
+every place scrubbed before the trip (the right shop, open, an exact
+address with the pin at the door, known hours, a note in the
+recommendation voice). `npm run audit` prints each region's scorecard
+and what's next. Claude runs audit passes a region at a time, settling
+what the evidence settles. `/audit` (`.claude/skills/audit/`) works
+through what needs Jerry one place at a time, from
+`docs/research/audit-decisions.md` and the queue.
 
 ### Drinks columns (one row per place)
 

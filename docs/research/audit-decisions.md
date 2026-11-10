@@ -1,6 +1,11 @@
-# Places to decide (2026-11-10)
+# Audit decisions
 
-Raised while rewriting the notes (`docs/proposals/content-pass.md`, Part 2): places whose identity or status is in doubt. Each note was written for the shop as recorded; these need Jerry's call.
+Questions only Jerry can answer, one row per place: whether it's the
+shop the list meant, whether to keep a place that may have closed, and
+the like. A row leaves when decided (`docs/design/auditing-places.md`).
+`/audit` takes them one at a time. The first 30 were raised on
+2026-11-10, while the notes were rewritten
+(`docs/proposals/content-pass.md`, Part 2).
 
 | Place | Question |
 | --- | --- |

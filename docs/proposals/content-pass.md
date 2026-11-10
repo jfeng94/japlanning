@@ -110,6 +110,12 @@ the findings table for anything that needs a decision.
 
 ## Part 3: settle hours and addresses
 
+*2026-11-10:* this part became a standing workflow,
+`docs/design/auditing-places.md`: the bar for a scrubbed place, the
+scorecard (`npm run audit`), audit passes by region, and `/audit` for
+the decisions that need Jerry. The rest of this section is the thinking
+behind it.
+
 Settling the 148 approximate addresses and 359 unverified or unknown
 hours is research, not editing. It is worth doing in the order the trip
 needs it:
@@ -121,7 +127,7 @@ needs it:
    - no hours;
    - unverified hours.
 
-The follow-up list (`docs/research/places-followup-2026-11-09.csv`)
+The follow-up list (`docs/research/audit-queue.csv`)
 already sorts by much of this. Each place settled leaves it, in the same
 commit.
 
@@ -182,7 +188,7 @@ The test from Part 1 holds new rows to it.
 
 ```
 Part 1  src/ui/detail-fields.ts, detail-fields.test.ts; src/data/parse.test.ts (notes check)
-Part 2  data/*.csv (notes, and hours where settled); docs/research/places-followup-2026-11-09.csv
+Part 2  data/*.csv (notes, and hours where settled); docs/research/audit-queue.csv
 Part 3  scripts/osm-check.ts, package.json; data/*.csv; the follow-up list
 Part 4  docs/design/adding-places.md; CLAUDE.md's workflow line
 ```
@@ -222,6 +228,6 @@ checked <date>" at the end of Details.
   notes used to carry, and lost its "no hours" tag where hours arrived
   (271 places now).
 - **Questions for Jerry:** 30 places whose identity or status is in
-  doubt are in `docs/research/findings-2026-11-10.md`.
+  doubt are in `docs/research/audit-decisions.md`.
 - **Enforced:** a test over every data file fails on research wording
   in a note or an Hours cell. `adding-places.md` states the voice.

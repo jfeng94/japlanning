@@ -20,7 +20,8 @@
     "assets": "node scripts/build-basemap.ts assets",
     "maps": "node scripts/build-basemap.ts maps",
     "check-maps": "node scripts/check-maps.ts",
-    "areas": "node scripts/build-areas.ts"
+    "areas": "node scripts/build-areas.ts",
+    "audit": "node scripts/audit.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
