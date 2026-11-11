@@ -120,6 +120,9 @@ by `npm run transit`.
     accuracy. Settings gives the repo's issues page as the app's
     contact.
   - Amenities (elevators, lockers, toilets, escalators) come next.
+  - **Pick-up note:** `docs/research/stations-odpt-state.md` says
+    what to do when the token arrives and what ODPT's guideline still
+    asks (the fetch date on the card, a contact address).
 - **The card's arrows step along one line** (the line row marked on the
   card). Stepping keeps the line through interchanges, tapping a row
   switches it, and a station tapped on the map starts on its first

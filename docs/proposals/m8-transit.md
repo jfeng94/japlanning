@@ -3,7 +3,7 @@
 Status: **accepted** (2026-11-10), narrowed: see "Decisions". Part 1
 done. Station pins wired, with Toei's first and last trains and arrows
 along a line (2026-11-10); Tokyo Metro waits on the ODPT token, then
-amenities and Kyoto.
+amenities and Kyoto. Pick-up note: `docs/research/stations-odpt-state.md`.
 
 ## Decisions (Jerry, 2026-11-10)
 
