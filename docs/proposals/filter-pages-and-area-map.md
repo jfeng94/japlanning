@@ -309,7 +309,10 @@ shown = places in the region
   - every basemap label and every road hides;
   - land, water, parks and green space stay;
   - the rail lines stay, thin and unlabelled, since trains are how
-    people get between areas (decided);
+    people get between areas (decided). In Tokyo and Kyoto our subway
+    lines replace the basemap's rail (`docs/proposals/m8-transit.md`),
+    and they hide on this page, where they made the map too busy
+    (Jerry, 2026-11-10), so no rail shows there;
   - our area labels are the only text.
 
 On an iPhone at Half, Tokyo fits at about zoom 11.5. An area is then

@@ -100,6 +100,8 @@ by `npm run transit`.
   box").
 - **The map's Lines button** hides or shows lines one by one,
   remembered on the device.
+- **Hidden on the Area page**, with the Lines button: the lines made
+  that map too busy (2026-11-10).
 - **They replace the basemap's rail and station names** in Tokyo and
   Kyoto; the station names there are ours.
 - **Shared track and renamed platforms** are handled in the config and

@@ -118,8 +118,9 @@ that have no entry, so new ones are noticed.
   so Shibuya stops appearing four times.
 - **The basemap's grey rail** stays underneath for the lines we don't
   colour: freight, and small private lines.
-- **The Area page** shows the coloured lines on its quiet map, which
-  helps for choosing an area by how you'd get there.
+- **The Area page** hides the lines, the stations and the Lines button
+  (Jerry, 2026-11-10: "quite busy"). The first plan showed them there,
+  for choosing an area by how you'd get there.
 - **Taps:** our pins win; a tap that misses every pin but lands on a
   station opens the station.
 
@@ -258,7 +259,8 @@ order:
 
 The area shapes now draw over the lines, tinting them where an area is
 filled. On the Area page our station names hide, so the area names stay
-the page's only text, as designed.
+the page's only text, as designed. (Since 2026-11-10 the lines and
+stations hide there altogether.)
 
 **Next, Part 2: stations as pins**, each with its own card (the old
 Part 3).

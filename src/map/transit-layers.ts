@@ -35,8 +35,8 @@ export interface TransitLayers {
   set(data: TransitData | undefined): void;
   /** Hide these line ids (and stations served only by them). */
   setHidden(hidden: ReadonlySet<string>): void;
-  /** The Area page: station names hide, so the area names are the only text; lines and dots stay. */
-  setQuiet(on: boolean): void;
+  /** Off on the Area page, where the lines made the map too busy (Jerry, 2026-11-10): every transit layer hides. */
+  setVisible(on: boolean): void;
   /** Ring the open station's dot (its data id) in the colour of the line its arrows follow, or none. */
   setSelected(id: string | undefined, colour?: string): void;
   /** The station whose dot or name is nearest a tap (screen pixels), within `slop` pixels; undefined for none. */
@@ -48,7 +48,11 @@ const flavor = () => (window.matchMedia("(prefers-color-scheme: dark)").matches 
 export function createTransitLayers(view: MapView): TransitLayers {
   let data: TransitData | undefined;
   let hidden: ReadonlySet<string> = new Set();
-  let quiet = false;
+  let visible = true;
+  const LAYERS = [CASING, LINE, SHARED, STATION, LABEL, SELECTED];
+  const applyVisible = (m: MapLibreMap): void => {
+    for (const id of LAYERS) if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
+  };
   let selected: string | undefined;
   let selectedColour: string | undefined;
   const ringColour = () => selectedColour ?? (flavor() === "dark" ? "#8fb0f5" : "#315bcf");
@@ -143,7 +147,7 @@ export function createTransitLayers(view: MapView): TransitLayers {
         "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 10, 2.5, 16, 3.5],
       },
     }, before);
-    if (quiet) m.setLayoutProperty(LABEL, "visibility", "none");
+    if (!visible) applyVisible(m);
   };
   view.onStyleLoad(add);
 
@@ -159,9 +163,10 @@ export function createTransitLayers(view: MapView): TransitLayers {
       hidden = next;
       applyFilters(view.map);
     },
-    setQuiet(on) {
-      quiet = on;
-      if (view.map.getLayer(LABEL)) view.map.setLayoutProperty(LABEL, "visibility", on ? "none" : "visible");
+    setVisible(on) {
+      if (on === visible) return;
+      visible = on;
+      applyVisible(view.map);
     },
     setSelected(id, colour) {
       if (id === selected && colour === selectedColour) return;

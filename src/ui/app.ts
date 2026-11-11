@@ -545,7 +545,9 @@ export function mountApp(root: HTMLElement): AppHandle {
   function syncAreaMap(on: boolean, state: FilterState, here: PositionChip): void {
     if (on === areaMapOn) return;
     areaMapOn = on;
-    transitLayers.setQuiet(on); // the area names are the page's only text
+    // The subway lines hide there: with the area colours and names they made the map too busy (Jerry, 2026-11-10).
+    transitLayers.setVisible(!on);
+    linesControl.setAvailable(!on);
     const scopeOpts = { hereGroup: here.group, areas: areasOf(state.region) };
     if (on) {
       scopeAtOpen = areaScopeKey(state, scopeOpts);

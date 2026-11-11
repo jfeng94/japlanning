@@ -19,6 +19,8 @@ export interface LinesControl extends IControl {
   /** The region's lines; none hides the button. */
   setLines(lines: LineChoice[]): void;
   setHidden(hidden: ReadonlySet<string>): void;
+  /** Off while the map draws no lines (the Area page): the button hides. */
+  setAvailable(on: boolean): void;
 }
 
 
@@ -39,6 +41,10 @@ export function createLinesControl(onChange: (hidden: Set<string>) => void): Lin
 
   let lines: LineChoice[] = [];
   let hidden = new Set<string>();
+  let available = true;
+  const showButton = () => {
+    root.hidden = lines.length === 0 || !available;
+  };
 
   const open = (on: boolean) => {
     panel.hidden = !on;
@@ -109,9 +115,14 @@ export function createLinesControl(onChange: (hidden: Set<string>) => void): Lin
     onRemove: () => root.remove(),
     setLines(next) {
       lines = next;
-      root.hidden = lines.length === 0;
+      showButton();
       if (lines.length === 0) open(false);
       else if (!panel.hidden) render();
+    },
+    setAvailable(on) {
+      available = on;
+      showButton();
+      if (!on) open(false);
     },
     setHidden(next) {
       hidden = new Set(next);
