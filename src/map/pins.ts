@@ -23,8 +23,8 @@ export interface PinRenderer {
   /** Replace the pins with the current filtered set. */
   update(pins: Pin[]): void;
   setSelected(id?: string): void;
-  /** `undefined` means a tap on empty map. */
-  onSelect(cb: (id?: string) => void): void;
+  /** `undefined` means a tap that hit no pin; `at` is where it landed (screen pixels), so the app can look for a station there. */
+  onSelect(cb: (id?: string, at?: { x: number; y: number }) => void): void;
   /** Off: pins ignore taps, which fall through to the map (the Area page's pins are only for reference). */
   setInteractive(on: boolean): void;
   destroy(): void;

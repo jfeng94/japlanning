@@ -72,14 +72,14 @@ export function createDomPinRenderer(view: MapView): PinRenderer {
   const style = pinStyle();
   const entries = new Map<string, Entry>();
   let selectedId: string | undefined;
-  let selectCb: (id?: string) => void = () => {};
+  let selectCb: (id?: string, at?: { x: number; y: number }) => void = () => {};
 
   const container = map.getContainer();
   const stopLabels = trackLabelZoom(map);
 
-  const onMapClick = (e: { originalEvent: MouseEvent }) => {
+  const onMapClick = (e: { originalEvent: MouseEvent; point: { x: number; y: number } }) => {
     if ((e.originalEvent.target as HTMLElement | null)?.closest(".dom-pin")) return;
-    selectCb(undefined);
+    selectCb(undefined, e.point);
   };
   map.on("click", onMapClick);
 

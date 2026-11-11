@@ -1,7 +1,8 @@
 # M8 Part 2: lines in their colours, and the station for every place
 
-Status: **accepted** (2026-11-10), narrowed: see "Decisions". Part 1 in
-progress.
+Status: **accepted** (2026-11-10), narrowed: see "Decisions". Part 1
+done. Station pins wired (2026-11-10); their train times and amenities
+wait on the questions at the end.
 
 ## Decisions (Jerry, 2026-11-10)
 
@@ -261,7 +262,7 @@ the page's only text, as designed.
 **Next, Part 2: stations as pins**, each with its own card (the old
 Part 3).
 
-## Part 2, revised: stations for planning (2026-11-10, proposed)
+## Part 2, revised: stations for planning (2026-11-10, pins done; facts to come)
 
 Jerry: no nearby places on the station card. It holds the facts for
 planning, such as when the trains run and what the station has.
@@ -311,3 +312,31 @@ an hour.
    fallback?**
 2. **Amenities:** elevators, coin lockers, toilets and escalators, or a
    different set?
+
+### Results: the pins (2026-11-10)
+
+Jerry: "wire up the pins and then we can fill the missing info later."
+Done, with the facts still to fill:
+
+- **Ids.** Each station in the built file has an `id`,
+  `<region>:<Japanese name>` (`tokyo:渋谷`), stable across rebuilds; a
+  second station of the same name in a region would get `~2`. A
+  selection is that id behind `station:`, so `s=station:tokyo:渋谷` in
+  the URL opens the card, and a reload keeps it. A test checks the ids
+  are unique and find their station again.
+- **Taps.** A tap that misses every pin asks the transit layers for the
+  nearest station dot or name within 12 px (`stationAt`). Pins win
+  where they overlap. The Area page skips the lookup, so taps there
+  still pick areas. First tap opens the card without moving the map;
+  the second centres on the station, as for places.
+- **The card** (`src/ui/station-card.ts`): the station's marker and
+  name in English and Japanese in the header, with Directions (to the
+  station's coordinates) and the panel chevron. The body has "Subway
+  station · n lines", Show on map, one row per line (its badge and
+  name, with room for that line's first and last trains), and a note
+  that train times and amenities aren't in yet. No bookmark, and
+  Prev/Next are disabled: stations aren't in the list.
+- **The open station** gets a larger dot ringed in the label blue.
+- **Stations stay out of search and the list:** they are never places.
+- **A station link from another region** switches to that region
+  first; the id names it.

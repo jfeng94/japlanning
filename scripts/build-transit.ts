@@ -238,6 +238,15 @@ async function buildRegion(region: RegionId, stops: StopLists): Promise<void> {
     }
   }
 
+  // A station's id is its region and Japanese name, for selection and links; a second station of the same name
+  // (none today) would take a "~2".
+  const seen = new Map<string, number>();
+  const stationId = (name: string) => {
+    const n = (seen.get(name) ?? 0) + 1;
+    seen.set(name, n);
+    return n === 1 ? `${region}:${name}` : `${region}:${name}~${n}`;
+  };
+
   const features = [
     ...lines.map((l) => ({
       type: "Feature" as const,
@@ -248,6 +257,7 @@ async function buildRegion(region: RegionId, stops: StopLists): Promise<void> {
       type: "Feature" as const,
       properties: {
         kind: "station",
+        id: stationId(st.name),
         name: st.name,
         // OpenStreetMap writes an alias in quotes ("Meiji-jingumae 'Harajuku'"); signs put it in brackets.
         en: (st.en ?? st.name).replace(/\s*'([^']+)'/, " ($1)"),

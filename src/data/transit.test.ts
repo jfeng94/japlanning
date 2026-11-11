@@ -2,7 +2,18 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { TRANSIT_LINES, TRANSIT_REGIONS } from "../config/transit.ts";
-import { lineFilter, normaliseStation, stationFilter, type TransitData, type TransitLineProps, type TransitStationProps } from "./transit.ts";
+import {
+  findStation,
+  isStationSelection,
+  lineFilter,
+  normaliseStation,
+  STATION_SELECTION,
+  stationFilter,
+  stationRegion,
+  type TransitData,
+  type TransitLineProps,
+  type TransitStationProps,
+} from "./transit.ts";
 
 const built = (region: string): TransitData =>
   JSON.parse(readFileSync(path.join(import.meta.dirname, "../../public/transit", `${region}.geojson`), "utf8")) as TransitData;
@@ -40,6 +51,37 @@ describe.each(TRANSIT_REGIONS.map((r) => [r]))("public/transit/%s.geojson (npm r
       expect(s.properties.lines.length, s.properties.name).toBeGreaterThan(0);
       for (const id of s.properties.lines) expect(ids.has(id), `${s.properties.name}: ${id}`).toBe(true);
     }
+  });
+
+  it("gives every station a unique id in its region, which finds it again", () => {
+    const seen = new Set<string>();
+    for (const s of stations) {
+      expect(s.properties.id.startsWith(`${region}:`), s.properties.id).toBe(true);
+      expect(seen.has(s.properties.id), s.properties.id).toBe(false);
+      seen.add(s.properties.id);
+      const selection = STATION_SELECTION + s.properties.id;
+      expect(stationRegion(selection)).toBe(region);
+      expect(findStation(data, selection)?.props.name).toBe(s.properties.name);
+    }
+  });
+});
+
+describe("station selections", () => {
+  it("are told apart from place ids by their prefix", () => {
+    expect(isStationSelection("station:tokyo:渋谷")).toBe(true);
+    expect(isStationSelection("drinks:12")).toBe(false);
+    expect(isStationSelection(undefined)).toBe(false);
+  });
+
+  it("find nothing for an unknown station or before the data loads", () => {
+    expect(findStation(built("tokyo"), "station:tokyo:nowhere")).toBeUndefined();
+    expect(findStation(undefined, "station:tokyo:渋谷")).toBeUndefined();
+  });
+
+  it("find Shibuya with its lines", () => {
+    const shibuya = findStation(built("tokyo"), "station:tokyo:渋谷");
+    expect(shibuya?.props.en).toBe("Shibuya");
+    expect(shibuya?.props.lines).toEqual(["ginza", "hanzomon", "fukutoshin"]);
   });
 });
 

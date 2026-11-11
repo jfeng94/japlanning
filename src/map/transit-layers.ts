@@ -14,6 +14,8 @@ import { SOURCE_ID } from "./style.ts";
  * The lines and dots go under the basemap's first text layer, so street
  * and district names stay readable on top of them; the station names go
  * just under our pins, above the basemap's text (Jerry, 2026-11-10).
+ * A tapped station's dot or name opens its card (the app asks
+ * `stationAt`), and the open station's dot is drawn larger, ringed.
  * Re-added after every style load.
  */
 const SOURCE = "transit";
@@ -21,6 +23,8 @@ const CASING = "transit-casing";
 const LINE = "transit-line";
 const STATION = "transit-station";
 const LABEL = "transit-label";
+/** The open station's dot, drawn larger above the rest. */
+const SELECTED = "transit-station-selected";
 const EMPTY: TransitData = { type: "FeatureCollection", features: [] };
 
 export interface TransitLayers {
@@ -30,6 +34,10 @@ export interface TransitLayers {
   setHidden(hidden: ReadonlySet<string>): void;
   /** The Area page: station names hide, so the area names are the only text; lines and dots stay. */
   setQuiet(on: boolean): void;
+  /** Ring the open station's dot (its data id), or none. */
+  setSelected(id: string | undefined): void;
+  /** The station whose dot or name is nearest a tap (screen pixels), within `slop` pixels; undefined for none. */
+  stationAt(point: { x: number; y: number }, slop: number): string | undefined;
 }
 
 const flavor = () => (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -38,6 +46,8 @@ export function createTransitLayers(view: MapView): TransitLayers {
   let data: TransitData | undefined;
   let hidden: ReadonlySet<string> = new Set();
   let quiet = false;
+  let selected: string | undefined;
+  const selectedFilter = (): FilterSpecification => ["all", ["==", ["get", "kind"], "station"], ["==", ["get", "id"], selected ?? ""]];
   const lineIds = () => (data?.features ?? []).flatMap((f) => (f.properties.kind === "line" ? [f.properties.id] : []));
 
   const applyFilters = (m: MapLibreMap): void => {
@@ -107,6 +117,18 @@ export function createTransitLayers(view: MapView): TransitLayers {
       },
       paint: { "text-color": dark ? "#8fb0f5" : "#315bcf", "text-halo-color": dark ? "#1f1f1f" : "#ffffff", "text-halo-width": 1.3 },
     }, before);
+    m.addLayer({
+      id: SELECTED,
+      type: "circle",
+      source: SOURCE,
+      filter: selectedFilter(),
+      paint: {
+        "circle-color": "#ffffff",
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 5, 13, 6.5, 16, 9],
+        "circle-stroke-color": dark ? "#8fb0f5" : "#315bcf",
+        "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 10, 2.5, 16, 3.5],
+      },
+    }, before);
     if (quiet) m.setLayoutProperty(LABEL, "visibility", "none");
   };
   view.onStyleLoad(add);
@@ -126,6 +148,36 @@ export function createTransitLayers(view: MapView): TransitLayers {
     setQuiet(on) {
       quiet = on;
       if (view.map.getLayer(LABEL)) view.map.setLayoutProperty(LABEL, "visibility", on ? "none" : "visible");
+    },
+    setSelected(id) {
+      if (id === selected) return;
+      selected = id;
+      if (view.map.getLayer(SELECTED)) view.map.setFilter(SELECTED, selectedFilter());
+    },
+    stationAt(point, slop) {
+      const m = view.map;
+      const layers = [STATION, LABEL].filter((id) => m.getLayer(id) && m.getLayoutProperty(id, "visibility") !== "none");
+      if (layers.length === 0) return undefined;
+      const hits = m.queryRenderedFeatures(
+        [
+          [point.x - slop, point.y - slop],
+          [point.x + slop, point.y + slop],
+        ],
+        { layers },
+      );
+      // A name can overlap another station's dot: the nearest station point wins.
+      let best: string | undefined;
+      let bestD = Infinity;
+      for (const f of hits) {
+        if (f.properties?.["kind"] !== "station" || f.geometry.type !== "Point") continue;
+        const p = m.project(f.geometry.coordinates as [number, number]);
+        const d = Math.hypot(p.x - point.x, p.y - point.y);
+        if (d < bestD) {
+          bestD = d;
+          best = String(f.properties["id"]);
+        }
+      }
+      return best;
     },
   };
 }

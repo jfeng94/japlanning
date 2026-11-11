@@ -56,7 +56,7 @@ export function createRasterPinRenderer(view: MapView, colorsNow: () => { label:
   let pins: Pin[] = [];
   const byId = new Map<string, Pin>();
   let selectedId: string | undefined;
-  let selectCb: (id?: string) => void = () => {};
+  let selectCb: (id?: string, at?: { x: number; y: number }) => void = () => {};
   let interactive = true;
   let disposed = false;
   /** The badge halo follows the theme; read at each style load. */
@@ -162,7 +162,7 @@ export function createRasterPinRenderer(view: MapView, colorsNow: () => { label:
   // ---- taps ----
   const onClick = (e: MapMouseEvent) => {
     if ((e.originalEvent.target as HTMLElement | null)?.closest?.(".dom-pin")) return; // the HTML pin handles its own
-    if (!interactive || !map.getLayer(ART_LAYER)) return selectCb(undefined);
+    if (!interactive || !map.getLayer(ART_LAYER)) return selectCb(undefined, e.point);
     const r = PIN_PX / 2 + TAP_SLACK_PX;
     const { x, y } = e.point;
     const hits = map.queryRenderedFeatures(
@@ -180,7 +180,8 @@ export function createRasterPinRenderer(view: MapView, colorsNow: () => { label:
       const p = map.project([pin.lng, pin.lat]);
       candidates.push({ id: pin.id, x: p.x, y: p.y });
     }
-    selectCb(nearestPin(candidates, e.point, r * Math.SQRT2));
+    const hit = nearestPin(candidates, e.point, r * Math.SQRT2);
+    selectCb(hit, hit ? undefined : e.point);
   };
   const onEnter = () => (map.getCanvas().style.cursor = interactive ? "pointer" : "");
   const onLeave = () => (map.getCanvas().style.cursor = "");

@@ -1040,6 +1040,38 @@ button {
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.35);
 }
 
+/* The station card (src/ui/station-card.ts): its marker in the header, as the map draws it, and one row per line. */
+.station-mark {
+  flex: none;
+  width: 0.9rem;
+  height: 0.9rem;
+  margin: 0 0.3rem 0 0.15rem;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #3b3f45;
+}
+
+.strip-title-ja {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+
+.station-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.station-lines li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .lines-foot {
   display: flex;
   justify-content: flex-end;

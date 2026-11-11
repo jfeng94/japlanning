@@ -209,7 +209,7 @@ function icon(src: string): HTMLImageElement {
   return img;
 }
 
-function iconButton(label: string, src: string, onClick: () => void): HTMLButtonElement {
+export function iconButton(label: string, src: string, onClick: () => void): HTMLButtonElement {
   const b = document.createElement("button");
   b.type = "button";
   b.className = "icon-button icon-button--action";
@@ -220,7 +220,7 @@ function iconButton(label: string, src: string, onClick: () => void): HTMLButton
   return b;
 }
 
-function iconAnchor(label: string, src: string, href: string): HTMLAnchorElement {
+export function iconAnchor(label: string, src: string, href: string): HTMLAnchorElement {
   const a = document.createElement("a");
   a.className = "icon-button icon-button--action";
   a.setAttribute("aria-label", label);

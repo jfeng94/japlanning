@@ -5,7 +5,7 @@ import { areasOf, regions } from "../config/regions.ts";
 import { settings, updateSettings, type Settings } from "../config/settings.ts";
 import { createBookmarks, createIdbBookmarkStorage } from "../data/bookmarks.ts";
 import { loadAreaShapes, nearestChip, shapesBounds, type AreaShapes } from "../data/area-shapes.ts";
-import { loadTransit } from "../data/transit.ts";
+import { findStation, isStationSelection, loadTransit, STATION_SELECTION, stationRegion, type TransitData } from "../data/transit.ts";
 import { TRANSIT_LINES } from "../config/transit.ts";
 import { areaAt } from "../data/areas.ts";
 import { browserDeps } from "../data/browser.ts";
@@ -48,12 +48,15 @@ import { renderOfflineSection } from "./offline-section.ts";
 import { mountPanel, type PanelHeight } from "./panel.ts";
 import { renderSettingsSheet } from "./settings-sheet.ts";
 import { createSheet } from "./sheet.ts";
+import { renderStationCard, renderStationStrip, type StationCard } from "./station-card.ts";
 import { showToast } from "./toast.ts";
 
 const REGION_KEY = "japlanning.region";
 const SELECTED_PARAM = "s";
 /** How far outside an area a tap on the Area page's map still counts as on it, in screen pixels. */
 const AREA_TAP_SLOP_PX = 12;
+/** How far from a station's dot or name a tap that missed every pin still opens the station, in screen pixels. */
+const STATION_TAP_SLOP_PX = 12;
 
 interface UiState {
   selectedId?: string;
@@ -154,8 +157,14 @@ export function mountApp(root: HTMLElement): AppHandle {
       render();
     }
   });
-  /** A place id from the URL to select once its data has loaded. */
+  /** A place or station id from the URL to select once its data has loaded. */
   let pendingSelection: string | undefined = startParams.get(SELECTED_PARAM) ?? undefined;
+  {
+    // A station from the URL belongs to the region its id names (the default region leaves no r= in the URL).
+    const start = pendingSelection;
+    const region = isStationSelection(start) ? regions.find((r) => r.id === stationRegion(start))?.id : undefined;
+    if (region && region !== filters.get().region) filters.dispatch({ type: "setRegion", region });
+  }
   let fittedOnce = false;
 
   // Layout: header row, the map pane filling the rest, the panel over it, sheets over everything.
@@ -276,15 +285,20 @@ export function mountApp(root: HTMLElement): AppHandle {
   /**
    * A pin tapped on the map (2026-11-10): the first tap selects the place
    * and leaves the map and the panel's height alone, since the user may be
-   * browsing the area; a second tap on the selected pin presents it.
+   * browsing the area; a second tap on the selected pin presents it. A tap
+   * that missed every pin but landed on a station's dot or name does the
+   * same for the station; anywhere else closes the card. On the Area page
+   * taps pick areas, so stations can't be tapped there.
    */
-  function onPinSelect(id: string | undefined): void {
+  function onPinSelect(pinId: string | undefined, at?: { x: number; y: number }): void {
     const { selectedId, page } = ui.get();
+    const station = pinId === undefined && at && page !== "area" ? transitLayers.stationAt(at, STATION_TAP_SLOP_PX) : undefined;
+    const id = pinId ?? (station !== undefined ? STATION_SELECTION + station : undefined);
     if (id === undefined) {
       if (page === undefined) deselect();
     } else if (id === selectedId && page === undefined) {
-      const place = places.find((p) => p.id === id);
-      if (place) present(place);
+      const target = pointOf(id);
+      if (target) present(target);
     } else {
       openedFrom = "elsewhere";
       presentOnSelect = false;
@@ -300,14 +314,31 @@ export function mountApp(root: HTMLElement): AppHandle {
   let presentOnSelect = true;
 
   /**
-   * Present a place: the card at half (from the strip, or from full where
-   * the map is hidden) and the map eased to it at presentation zoom.
-   * Height first: it changes the map's padding, which would cancel an ease
-   * already under way.
+   * Present a place or station: the card at half (from the strip, or from
+   * full where the map is hidden) and the map eased to it at presentation
+   * zoom. Height first: it changes the map's padding, which would cancel
+   * an ease already under way.
    */
-  function present(place: Place): void {
+  function present(at: { lng: number; lat: number }): void {
     if (panel.getHeight() !== "half") panel.setHeight("half");
-    view.focus(place.lng, place.lat);
+    view.focus(at.lng, at.lat);
+  }
+
+  /** Where a selection is on the map: a place, or a station in the region's loaded transit; undefined if neither is known. */
+  function pointOf(id: string): { lng: number; lat: number } | undefined {
+    if (isStationSelection(id)) {
+      const station = findStation(transitData, id);
+      return station ? { lng: station.at[0], lat: station.at[1] } : undefined;
+    }
+    return places.find((p) => p.id === id);
+  }
+
+  /** The open station's card contents, or undefined when the selection isn't a station in the loaded transit. */
+  function stationCard(id: string | undefined): StationCard | undefined {
+    const station = isStationSelection(id) ? findStation(transitData, id) : undefined;
+    if (!station) return undefined;
+    const lines = station.props.lines.flatMap((lineId) => TRANSIT_LINES.filter((l) => l.id === lineId));
+    return { props: station.props, at: station.at, lines };
   }
 
   /** Pin settings need the renderer rebuilt; location starts or stops the watch; anything else (sort) is a plain re-render. */
@@ -398,21 +429,40 @@ export function mountApp(root: HTMLElement): AppHandle {
   // ---- area shapes: Here goes by them; the Area page draws them (Settings can draw them on the normal map too) ----
   const shapes = new Map<RegionId, AreaShapes>();
   const shapesRequested = new Set<RegionId>();
-  /** Fetch a region's shapes once, the first time it renders; Here uses nearest centres until they arrive. */
   /** The region's subway lines on the map and in the Lines panel; switching region swaps them. */
   let transitFor: RegionId | undefined;
+  /** The current region's lines and stations, once loaded; station cards read it. */
+  let transitData: TransitData | undefined;
   function ensureTransit(region: RegionId): void {
     if (transitFor === region) return;
     transitFor = region;
+    transitData = undefined;
     const lines = TRANSIT_LINES.filter((l) => l.region === region);
     linesControl.setLines(lines);
     transitLayers.set(undefined);
     if (lines.length === 0) return;
     void loadTransit(region).then((data) => {
-      if (transitFor === region) transitLayers.set(data);
+      if (transitFor !== region) return;
+      transitData = data;
+      transitLayers.set(data);
+      openPendingStation();
+      render();
     });
   }
 
+  /** A station from the URL (a reload with its card open): select it once its region's transit is in. */
+  function openPendingStation(): void {
+    const id = pendingSelection;
+    if (!isStationSelection(id) || !findStation(transitData, id)) return;
+    pendingSelection = undefined;
+    openedFrom = "elsewhere";
+    // Not marked as pushed, as for a place from the URL: this entry is the page itself.
+    ui.dispatch({ type: "select", id });
+    history.replaceState(history.state, "", urlFor(filters.get(), id));
+    fittedOnce = true;
+  }
+
+  /** Fetch a region's shapes once, the first time it renders; Here uses nearest centres until they arrive. */
   function ensureShapes(region: RegionId): void {
     if (shapesRequested.has(region) || areasOf(region).chips.length === 0) return;
     shapesRequested.add(region);
@@ -740,7 +790,7 @@ export function mountApp(root: HTMLElement): AppHandle {
       ui.dispatch({ type: "reset" });
       if (height) panel.setHeight(height);
     }
-    if (id && places.some((p) => p.id === id)) {
+    if (id && pointOf(id)) {
       ui.dispatch({ type: "select", id });
     } else {
       ui.dispatch({ type: "deselect" });
@@ -753,12 +803,12 @@ export function mountApp(root: HTMLElement): AppHandle {
   let arrangedFor: string | undefined;
   ui.subscribe(({ selectedId, page }) => {
     if (page === undefined && selectedId !== arrangedFor) {
-      const place = selectedId ? places.find((p) => p.id === selectedId) : undefined;
-      if (place) {
+      const target = selectedId ? pointOf(selectedId) : undefined;
+      if (target) {
         // Remember the list's height for Back. A list row, Prev/Next or a link presents the place (the card at
-        // half, the map eased to it); a pin tapped on the map leaves both where they are (onPinSelect).
+        // half, the map eased to it); a pin or station tapped on the map leaves both where they are (onPinSelect).
         if (listHeight === undefined) listHeight = panel.getHeight();
-        if (presentOnSelect) present(place);
+        if (presentOnSelect) present(target);
       } else if (listHeight !== undefined) {
         // Back to the list at the height it had. A card that raised the panel from the strip comes back to half, so
         // the list shows; one still on the strip (pins tapped while browsing the map) stays there.
@@ -804,7 +854,9 @@ export function mountApp(root: HTMLElement): AppHandle {
   function closePage(): void {
     const { page, selectedId } = ui.get();
     if (page === undefined) return;
-    if (selectedId === undefined || !lastShown.some((p) => p.id === selectedId)) return leaveToList();
+    // A station's card comes back whatever the filters say: they don't apply to stations.
+    const stillThere = isStationSelection(selectedId) ? stationCard(selectedId) !== undefined : lastShown.some((p) => p.id === selectedId);
+    if (selectedId === undefined || !stillThere) return leaveToList();
     const height = beforePage?.height;
     endPage();
     ui.dispatch({ type: "closePage" });
@@ -891,10 +943,11 @@ export function mountApp(root: HTMLElement): AppHandle {
     orderToggle.setAttribute("aria-label", `List order: ${order === "name" ? "A to Z" : "nearest first"}. Tap to switch.`);
     const sorted = order === "distance" && position ? sortByDistance(matching, position) : sortByName(matching);
     const shown = state.openNow ? sinkUnknownHours(sorted, hoursInput()) : sorted;
-    const selected = selectedId ? shown.find((p) => p.id === selectedId) : undefined;
+    const station = stationCard(selectedId);
+    const selected = selectedId && !station ? shown.find((p) => p.id === selectedId) : undefined;
     const count = loading && places.length === 0 ? "Loading…" : countLabel(shown.length, total);
     // Returning to the list: remember which place was open so its row can fade in from a highlight.
-    flashId = shownMode === "detail" && !selected ? shownDetailId : undefined;
+    flashId = shownMode === "detail" && !selected && !station && !isStationSelection(shownDetailId) ? shownDetailId : undefined;
 
     renderFilterSummary(
       resultsCount,
@@ -940,12 +993,18 @@ export function mountApp(root: HTMLElement): AppHandle {
       const i = shown.findIndex((p) => p.id === selected.id);
       prevButton.disabled = i <= 0;
       nextButton.disabled = i < 0 || i >= shown.length - 1;
+    } else if (station) {
+      // A station isn't in the list, so it has no neighbours to step to.
+      renderStationCard(detailBody, station, () => present({ lng: station.at[0], lat: station.at[1] }));
+      renderStationStrip(detailStrip, station, detailToggle);
+      prevButton.disabled = true;
+      nextButton.disabled = true;
     }
     // One scroll container holds all three contents: save the list's position
     // on the way out of it (before the list is hidden, or the browser clamps it
     // to the next content's height), open a card or a page at its top, restore
     // the list's position on the way back.
-    const mode = page !== undefined ? "page" : selected ? "detail" : "list";
+    const mode = page !== undefined ? "page" : selected || station ? "detail" : "list";
     if (mode !== shownMode && shownMode === "list") listScrollTop = panel.content.scrollTop;
     panel.el.dataset["mode"] = mode;
     if (mode !== shownMode) {
@@ -960,10 +1019,10 @@ export function mountApp(root: HTMLElement): AppHandle {
         content.scrollTop = row ? Math.max(0, row.offsetTop - (content.clientHeight - row.offsetHeight) / 2) : listScrollTop;
       }
       shownMode = mode;
-    } else if (mode === "detail" && selected && selected.id !== shownDetailId) {
-      panel.content.scrollTop = 0; // switched to another place while open
+    } else if (mode === "detail" && selectedId !== shownDetailId) {
+      panel.content.scrollTop = 0; // switched to another place or station while open
     }
-    shownDetailId = selected?.id;
+    shownDetailId = selected || station ? selectedId : undefined;
 
     // On the Area page the pins are a reference, not the results: bookmarks (and lodging), and taps go to the areas.
     // Its question is where, not when, so a bookmark there wears the bookmark badge even when the shop is closed.
@@ -971,6 +1030,7 @@ export function mountApp(root: HTMLElement): AppHandle {
     const pinMarks = areaMap ? new Map(pinned.filter((p) => bookmarks.has(p.id)).map((p) => [p.id, "bookmark" as const])) : marksFor(pinned);
     pins.update(placesToPins(pinned, regionLayers, pinMarks));
     pins.setSelected(areaMap ? undefined : selectedId);
+    transitLayers.setSelected(areaMap || !station ? undefined : station.props.id);
     pins.setInteractive(!areaMap);
     panel.relayout(); // the strip's height depends on what the summary shows
   }
