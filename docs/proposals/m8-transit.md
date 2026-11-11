@@ -260,3 +260,54 @@ the page's only text, as designed.
 
 **Next, Part 2: stations as pins**, each with its own card (the old
 Part 3).
+
+## Part 2, revised: stations for planning (2026-11-10, proposed)
+
+Jerry: no nearby places on the station card. It holds the facts for
+planning, such as when the trains run and what the station has.
+Stations also stay out of search: they aren't places, and nothing adds
+them to the list or the search.
+
+**The card**, opened by tapping a station's dot or name:
+
+- **The name** in English and Japanese.
+- **Each line that stops there,** as a chip in its colour with its
+  letter, and with its station code (G-09) where one is known.
+- **First and last trains** per line and direction, on weekdays and on
+  weekends and holidays.
+- **Amenities that matter to a visitor:** elevators (suitcases), coin
+  lockers, toilets including accessible ones, and escalators.
+- **Directions** to the station.
+
+**Taps** follow the place rule: the first opens the card without moving
+the map, and a second centres on the station. Pins win where they
+overlap a station. On the Area page, stations can't be tapped, since
+taps pick areas there. The station goes in the link, as places do.
+
+**Where the facts come from:**
+
+| Operator | Train times and codes | Amenities |
+| --- | --- | --- |
+| Tokyo Metro (9 lines) | ODPT, the national public-transport open-data centre: station timetables (first and last trains derived from them) and station codes. Its own basic licence, with attribution | ODPT's station facilities (barrier-free), checked against tokyometro.jp's station pages, which also list coin lockers |
+| Toei (4 lines) | ODPT, CC BY 4.0 | kotsu.metro.tokyo.jp's station pages (elevators, escalators, accessible toilets) |
+| Kyoto City Subway (2 lines) | Not in ODPT (only Kyoto's buses are). By hand from the city's pages, 31 stations | By hand, the same pages |
+
+ODPT needs a free developer account, which gives an access token. Jerry
+registers (Claude can't create accounts) and puts the token in an
+environment variable. A build step (`npm run stations`) then fetches the
+data once, keeps only the summary above, and bakes it into
+`public/transit/<region>.geojson`; the app makes no live calls.
+Timetables change with each operator's timetable revision, so the step
+is rerun before the trip.
+
+**If ODPT is too much,** a lighter fallback: each line's service hours
+("first trains about 5:00, last about 0:15"), entered by hand from the
+operators' pages, with no per-station amenities. That's 15 lines, about
+an hour.
+
+**Questions for Jerry:**
+
+1. **ODPT (exact per-station times and amenities) or the line-level
+   fallback?**
+2. **Amenities:** elevators, coin lockers, toilets and escalators, or a
+   different set?
