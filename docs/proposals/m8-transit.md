@@ -306,12 +306,12 @@ is rerun before the trip.
 operators' pages, with no per-station amenities. That's 15 lines, about
 an hour.
 
-**Questions for Jerry:**
+**Answered (Jerry, 2026-11-10):**
 
-1. **ODPT (exact per-station times and amenities) or the line-level
-   fallback?**
-2. **Amenities:** elevators, coin lockers, toilets and escalators, or a
-   different set?
+1. **ODPT.** Jerry registered; the token is pending (up to two business
+   days).
+2. **Amenities:** elevators, coin lockers, toilets (and accessible
+   ones) and escalators.
 
 ### Results: the pins (2026-11-10)
 
@@ -340,3 +340,76 @@ Done, with the facts still to fill:
 - **Stations stay out of search and the list:** they are never places.
 - **A station link from another region** switches to that region
   first; the id names it.
+
+### The facts: plan (2026-11-10, proposed)
+
+**What ODPT serves without a token** (checked 2026-11-10): Toei's
+stations, railways and station timetables, on `api-public.odpt.org`.
+Every Toei station has a timetable per direction and day type
+(weekday; Saturday and holiday), with the first and last trains marked,
+and a station code (E-27). The timetables are current: Mita from March
+2026, Asakusa from December 2025, Oedo and Shinjuku from March 2025.
+Toei's facilities aren't there (404). Tokyo Metro's data comes back
+empty without the token.
+
+**Built in two passes:**
+
+1. **Now, before the token:** the build step, the data file and the
+   card, with Toei's train times as the first data.
+2. **When the token arrives:** Tokyo Metro's times from `api.odpt.org`
+   (`ODPT_TOKEN` in the environment, never in the repo), and its
+   facilities from ODPT. Then Toei's facilities and Kyoto's times and
+   facilities by hand, from the operators' station pages.
+
+**`npm run stations`** fetches once into `.cache/stations/` (`--refresh`
+to refetch), matches ODPT's stations to ours by line and Japanese name,
+and fails on a station of ours it can't match. It writes
+`public/transit/<region>.stations.json`, keyed by our station id. That
+file is separate from the geojson, so rerunning `npm run transit` after
+a map change needs no token and keeps the facts. It is committed and
+precached, like the geojson.
+
+Per station and line:
+
+- the station code;
+- each direction, named by where it goes ("to Motoyawata");
+- weekday and Saturday/holiday first and last trains;
+- where the last train stops when that's short of the end. Shinjuku's
+  last eastbound train runs only to Iwamotocho, so the card says "last
+  0:10 to Iwamotocho".
+
+Per station, the four amenities, each yes, no or unknown.
+
+**The card:** each line's row gains its station code and a small table
+under it, one line per direction:
+
+```
+[S] Shinjuku Line  S-01
+    to Motoyawata     first 5:00 · last 0:10 (to Iwamotocho)
+    Sat & hol         first 5:00 · last 0:10 (to Iwamotocho)
+```
+
+A row of amenities follows. A station without facts yet keeps today's
+note.
+
+**What the licence asks** (ODPT's basic licence, Tokyo Metro's data;
+Toei's is CC BY 4.0):
+
+- **A credit and a disclaimer** at the foot of the card: "Train times:
+  Public Transportation Open Data Center, as of <date>. ODPT and the
+  operators aren't responsible for their accuracy."
+- **A contact for questions about the app**, kept away from the
+  operators: in Settings, the repo's issues page.
+- **A summary only.** First and last trains can't rebuild a timetable;
+  the licence forbids republishing data that could.
+- **Kept current.** Rerun the step before the trip, as for the maps.
+
+**Station codes** come free with the data. "No codes for now" was about
+drawing them on the map, so the card shows them.
+
+**Files:** `scripts/build-stations.ts` (new), `package.json`
+(`npm run stations`), `src/data/transit.ts` (+ test: types, the loader,
+and every Toei station of ours has times), `src/ui/station-card.ts`,
+`src/ui/app.ts` (load the file with the geojson),
+`src/ui/settings-sheet.ts` (the contact), `src/style.css`, `CLAUDE.md`,
+`docs/design/adding-places.md` (rerun before the trip).
