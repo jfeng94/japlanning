@@ -15,7 +15,8 @@ import { SOURCE_ID } from "./style.ts";
  * and district names stay readable on top of them; the station names go
  * just under our pins, above the basemap's text (Jerry, 2026-11-10).
  * A tapped station's dot or name opens its card (the app asks
- * `stationAt`), and the open station's dot is drawn larger, ringed.
+ * `stationAt`), and the open station's dot is drawn larger, ringed in
+ * the colour of the line its card's arrows follow.
  * Re-added after every style load.
  */
 const SOURCE = "transit";
@@ -36,8 +37,8 @@ export interface TransitLayers {
   setHidden(hidden: ReadonlySet<string>): void;
   /** The Area page: station names hide, so the area names are the only text; lines and dots stay. */
   setQuiet(on: boolean): void;
-  /** Ring the open station's dot (its data id), or none. */
-  setSelected(id: string | undefined): void;
+  /** Ring the open station's dot (its data id) in the colour of the line its arrows follow, or none. */
+  setSelected(id: string | undefined, colour?: string): void;
   /** The station whose dot or name is nearest a tap (screen pixels), within `slop` pixels; undefined for none. */
   stationAt(point: { x: number; y: number }, slop: number): string | undefined;
 }
@@ -49,6 +50,8 @@ export function createTransitLayers(view: MapView): TransitLayers {
   let hidden: ReadonlySet<string> = new Set();
   let quiet = false;
   let selected: string | undefined;
+  let selectedColour: string | undefined;
+  const ringColour = () => selectedColour ?? (flavor() === "dark" ? "#8fb0f5" : "#315bcf");
   const selectedFilter = (): FilterSpecification => ["all", ["==", ["get", "kind"], "station"], ["==", ["get", "id"], selected ?? ""]];
   const lineIds = () => [...new Set((data?.features ?? []).flatMap((f) => (f.properties.kind === "line" ? [f.properties.id] : [])))];
 
@@ -136,7 +139,7 @@ export function createTransitLayers(view: MapView): TransitLayers {
       paint: {
         "circle-color": "#ffffff",
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 5, 13, 6.5, 16, 9],
-        "circle-stroke-color": dark ? "#8fb0f5" : "#315bcf",
+        "circle-stroke-color": ringColour(),
         "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 10, 2.5, 16, 3.5],
       },
     }, before);
@@ -160,7 +163,12 @@ export function createTransitLayers(view: MapView): TransitLayers {
       quiet = on;
       if (view.map.getLayer(LABEL)) view.map.setLayoutProperty(LABEL, "visibility", on ? "none" : "visible");
     },
-    setSelected(id) {
+    setSelected(id, colour) {
+      if (id === selected && colour === selectedColour) return;
+      if (colour !== selectedColour) {
+        selectedColour = colour;
+        if (view.map.getLayer(SELECTED)) view.map.setPaintProperty(SELECTED, "circle-stroke-color", ringColour());
+      }
       if (id === selected) return;
       selected = id;
       if (view.map.getLayer(SELECTED)) view.map.setFilter(SELECTED, selectedFilter());

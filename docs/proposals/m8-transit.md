@@ -465,3 +465,20 @@ station on the line"):
 **The licence:** the card's foot credits Toei (CC BY 4.0) via ODPT, with
 the timetable's date and ODPT's disclaimer. Settings and the README give
 the repo's issues page as the app's contact.
+
+**Which line, at a glance** (Jerry, 2026-11-10):
+- **On the card,** the first line reads "Subway station" and each
+  line's badge (no line count). The badge of the line the arrows follow
+  sits on a light box tinted in its colour, on a one-line station too,
+  where it can't be turned off.
+- **Switching:** tapping another badge switches line; so does tapping a
+  line's row, which no longer carries a highlight of its own.
+- **On the map,** the open station's ring takes the colour of the line
+  being followed, so stepping shows which line it is.
+
+**Deferred and decided** (Jerry, 2026-11-10):
+- **ODPT's guideline items wait until Tokyo Metro's data is used:** the
+  fetch date on the card and the contact address.
+- **Toei's colours stay ours;** they're from Toei's site. ODPT's
+  Railway data lists other values
+  (`docs/research/stations-odpt-state.md`).

@@ -11,8 +11,9 @@ import { directionsUrl } from "./links.ts";
  * stops there gets a row: its station code, and the first and last trains
  * each way (`npm run stations`). Stations aren't places: they never join
  * the list or search and have no bookmark. The footer's arrows step to the
- * next station along one line, the row marked here; tapping another row
- * switches line.
+ * next station along one line: its badge in the card's first line sits
+ * on a box tinted in its colour (on a one-line station too), and tapping
+ * another badge, or another line's row, switches (Jerry, 2026-11-10).
  */
 export interface StationCard {
   props: TransitStationProps;
@@ -67,10 +68,24 @@ export function renderStationStrip(strip: HTMLElement, station: StationCard, tog
 /** The card's body: what it is, Show on map, a row per line with its times, then the credit or what isn't in yet. */
 export function renderStationCard(body: HTMLElement, station: StationCard, h: StationCardHandlers): void {
   body.replaceChildren();
+  // "Subway station", then a badge per line; the one the arrows follow sits on a box tinted in its colour.
   const meta = document.createElement("p");
-  meta.className = "detail-meta";
-  const n = station.lines.length;
-  meta.textContent = `Subway station · ${n} line${n === 1 ? "" : "s"}`;
+  meta.className = "detail-meta station-meta";
+  meta.append("Subway station");
+  for (const line of station.lines) {
+    const pick = document.createElement("button");
+    pick.type = "button";
+    pick.className = "station-meta-line";
+    pick.style.setProperty("--line-colour", line.colour);
+    const on = line.id === station.following;
+    pick.setAttribute("aria-pressed", String(on));
+    pick.setAttribute("aria-label", on ? `${line.label}: the arrows step along it` : `Step along the ${line.label} with the arrows`);
+    pick.title = line.label;
+    pick.append(badgeFor(line));
+    // The followed line stays followed: a tap on it (a one-line station's only badge) changes nothing.
+    if (!on) pick.addEventListener("click", () => h.onFollow(line.id));
+    meta.append(pick);
+  }
 
   const actions = document.createElement("div");
   actions.className = "detail-actions";
@@ -78,25 +93,16 @@ export function renderStationCard(body: HTMLElement, station: StationCard, h: St
 
   const lines = document.createElement("ul");
   lines.className = "station-lines";
-  const choosing = station.lines.length > 1;
   for (const line of station.lines) {
     const facts = station.facts?.lines[line.id];
     const li = document.createElement("li");
     li.className = "station-line";
-    // The row's head picks the line the arrows follow, where there's a choice.
-    const head = document.createElement(choosing ? "button" : "div");
+    // A row's head picks its line too: a bigger target than the badge above, marked only there.
+    const head = document.createElement("button");
+    head.type = "button";
     head.className = "station-line-head";
-    if (head instanceof HTMLButtonElement) {
-      head.type = "button";
-      const on = line.id === station.following;
-      head.setAttribute("aria-pressed", String(on));
-      head.title = on ? "The arrows step along this line" : "Step along this line with the arrows";
-      head.addEventListener("click", () => h.onFollow(line.id));
-    }
-    const badge = document.createElement("span");
-    badge.className = "line-badge";
-    badge.style.background = line.colour;
-    badge.textContent = line.code;
+    if (line.id !== station.following) head.addEventListener("click", () => h.onFollow(line.id));
+    const badge = badgeFor(line);
     const name = document.createElement("span");
     name.className = "station-line-name";
     name.textContent = line.label;
@@ -120,6 +126,15 @@ export function renderStationCard(body: HTMLElement, station: StationCard, h: St
   }
   if (!station.facts?.amenities) body.append(note("The station's amenities aren't in yet."));
   body.append(credit(station));
+}
+
+/** A line's round badge: its letter on its colour. */
+function badgeFor(line: TransitLine): HTMLSpanElement {
+  const badge = document.createElement("span");
+  badge.className = "line-badge";
+  badge.style.background = line.colour;
+  badge.textContent = line.code;
+  return badge;
 }
 
 const hasAnyTimes = (station: StationCard) => station.lines.some((l) => station.facts?.lines[l.id]);

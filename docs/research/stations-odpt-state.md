@@ -19,8 +19,12 @@ revised" on.
   - the first and last trains each way, for weekdays and for weekends
     and holidays;
   - a credit naming Toei, CC BY 4.0 and ODPT, with ODPT's disclaimer.
-- **The arrows** step to the next station along one line. The card
-  outlines that line's row; tapping another row switches.
+- **The arrows** step to the next station along one line.
+  - The card's first line reads "Subway station" and a badge per line.
+    The followed line's badge sits on a box tinted in its colour, on a
+    one-line station too.
+  - Tapping another badge, or another line's row, switches.
+  - On the map, the station's ring takes that line's colour.
 - **Tokyo Metro's lines** (9) say "Train times not in yet". Their arrows
   use OpenStreetMap's station order.
 - **Kyoto** has arrows but no times. ODPT has no Kyoto subway data.
@@ -90,7 +94,9 @@ It reads `public/transit/<region>.geojson`, so it runs after
    - **The Marunouchi branch.** With ODPT it should join the main line:
      Honancho → Nakano-fujimicho → Nakano-shimbashi → Nakano-sakaue. The
      build turns a branch around so it ends at its junction.
-4. **Meet the guideline** (below) before shipping Metro's times.
+4. **Meet the guideline** (below) before shipping Metro's times. Jerry
+   deferred it to this point ("defer until we actually use ODPT",
+   2026-11-10).
 5. **Tests** (src/data/transit.test.ts):
    - Widen "Toei's stations (public in ODPT)" to every ODPT line: every
      station has a code and times.
@@ -137,14 +143,14 @@ these bind only Metro, but doing them for both is simpler.
   the Public Transportation Open Data Basic License" in the credit.
   Shorten it to "ODPT Basic License" when it first shows.
 
-## Open points for Jerry
+## Decided, and open
 
-- **The contact address** (above).
-- **Toei's colours.** ODPT's Railway data gives different colours from
-  the OpenStreetMap ones we draw. The guideline's colour rule doesn't
-  bind Toei's CC BY data. Ours match the commonly published sign colours.
+- **The contact address** (above): open, for when Metro's data ships.
+- **Toei's colours: keep ours** (Jerry, 2026-11-10: they're from Toei's
+  site). ODPT's Railway data gives different ones, for the record; the
+  guideline's colour rule doesn't bind Toei's CC BY data anyway.
 
-  | Line | Ours (OSM) | ODPT |
+  | Line | Ours | ODPT |
   | --- | --- | --- |
   | Asakusa | `#E85298` | `#FF535F` |
   | Mita | `#0079C2` | `#0067B0` |

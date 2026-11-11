@@ -1090,7 +1090,9 @@ export function mountApp(root: HTMLElement): AppHandle {
     const pinMarks = areaMap ? new Map(pinned.filter((p) => bookmarks.has(p.id)).map((p) => [p.id, "bookmark" as const])) : marksFor(pinned);
     pins.update(placesToPins(pinned, regionLayers, pinMarks));
     pins.setSelected(areaMap ? undefined : selectedId);
-    transitLayers.setSelected(areaMap || !station ? undefined : station.props.id);
+    // The ring takes the colour of the line the arrows follow, so stepping shows which line it is.
+    const following = station?.lines.find((l) => l.id === station.following);
+    transitLayers.setSelected(areaMap || !station ? undefined : station.props.id, following?.colour);
     pins.setInteractive(!areaMap);
     panel.relayout(); // the strip's height depends on what the summary shows
   }

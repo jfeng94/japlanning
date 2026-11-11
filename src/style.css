@@ -1066,7 +1066,31 @@ button {
   gap: 0.6rem;
 }
 
-/* A line's head: badge, name, station code. Where there's a choice it's a button, and the line the arrows follow is outlined. */
+/* "Subway station" and a badge per line; the line the arrows follow sits on a box tinted in its colour. */
+.station-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.station-meta > :first-child {
+  margin-left: 0.35rem;
+}
+
+.station-meta-line {
+  display: inline-flex;
+  padding: 0.22rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: none;
+}
+
+.station-meta-line[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--line-colour) 22%, transparent);
+}
+
+/* A line's head: badge, name, station code; a tap follows its line. */
 .station-line-head {
   display: flex;
   align-items: center;
@@ -1080,11 +1104,6 @@ button {
   color: inherit;
   font: inherit;
   text-align: left;
-}
-
-button.station-line-head[aria-pressed="true"] {
-  border-color: var(--rule);
-  background: var(--chip);
 }
 
 .station-line-name {
