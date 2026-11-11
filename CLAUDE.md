@@ -308,7 +308,11 @@ is used only as the **directions hand-off**.
    own site, deployed only when a map changes, so app deploys are about
    5 MB (`docs/proposals/maps-site.md`, done 2026-11-10). If it
    still stalls: push an empty commit ("Redeploy: …"); a re-run reuses the
-   stalled deployment's id (the commit) and stalls again.
+   stalled deployment's id (the commit) and stalls again. Once
+   (2026-11-10, a0f94d8) a push started no deploy at all, though it
+   reached GitHub. `gh workflow run deploy.yml --ref main` started one.
+   When watching a deploy, wait for the run whose commit is the one
+   pushed: the latest run listed can still be the previous push's.
 
 ## Basemap extracts (starting point)
 
