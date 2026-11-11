@@ -182,7 +182,7 @@ export function renderSettingsSheet(body: HTMLElement, handlers: SettingsSheetHa
   body.append(actions, credits());
 }
 
-/** Where the map and the area shapes come from; e-Stat's terms ask for the source and a note that it was processed. */
+/** Where the map, the area shapes and the train times come from; e-Stat's terms ask for the source and a note that it was processed. */
 function credits(): HTMLParagraphElement {
   const p = document.createElement("p");
   p.className = "note credits";
@@ -199,7 +199,12 @@ function credits(): HTMLParagraphElement {
     link("© OpenStreetMap contributors", "https://www.openstreetmap.org/copyright"),
     ". Area shapes processed from the 2020 census boundaries (「国勢調査 境界データ」, Statistics Bureau of Japan), via ",
     link("e-Stat", "https://www.e-stat.go.jp/"),
-    ".",
+    ". Train times from the ",
+    link("Public Transportation Open Data Center", "https://developer.odpt.org/"),
+    " (Toei's under CC BY 4.0); it and the operators aren't responsible for their accuracy. Questions about this app go to its ",
+    // ODPT's licence asks apps to give a contact of their own, so questions don't reach the train companies.
+    link("issues page", "https://github.com/jfeng94/japlanning/issues"),
+    ", not to the train companies.",
   );
   return p;
 }

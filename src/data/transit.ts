@@ -10,6 +10,8 @@ export interface TransitLineProps {
   code: string;
   label: string;
   colour: string;
+  /** Track this line shares with another (config `shares`): drawn dashed over the other's colour. */
+  shared?: boolean;
 }
 
 export interface TransitStationProps {
@@ -80,7 +82,91 @@ export function findStation(data: TransitData | undefined, selection: string): {
   return undefined;
 }
 
-/** The map filter for the lines to show. */
-export function lineFilter(hidden: ReadonlySet<string>): unknown[] {
-  return ["all", ["==", ["get", "kind"], "line"], ["!", ["in", ["get", "id"], ["literal", [...hidden]]]]];
+/**
+ * A region's station data for the station cards, built by `npm run
+ * stations` (docs/proposals/m8-transit.md, "The facts") and served at
+ * /transit/<region>.stations.json.
+ */
+export interface StationsFile {
+  /** Who the train times come from, by ODPT operator ("Toei"), for the card's credit. */
+  sources: Record<string, { label: string; licence: string }>;
+  /**
+   * Each line's stations in order, by station id, for the card's arrows:
+   * Next steps away from station 01. The main line comes first; a branch
+   * or the Oedo's loop closure after it, each adding only the links the
+   * earlier ones lack.
+   */
+  order: Record<string, string[][]>;
+  /** By station id; a station without times or amenities yet is absent. */
+  stations: Record<string, StationFacts>;
+}
+
+export interface StationFacts {
+  /** By line id. */
+  lines: Record<string, LineFacts>;
+  amenities?: Amenities;
+}
+
+export interface LineFacts {
+  /** The station's number on this line, "S-01". */
+  code?: string;
+  /** The operator, a key of `sources`. */
+  source: string;
+  /** When the timetable took effect, YYYY-MM-DD. */
+  from: string;
+  directions: DirectionTimes[];
+}
+
+export interface DirectionTimes {
+  /** "to Motoyawata", or on the Oedo's loop "via Azabu-juban". */
+  label: string;
+  weekday?: Service;
+  /** Saturdays, Sundays and holidays. */
+  holiday?: Service;
+}
+
+export interface Service {
+  /** Departure times as the timetable writes them, "05:00", "00:10". */
+  first: string;
+  last: string;
+  /** Where the last train stops, when short of the direction's end. */
+  lastTo?: string;
+}
+
+export const AMENITIES = ["elevator", "escalator", "toilet", "accessibleToilet", "lockers"] as const;
+export type Amenity = (typeof AMENITIES)[number];
+/** Each amenity: true, false, or absent for unknown. */
+export type Amenities = Partial<Record<Amenity, boolean>>;
+
+const loadingStations = new Map<string, Promise<StationsFile | undefined>>();
+
+/** The region's station data, once per region; undefined when it has none or the fetch fails. */
+export function loadStations(region: string): Promise<StationsFile | undefined> {
+  let p = loadingStations.get(region);
+  if (!p) {
+    p = fetch(`/transit/${region}.stations.json`)
+      .then((res) => (res.ok ? (res.json() as Promise<StationsFile>) : undefined))
+      .catch(() => undefined);
+    loadingStations.set(region, p);
+  }
+  return p;
+}
+
+/** The stations before and after one on a line, by station id; the earlier sequence wins where two give a link. */
+export function lineNeighbours(order: readonly (readonly string[])[] | undefined, id: string): { prev?: string; next?: string } {
+  let prev: string | undefined;
+  let next: string | undefined;
+  for (const seq of order ?? []) {
+    const i = seq.indexOf(id);
+    if (i < 0) continue;
+    prev ??= seq[i - 1];
+    next ??= seq[i + 1];
+  }
+  return { ...(prev ? { prev } : {}), ...(next ? { next } : {}) };
+}
+
+/** The map filter for the lines to show; `shared` picks the shared track alone (true) or leaves it out (false). */
+export function lineFilter(hidden: ReadonlySet<string>, shared?: boolean): unknown[] {
+  const base = ["all", ["==", ["get", "kind"], "line"], ["!", ["in", ["get", "id"], ["literal", [...hidden]]]]];
+  return shared === undefined ? base : [...base, shared ? ["has", "shared"] : ["!", ["has", "shared"]]];
 }

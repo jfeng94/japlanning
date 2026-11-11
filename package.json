@@ -22,7 +22,8 @@
     "check-maps": "node scripts/check-maps.ts",
     "areas": "node scripts/build-areas.ts",
     "audit": "node scripts/audit.ts",
-    "transit": "node scripts/build-transit.ts"
+    "transit": "node scripts/build-transit.ts",
+    "stations": "node scripts/build-stations.ts"
   },
   "devDependencies": {
     "@mapbox/vector-tile": "^3.0.0",

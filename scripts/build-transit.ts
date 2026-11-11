@@ -46,6 +46,13 @@ const NEAR_TRACK_M = 300;
 const MERGE_M = 500;
 /** Douglas–Peucker tolerance, in metres. */
 const SIMPLIFY_M = 1.5;
+/**
+ * Station nodes named for another railway's platforms. 新線新宿 is the Keio New Line's name for the platforms it
+ * shares with the Toei Shinjuku Line, whose signs (and ODPT) say 新宿: one station with the Marunouchi and Oedo.
+ */
+const RENAMED: Record<string, { name: string; en: string }> = {
+  新線新宿: { name: "新宿", en: "Shinjuku" },
+};
 const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter"];
 const UA = "japlanning-build/1.0 (+https://japan.garbage.house)";
 
@@ -214,14 +221,36 @@ async function buildRegion(region: RegionId, stops: StopLists): Promise<void> {
     await close();
   }
 
-  // A node serves a line when its name is on the line's stop list and it lies near the line's own track.
+  // Track a line shares with another, which the tiles name for the other only (the Mita on the Namboku's).
+  const shared = new Map<string, Pt[][]>(lines.map((l) => [l.id, []]));
+  for (const l of lines) {
+    for (const { line, bbox: [bw, bs, be, bn] } of l.shares ?? []) {
+      const inside = (p: Pt) => p[0] >= bw && p[0] <= be && p[1] >= bs && p[1] <= bn;
+      // Each piece trimmed to the box: its runs of points inside.
+      for (const part of tracks.get(line) ?? []) {
+        let run: Pt[] = [];
+        for (const p of [...part, undefined]) {
+          if (p && inside(p)) run.push(p);
+          else {
+            if (run.length > 1) shared.get(l.id)!.push(run);
+            run = [];
+          }
+        }
+      }
+    }
+  }
+  const trackOf = (id: string) => [...tracks.get(id)!, ...shared.get(id)!];
+
+  // A node serves a line when its name is on the line's stop list and it lies near the line's own track. Then it
+  // takes the name its signs use (RENAMED), so it merges with the station of that name.
   const served = nodes
     .map((node) => {
-      const key = normaliseStation(node.name);
       const ids = lines
-        .filter((l) => stops[l.route]?.includes(key) && toTrack(node.at, tracks.get(l.id)!) <= NEAR_TRACK_M)
+        .filter((l) => stops[l.route]?.includes(normaliseStation(node.name)) && toTrack(node.at, trackOf(l.id)) <= NEAR_TRACK_M)
         .map((l) => l.id);
-      return { node, key, ids };
+      const renamed = RENAMED[node.name];
+      const named = renamed ? { ...node, ...renamed } : node;
+      return { node: named, key: normaliseStation(named.name), ids };
     })
     .filter((s) => s.ids.length > 0);
 
@@ -253,6 +282,14 @@ async function buildRegion(region: RegionId, stops: StopLists): Promise<void> {
       properties: { kind: "line", id: l.id, code: l.code, label: l.label, colour: l.colour },
       geometry: { type: "MultiLineString" as const, coordinates: tracks.get(l.id)!.filter((p) => p.length > 1) },
     })),
+    // Shared track, drawn dashed over the other line's colour.
+    ...lines
+      .filter((l) => shared.get(l.id)!.length > 0)
+      .map((l) => ({
+        type: "Feature" as const,
+        properties: { kind: "line", id: l.id, code: l.code, label: l.label, colour: l.colour, shared: true },
+        geometry: { type: "MultiLineString" as const, coordinates: shared.get(l.id)!.filter((p) => p.length > 1) },
+      })),
     ...stations.map((st) => ({
       type: "Feature" as const,
       properties: {
@@ -276,7 +313,7 @@ async function buildRegion(region: RegionId, stops: StopLists): Promise<void> {
   await writeFile(path.join(OUT_DIR, `${region}.geojson`), text + "\n");
   console.log(`  ${region}: ${tiles} tiles, ${(text.length / 1024).toFixed(0)} KB, ${stations.length} stations`);
   for (const l of lines) {
-    const pieces = tracks.get(l.id)!.length;
+    const pieces = tracks.get(l.id)!.length + shared.get(l.id)!.length;
     const found = stations.filter((st) => st.lines.has(l.id)).length;
     const listed = stops[l.route]?.length ?? 0;
     const warn = pieces === 0 ? "  <- track NOT FOUND in the tiles" : listed === 0 ? "  <- no stop list" : "";

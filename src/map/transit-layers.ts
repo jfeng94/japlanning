@@ -21,6 +21,8 @@ import { SOURCE_ID } from "./style.ts";
 const SOURCE = "transit";
 const CASING = "transit-casing";
 const LINE = "transit-line";
+/** Track one line shares with another (the Mita on the Namboku's), dashed over the other's colour. */
+const SHARED = "transit-line-shared";
 const STATION = "transit-station";
 const LABEL = "transit-label";
 /** The open station's dot, drawn larger above the rest. */
@@ -48,13 +50,14 @@ export function createTransitLayers(view: MapView): TransitLayers {
   let quiet = false;
   let selected: string | undefined;
   const selectedFilter = (): FilterSpecification => ["all", ["==", ["get", "kind"], "station"], ["==", ["get", "id"], selected ?? ""]];
-  const lineIds = () => (data?.features ?? []).flatMap((f) => (f.properties.kind === "line" ? [f.properties.id] : []));
+  const lineIds = () => [...new Set((data?.features ?? []).flatMap((f) => (f.properties.kind === "line" ? [f.properties.id] : [])))];
 
   const applyFilters = (m: MapLibreMap): void => {
     if (!m.getLayer(LINE)) return;
     const lines = lineFilter(hidden) as FilterSpecification;
     m.setFilter(CASING, lines);
-    m.setFilter(LINE, lines);
+    m.setFilter(LINE, lineFilter(hidden, false) as FilterSpecification);
+    m.setFilter(SHARED, lineFilter(hidden, true) as FilterSpecification);
     m.setFilter(STATION, stationFilter(hidden, lineIds()) as FilterSpecification);
     m.setFilter(LABEL, stationFilter(hidden, lineIds()) as FilterSpecification);
   };
@@ -79,9 +82,17 @@ export function createTransitLayers(view: MapView): TransitLayers {
       id: LINE,
       type: "line",
       source: SOURCE,
-      filter: lineFilter(hidden) as FilterSpecification,
+      filter: lineFilter(hidden, false) as FilterSpecification,
       layout: { "line-join": "round", "line-cap": "round" },
       paint: { "line-color": ["get", "colour"], "line-width": width(1) },
+    }, underText);
+    m.addLayer({
+      id: SHARED,
+      type: "line",
+      source: SOURCE,
+      filter: lineFilter(hidden, true) as FilterSpecification,
+      layout: { "line-join": "round" },
+      paint: { "line-color": ["get", "colour"], "line-width": width(1), "line-dasharray": [1.2, 1.2] },
     }, underText);
     m.addLayer({
       id: STATION,

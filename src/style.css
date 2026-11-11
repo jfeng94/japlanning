@@ -1063,13 +1063,85 @@ button {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.6rem;
 }
 
-.station-lines li {
+/* A line's head: badge, name, station code. Where there's a choice it's a button, and the line the arrows follow is outlined. */
+.station-line-head {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.station-line-head[aria-pressed="true"] {
+  border-color: var(--rule);
+  background: var(--chip);
+}
+
+.station-line-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.station-code {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.station-line-note {
+  margin: 0.15rem 0 0 2.2rem;
+}
+
+.station-times {
+  margin: 0.2rem 0 0 2.2rem;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.station-times th,
+.station-times td {
+  padding: 0.12rem 0.9rem 0.12rem 0;
+  text-align: left;
+  vertical-align: top;
+  font-weight: 400;
+}
+
+.station-times thead th {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+/* One width for the direction column, so every line's times line up. */
+.station-times tbody th {
+  min-width: 8.5rem;
+  color: var(--fg);
+}
+
+.station-day {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.station-last-to {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.station-credit {
+  margin-top: 1rem;
+  font-size: 0.78rem;
 }
 
 .lines-foot {

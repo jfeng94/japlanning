@@ -1,8 +1,9 @@
 # M8 Part 2: lines in their colours, and the station for every place
 
 Status: **accepted** (2026-11-10), narrowed: see "Decisions". Part 1
-done. Station pins wired (2026-11-10); their train times and amenities
-wait on the questions at the end.
+done. Station pins wired, with Toei's first and last trains and arrows
+along a line (2026-11-10); Tokyo Metro waits on the ODPT token, then
+amenities and Kyoto.
 
 ## Decisions (Jerry, 2026-11-10)
 
@@ -413,3 +414,54 @@ and every Toei station of ours has times), `src/ui/station-card.ts`,
 `src/ui/app.ts` (load the file with the geojson),
 `src/ui/settings-sheet.ts` (the contact), `src/style.css`, `CLAUDE.md`,
 `docs/design/adding-places.md` (rerun before the trip).
+
+### Results: Toei's times and the arrows (2026-11-10)
+
+**`npm run stations`** (`scripts/build-stations.ts`) built as planned:
+per-railway queries, cached in `.cache/stations/`. Every Toei station of
+ours (89) has its code and first and last trains. Tokyo Metro's lines
+are skipped without `ODPT_TOKEN`; Kyoto has order only.
+
+**Directions:**
+- **Plain lines** are named by the line's end, as station signs do
+  ("to Motoyawata").
+- **The Oedo's loop** has no end to name. Each direction is named by
+  where most of its trains go ("to Hikarigaoka"), or failing that by the
+  next station ("via Azabu-juban").
+- **A short last train** is noted with where it stops ("0:10 to
+  Iwamotocho").
+- **Weekdays and weekends** get one row when their times agree.
+
+**The arrows** (Jerry, 2026-11-10: "page through to the next sequential
+station on the line"):
+- **One line at a time.** The card outlines the row of the line they
+  follow; tapping another row switches.
+- **Through interchanges,** stepping keeps the line.
+- **From the map,** a tapped station starts on its first line.
+- **Next steps away from station 01** (`first` in the config).
+- **Where the order comes from:**
+  - **ODPT's railways** where we have them, with a branch oriented to
+    end at its junction.
+  - **The Oedo's loop:** its repeated first station, Tochomae, becomes
+    a closing link, so the loop goes round and on along the tail.
+  - **Elsewhere,** OpenStreetMap's stop list, split where it jumps more
+    than 4 km. Until the token, the Marunouchi's Honancho branch is a
+    run of its own, not joined to Nakano-sakaue.
+- The arrows grey out at the ends, and their labels name the station
+  they go to.
+
+**Two data fixes in the transit build**, found by matching to ODPT:
+- **Shared track.** The tiles name the Meguro–Shirokane-takanawa track
+  for the Namboku only, so the Mita stopped at Shirokane-takanawa. A
+  line's config can now claim another's track inside a box (`shares`).
+  The Mita gains Meguro and Shirokanedai, and the shared stretch is
+  drawn dashed over the Namboku.
+- **A renamed platform.** OpenStreetMap names the Shinjuku Line's
+  platforms 新線新宿 (the Keio New Line's name). The build renames them
+  to 新宿 (`RENAMED`), which merges them into Shinjuku with the
+  Marunouchi and Oedo, as the signs and ODPT have it. The station id
+  `tokyo:新線新宿` is gone.
+
+**The licence:** the card's foot credits Toei (CC BY 4.0) via ODPT, with
+the timetable's date and ODPT's disclaimer. Settings and the README give
+the repo's issues page as the app's contact.

@@ -5,7 +5,17 @@ import { areasOf, regions } from "../config/regions.ts";
 import { settings, updateSettings, type Settings } from "../config/settings.ts";
 import { createBookmarks, createIdbBookmarkStorage } from "../data/bookmarks.ts";
 import { loadAreaShapes, nearestChip, shapesBounds, type AreaShapes } from "../data/area-shapes.ts";
-import { findStation, isStationSelection, loadTransit, STATION_SELECTION, stationRegion, type TransitData } from "../data/transit.ts";
+import {
+  findStation,
+  isStationSelection,
+  lineNeighbours,
+  loadStations,
+  loadTransit,
+  STATION_SELECTION,
+  stationRegion,
+  type StationsFile,
+  type TransitData,
+} from "../data/transit.ts";
 import { TRANSIT_LINES } from "../config/transit.ts";
 import { areaAt } from "../data/areas.ts";
 import { browserDeps } from "../data/browser.ts";
@@ -294,6 +304,8 @@ export function mountApp(root: HTMLElement): AppHandle {
     const { selectedId, page } = ui.get();
     const station = pinId === undefined && at && page !== "area" ? transitLayers.stationAt(at, STATION_TAP_SLOP_PX) : undefined;
     const id = pinId ?? (station !== undefined ? STATION_SELECTION + station : undefined);
+    // A station opened from the map starts on its first line; the arrows keep theirs (step).
+    if (station !== undefined && id !== selectedId) followLine = undefined;
     if (id === undefined) {
       if (page === undefined) deselect();
     } else if (id === selectedId && page === undefined) {
@@ -333,12 +345,26 @@ export function mountApp(root: HTMLElement): AppHandle {
     return places.find((p) => p.id === id);
   }
 
+  /**
+   * The line a station card's arrows step along: kept while stepping
+   * (stay on the Ginza through Omotesando), the station's first line when
+   * it isn't there, another when its row is tapped.
+   */
+  let followLine: string | undefined;
+
   /** The open station's card contents, or undefined when the selection isn't a station in the loaded transit. */
   function stationCard(id: string | undefined): StationCard | undefined {
     const station = isStationSelection(id) ? findStation(transitData, id) : undefined;
     if (!station) return undefined;
     const lines = station.props.lines.flatMap((lineId) => TRANSIT_LINES.filter((l) => l.id === lineId));
-    return { props: station.props, at: station.at, lines };
+    const following = followLine && station.props.lines.includes(followLine) ? followLine : station.props.lines[0]!;
+    const facts = stationsData?.stations[station.props.id];
+    return { props: station.props, at: station.at, lines, ...(facts ? { facts } : {}), sources: stationsData?.sources ?? {}, following };
+  }
+
+  /** The stations either side of an open station on the line its arrows follow. */
+  function stationSteps(card: StationCard): { prev?: string; next?: string } {
+    return lineNeighbours(stationsData?.order[card.following], card.props.id);
   }
 
   /** Pin settings need the renderer rebuilt; location starts or stops the watch; anything else (sort) is a plain re-render. */
@@ -433,10 +459,13 @@ export function mountApp(root: HTMLElement): AppHandle {
   let transitFor: RegionId | undefined;
   /** The current region's lines and stations, once loaded; station cards read it. */
   let transitData: TransitData | undefined;
+  /** The current region's station order, codes and train times (npm run stations), once loaded. */
+  let stationsData: StationsFile | undefined;
   function ensureTransit(region: RegionId): void {
     if (transitFor === region) return;
     transitFor = region;
     transitData = undefined;
+    stationsData = undefined;
     const lines = TRANSIT_LINES.filter((l) => l.region === region);
     linesControl.setLines(lines);
     transitLayers.set(undefined);
@@ -446,6 +475,11 @@ export function mountApp(root: HTMLElement): AppHandle {
       transitData = data;
       transitLayers.set(data);
       openPendingStation();
+      render();
+    });
+    void loadStations(region).then((data) => {
+      if (transitFor !== region) return;
+      stationsData = data;
       render();
     });
   }
@@ -734,9 +768,23 @@ export function mountApp(root: HTMLElement): AppHandle {
   /** The panel height the list had when a card opened, restored on Back. */
   let listHeight: PanelHeight | undefined;
 
-  /** Prev/Next in the footer: the neighbour in the current list; the entry is replaced, so Back still means "to the list". */
+  /**
+   * Prev/Next in the footer: the neighbour in the current list, or for a
+   * station the next one along the line its card follows; the entry is
+   * replaced, so Back still means "to the list".
+   */
   function step(delta: 1 | -1): void {
     const current = ui.get().selectedId;
+    const card = stationCard(current);
+    if (card) {
+      const { prev, next } = stationSteps(card);
+      const to = delta > 0 ? next : prev;
+      if (to) {
+        followLine = card.following;
+        select(STATION_SELECTION + to);
+      }
+      return;
+    }
     const i = lastShown.findIndex((p) => p.id === current);
     const target = i >= 0 ? lastShown[i + delta] : undefined;
     if (target) select(target.id);
@@ -993,12 +1041,24 @@ export function mountApp(root: HTMLElement): AppHandle {
       const i = shown.findIndex((p) => p.id === selected.id);
       prevButton.disabled = i <= 0;
       nextButton.disabled = i < 0 || i >= shown.length - 1;
+      prevButton.setAttribute("aria-label", "Previous place");
+      nextButton.setAttribute("aria-label", "Next place");
     } else if (station) {
-      // A station isn't in the list, so it has no neighbours to step to.
-      renderStationCard(detailBody, station, () => present({ lng: station.at[0], lat: station.at[1] }));
+      renderStationCard(detailBody, station, {
+        onShowOnMap: () => present({ lng: station.at[0], lat: station.at[1] }),
+        onFollow: (lineId) => {
+          followLine = lineId;
+          render();
+        },
+      });
       renderStationStrip(detailStrip, station, detailToggle);
-      prevButton.disabled = true;
-      nextButton.disabled = true;
+      // The arrows step along the line the card follows, naming the station they go to.
+      const { prev, next } = stationSteps(station);
+      const nameOf = (id?: string) => (id ? findStation(transitData, STATION_SELECTION + id)?.props.en : undefined);
+      prevButton.disabled = !prev;
+      nextButton.disabled = !next;
+      prevButton.setAttribute("aria-label", prev ? `Previous station: ${nameOf(prev)}` : "No previous station");
+      nextButton.setAttribute("aria-label", next ? `Next station: ${nameOf(next)}` : "No next station");
     }
     // One scroll container holds all three contents: save the list's position
     // on the way out of it (before the list is hidden, or the browser clamps it
