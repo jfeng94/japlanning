@@ -2,6 +2,7 @@ import type { ExpressionSpecification, FilterSpecification, GeoJSONSource, Map a
 import { lineFilter, stationFilter, type TransitData } from "../data/transit.ts";
 import type { MapView } from "./map.ts";
 import { belowPins } from "./pins.ts";
+import { SOURCE_ID } from "./style.ts";
 
 /**
  * The subway lines in their own colours, with white station dots and
@@ -10,8 +11,10 @@ import { belowPins } from "./pins.ts";
  * They replace the basemap's rail and stations in these regions
  * (style.ts, OWN_TRANSIT_REPLACES). Lines can be hidden one by one.
  *
- * Added before the pins, so the pins draw on top, and above whatever was
- * added earlier (the area shapes); re-added after every style load.
+ * The lines and dots go under the basemap's first text layer, so street
+ * and district names stay readable on top of them; the station names go
+ * just under our pins, above the basemap's text (Jerry, 2026-11-10).
+ * Re-added after every style load.
  */
 const SOURCE = "transit";
 const CASING = "transit-casing";
@@ -25,6 +28,8 @@ export interface TransitLayers {
   set(data: TransitData | undefined): void;
   /** Hide these line ids (and stations served only by them). */
   setHidden(hidden: ReadonlySet<string>): void;
+  /** The Area page: station names hide, so the area names are the only text; lines and dots stay. */
+  setQuiet(on: boolean): void;
 }
 
 const flavor = () => (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -32,6 +37,7 @@ const flavor = () => (window.matchMedia("(prefers-color-scheme: dark)").matches 
 export function createTransitLayers(view: MapView): TransitLayers {
   let data: TransitData | undefined;
   let hidden: ReadonlySet<string> = new Set();
+  let quiet = false;
   const lineIds = () => (data?.features ?? []).flatMap((f) => (f.properties.kind === "line" ? [f.properties.id] : []));
 
   const applyFilters = (m: MapLibreMap): void => {
@@ -46,6 +52,8 @@ export function createTransitLayers(view: MapView): TransitLayers {
   const add = (m: MapLibreMap): void => {
     if (m.getSource(SOURCE)) return;
     const before = belowPins(m);
+    // The first basemap label layer: everything drawn from there up is text.
+    const underText = m.getStyle()?.layers?.find((l) => l.type === "symbol" && (l as { source?: string }).source === SOURCE_ID)?.id ?? before;
     const dark = flavor() === "dark";
     m.addSource(SOURCE, { type: "geojson", data: data ?? EMPTY });
     const width = (scale: number): ExpressionSpecification => ["interpolate", ["linear"], ["zoom"], 10, 1.6 * scale, 13, 2.6 * scale, 16, 5 * scale];
@@ -56,7 +64,7 @@ export function createTransitLayers(view: MapView): TransitLayers {
       filter: lineFilter(hidden) as FilterSpecification,
       layout: { "line-join": "round", "line-cap": "round" },
       paint: { "line-color": dark ? "#1f1f1f" : "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 10, 2.8, 13, 4.2, 16, 7.5], "line-opacity": 0.9 },
-    }, before);
+    }, underText);
     m.addLayer({
       id: LINE,
       type: "line",
@@ -64,7 +72,7 @@ export function createTransitLayers(view: MapView): TransitLayers {
       filter: lineFilter(hidden) as FilterSpecification,
       layout: { "line-join": "round", "line-cap": "round" },
       paint: { "line-color": ["get", "colour"], "line-width": width(1) },
-    }, before);
+    }, underText);
     m.addLayer({
       id: STATION,
       type: "circle",
@@ -77,7 +85,7 @@ export function createTransitLayers(view: MapView): TransitLayers {
         "circle-stroke-color": dark ? "#9aa0a8" : "#3b3f45",
         "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 11, 0.8, 16, 1.6],
       },
-    }, before);
+    }, underText);
     // Names beside the dots, in the blue the basemap used for stations; the Japanese below from street level.
     m.addLayer({
       id: LABEL,
@@ -99,6 +107,7 @@ export function createTransitLayers(view: MapView): TransitLayers {
       },
       paint: { "text-color": dark ? "#8fb0f5" : "#315bcf", "text-halo-color": dark ? "#1f1f1f" : "#ffffff", "text-halo-width": 1.3 },
     }, before);
+    if (quiet) m.setLayoutProperty(LABEL, "visibility", "none");
   };
   view.onStyleLoad(add);
 
@@ -113,6 +122,10 @@ export function createTransitLayers(view: MapView): TransitLayers {
     setHidden(next) {
       hidden = next;
       applyFilters(view.map);
+    },
+    setQuiet(on) {
+      quiet = on;
+      if (view.map.getLayer(LABEL)) view.map.setLayoutProperty(LABEL, "visibility", on ? "none" : "visible");
     },
   };
 }

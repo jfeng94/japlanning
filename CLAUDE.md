@@ -393,6 +393,18 @@ proposal in `docs/proposals/` before work starts.
 
 ## Wishlist (not scheduled)
 
+- **A separate theme layer** (Jerry, 2026-11-10), so the app can be
+  re-skinned in one place. Today the look is spread around:
+  - pin artwork and UI icons (`src/map/icons/`, `src/ui/icons/`, picked
+    in `src/config/icons.ts` and imported where used);
+  - colours (CSS tokens in `src/style.css`, layer and line colours in
+    config, area hues);
+  - map paint (`src/map/style.ts`, `src/map/transit-layers.ts`).
+
+  The idea is one theme module that names every asset and colour, which
+  the rest reads, so swapping the art (the icons are found images; see
+  the README) or the palette is a single change.
+
 - **One pin for places that share a spot** (Jerry, 2026-11-10). Shops in
   one building, and above all in station malls (Tokyo Station, Tokyu Food
   Show in Shibuya), stack their pins on top of each other, so only the top

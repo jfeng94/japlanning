@@ -461,6 +461,7 @@ export function mountApp(root: HTMLElement): AppHandle {
   function syncAreaMap(on: boolean, state: FilterState, here: PositionChip): void {
     if (on === areaMapOn) return;
     areaMapOn = on;
+    transitLayers.setQuiet(on); // the area names are the page's only text
     const scopeOpts = { hereGroup: here.group, areas: areasOf(state.region) };
     if (on) {
       scopeAtOpen = areaScopeKey(state, scopeOpts);

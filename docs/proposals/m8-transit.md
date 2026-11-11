@@ -244,5 +244,19 @@ Protomaps' rail lines and station labels (`OWN_TRANSIT_REPLACES` in
 - **Osaka, Nara and Hakone,** which have no lines of ours, keep the
   basemap's rail and station names.
 
+**Basemap text above the lines** (Jerry, 2026-11-10: street and
+district names were hidden under them). The layers now draw in this
+order:
+
+1. the lines and station dots, just under the basemap's first text
+   layer;
+2. the basemap's text (street and district names);
+3. our station names;
+4. the pins.
+
+The area shapes now draw over the lines, tinting them where an area is
+filled. On the Area page our station names hide, so the area names stay
+the page's only text, as designed.
+
 **Next, Part 2: stations as pins**, each with its own card (the old
 Part 3).
