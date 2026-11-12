@@ -1111,6 +1111,10 @@ export function mountApp(root: HTMLElement): AppHandle {
     // The ring takes the colour of the line the arrows follow, so stepping shows which line it is.
     const following = station?.lines.find((l) => l.id === station.following);
     transitLayers.setSelected(areaMap || !station ? undefined : station.props.id, following?.colour);
+    // So does the card's header, in the tint of that line's badge box (style.css, .panel-drag).
+    if (following) panel.el.style.setProperty("--header-tint", following.colour);
+    else panel.el.style.removeProperty("--header-tint");
+    panel.el.toggleAttribute("data-tinted", following !== undefined);
     pins.setInteractive(!areaMap);
     panel.relayout(); // the strip's height depends on what the summary shows
   }

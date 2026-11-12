@@ -482,6 +482,11 @@ the repo's issues page as the app's contact.
   stop there. The body's first line keeps "Subway station" and takes
   the Japanese name from the header, which had too little room:
   "Subway station · 門前仲町".
+- **The header takes the line's tint** (Jerry, 2026-11-11): the handle
+  and title row get the same light mix of the followed line's colour as
+  its badge's box, and change with it. The badge's box stacks on it, so
+  it still stands out. Pages, the list and place cards keep the plain
+  header.
 
 **Deferred and decided** (Jerry, 2026-11-10):
 - **ODPT's guideline items wait until Tokyo Metro's data is used:** the

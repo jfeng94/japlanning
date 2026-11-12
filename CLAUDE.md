@@ -127,9 +127,10 @@ by `npm run transit`.
     asks (the fetch date on the card, a contact address).
 - **The card's arrows step along one line.**
   - The card's header shows the station's line badges before its
-    name; the followed one sits on a box tinted in its colour, and the
-    map's ring around the station takes that colour. The body's first
-    line reads "Subway station · 門前仲町" (2026-11-11).
+    name; the followed one sits on a box tinted in its colour, the
+    header takes the same tint, and the map's ring around the station
+    takes that colour. The body's first line reads "Subway station ·
+    門前仲町" (2026-11-11).
   - Stepping keeps the line through interchanges. Tapping a badge or a
     line's row switches it. A station tapped on the map starts on its
     first line.
