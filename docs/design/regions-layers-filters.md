@@ -204,17 +204,20 @@ basemap, the areas and the layers, and resets the filters. Within it,
 two pages open in the strip at Half from their footer buttons. A page's
 header has the live count and an X that closes it; Clear (that page's
 selections) sits at the top of the page, greyed when there's nothing to
-clear:
+clear. On the Filters page it then reads **Select all** instead, its
+opposite: every category chip the city shows, so the unwanted ones can
+be tapped off (2026-11-11). Showing everything that way equals showing
+nothing selected; the difference is what a tap does next.
 
 - **Filters**:
   0. **Hide all** (2026-11-11), a toggle at the top left, beside Clear:
      no places on the map or in the list, so the subway lines can be
-     read. It is the categories' "none" (nothing picked is all):
-     turning it on clears the categories, and picking a category, or a
-     layer heading, turns it off, so Hide all then Coffee shows just
-     coffee. Flags and areas leave it alone. Clear turns it off. The
-     list says "All places are hidden" with Show all, and the list's
-     tags read "All hidden".
+     read. It is a veil over the selection, not part of it: turning it
+     off brings the selection back as it was. Only its own toggle and
+     Clear change it; chips tapped under it change the selection
+     underneath, and the pressed toggle says why nothing shows. The list
+     says "All places are hidden" with Show places, and the list's tags
+     read "All hidden".
   1. **Show only** (flags): Bookmarked (this device's bookmarks, kept
      outside the filter state and passed in), Open now or Open at a day
      and time, Nearby, Key branches. Each one on narrows the results.
@@ -308,7 +311,7 @@ search box's job. Pins are coloured by layer.
 interface FilterState {
   region: RegionId;
   categories: Set<string>;   // "drinks/Coffee", or a layer id for a layer without kinds
-  hideAll: boolean;          // Hide all: no places; categories stay empty while on
+  hideAll: boolean;          // Hide all: no places; the rest is kept underneath
   areas: Set<string>;        // area chips
   here: boolean;
   adjacent: boolean;         // + Adjacent

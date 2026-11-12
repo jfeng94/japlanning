@@ -77,21 +77,28 @@ export function renderPageStrip(strip: HTMLElement, page: FilterPage, count: str
 
 /**
  * The top of a page's body: Clear, for that page's selections, on the
- * right, after anything given to lead the row. Always in its place,
- * greyed when there is nothing to clear, so the first selection doesn't
- * push the chips down under the finger.
+ * right, after anything given to lead the row. Always in its place, so
+ * the first selection doesn't push the chips down under the finger. With
+ * nothing to clear it is greyed, or, given `selectAll`, becomes its
+ * opposite, Select all (the Filters page's categories, 2026-11-11).
  */
-function clearRow(page: FilterPage, ctx: PageContext, lead?: HTMLElement): HTMLElement {
+function clearRow(page: FilterPage, ctx: PageContext, lead?: HTMLElement, selectAll?: () => void): HTMLElement {
   const wrap = document.createElement("div");
   wrap.className = "page-top";
   if (lead) wrap.append(lead);
   const clear = document.createElement("button");
   clear.type = "button";
   clear.className = "page-clear";
-  clear.textContent = "Clear";
-  clear.disabled = !ctx.canClear;
-  clear.setAttribute("aria-label", `Clear ${PAGE_TITLES[page]}`);
-  clear.addEventListener("click", ctx.onClear);
+  if (!ctx.canClear && selectAll) {
+    clear.textContent = "Select all";
+    clear.setAttribute("aria-label", "Select every category");
+    clear.addEventListener("click", selectAll);
+  } else {
+    clear.textContent = "Clear";
+    clear.disabled = !ctx.canClear;
+    clear.setAttribute("aria-label", `Clear ${PAGE_TITLES[page]}`);
+    clear.addEventListener("click", ctx.onClear);
+  }
   wrap.append(clear);
   return wrap;
 }
@@ -101,13 +108,16 @@ export function renderFiltersPage(body: HTMLElement, state: FilterState, ctx: Pa
   // Mid-drag on the radius slider: a rebuild would take the thumb from under the finger.
   if (body.dataset["sliding"] === "1") return;
   const { dispatch } = ctx;
-  // Hide all: no places on the map or in the list, so the subway lines can be read; a category ends it.
+  // Hide all: a veil over the selection, so the subway lines can be read; off, the selection is back as it was.
   const hide = chip("Hide all", {
     className: "page-hide",
     pressed: state.hideAll,
     onClick: () => dispatch({ type: "setHideAll", value: !state.hideAll }),
   });
-  body.replaceChildren(clearRow("filters", ctx, hide));
+  // Select all: every category chip the city shows, so the ones not wanted can be tapped off.
+  const every = ctx.layers.flatMap(categoriesOf).filter((c) => !ctx.present || ctx.present.has(c));
+  const selectAll = () => dispatch({ type: "setCategories", categories: every, on: true });
+  body.replaceChildren(clearRow("filters", ctx, hide, every.length > 0 ? selectAll : undefined));
   const at = tokyoWallClock(state.openAt);
   const flags = [
     chip("Bookmarked", {

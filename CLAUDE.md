@@ -33,7 +33,9 @@ Jerry wants to be hands-on with this project. He's an experienced engineer
 2. **Filter** by criteria: what (layer and kind), where (areas, Here,
    + Adjacent) and flags (bookmarked, open, nearby, key branches), on two
    pages in the strip, with search for anything specific (2026-11-09).
-   Hide all shows no places, for reading the subway map (2026-11-11).
+   Hide all veils every place, for reading the subway map, and gives
+   the selection back when it's off; Clear's opposite, Select all,
+   picks every category (2026-11-11).
    The same filter state drives both list and map. See
    `docs/design/regions-layers-filters.md`.
 2b. **Bookmark** places of interest on the device, and filter to just

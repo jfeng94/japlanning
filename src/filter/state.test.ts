@@ -57,20 +57,19 @@ describe("categories", () => {
 });
 
 describe("reduce", () => {
-  it("Hide all clears the categories; picking one ends it; Clear and a layer heading do too", () => {
-    const hidden = run({ type: "toggleCategory", category: COFFEE }, { type: "setHideAll", value: true });
-    expect([hidden.hideAll, hidden.categories.size]).toEqual([true, 0]);
+  it("Hide all veils the selection: off again, it is all still there; only its toggle and Clear change it", () => {
+    const before = run({ type: "toggleCategory", category: COFFEE }, { type: "setOpenNow", value: true });
+    const hidden = reduce(before, { type: "setHideAll", value: true });
+    expect([hidden.hideAll, [...hidden.categories], hidden.openNow]).toEqual([true, [COFFEE], true]);
     expect(layersInPlay(hidden, [coffee])).toEqual([]);
-    expect(hasGroupSelection(hidden, "filters")).toBe(true);
+    expect(hasGroupSelection(run({ type: "setHideAll", value: true }), "filters")).toBe(true);
+    expect(reduce(hidden, { type: "setHideAll", value: false })).toEqual(before);
+    // Picking under the veil changes the selection, not the veil.
     const picked = reduce(hidden, { type: "toggleCategory", category: TEA });
-    expect([picked.hideAll, [...picked.categories]]).toEqual([false, [TEA]]);
-    expect(reduce(hidden, { type: "setCategories", categories: [COFFEE, TEA], on: true }).hideAll).toBe(false);
-    expect(reduce(hidden, { type: "setCategories", categories: [COFFEE, TEA], on: false }).hideAll).toBe(true);
-    expect(reduce(hidden, { type: "clearGroup", group: "filters" })).toEqual(defaultState("tokyo"));
+    expect([picked.hideAll, [...picked.categories]]).toEqual([true, [COFFEE, TEA]]);
+    expect(reduce(hidden, { type: "setNearby", value: undefined }).hideAll).toBe(true);
     expect(reduce(hidden, { type: "clearGroup", group: "area" }).hideAll).toBe(true);
-    // A flag doesn't end it: Hide all stays on, and nothing shows.
-    expect(reduce(hidden, { type: "setBookmarkedOnly", value: true }).hideAll).toBe(true);
-    expect(reduce(hidden, { type: "setHideAll", value: false })).toEqual(defaultState("tokyo"));
+    expect(reduce(hidden, { type: "clearGroup", group: "filters" })).toEqual(defaultState("tokyo"));
   });
 
   it("setRegion resets everything for the new region; the same region keeps identity", () => {

@@ -16,10 +16,10 @@ const HERE: FilterAction = { type: "setHere", value: true };
 const ALL_TOKYO = ["Glitch", "Fuglen", "Bear Pond", "Unknown Kissa", "ＧＬＩＴＣＨ annex", "Ippodo", "Hotel"];
 
 describe("applyFilters", () => {
-  it("Hide all shows nothing; picking a category afterwards shows just that", () => {
-    const hidden = run({ type: "setHideAll", value: true });
+  it("Hide all shows nothing, whatever is selected; off, the selection shows again", () => {
+    const hidden = run(cat("drinks/Tea"), { type: "setHideAll", value: true });
     expect(names(hidden)).toEqual([]);
-    expect(names(reduce(hidden, cat("drinks/Tea")))).toEqual(["Ippodo"]);
+    expect(names(reduce(hidden, { type: "setHideAll", value: false }))).toEqual(["Ippodo"]);
   });
 
   it("nothing selected shows every place in the region, none from other regions", () => {

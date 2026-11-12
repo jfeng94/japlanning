@@ -24,11 +24,10 @@ const parse = (q: string) => fromSearchParams(new URLSearchParams(q), ctx);
 const cat = (category: string): FilterAction => ({ type: "toggleCategory", category });
 
 describe("toSearchParams", () => {
-  it("Hide all is hide=1 and round-trips; a category in the link wins over it", () => {
-    const hidden = run({ type: "setHideAll", value: true });
-    expect(query(hidden)).toBe("hide=1");
+  it("Hide all is hide=1 and round-trips with the selection under it", () => {
+    const hidden = run(cat("drinks/Tea"), { type: "setHideAll", value: true });
+    expect(query(hidden)).toBe("c=drinks/Tea&hide=1");
     expect(roundTrip(hidden)).toEqual(hidden);
-    expect(parse("hide=1&c=drinks/Tea").hideAll).toBe(false);
   });
 
   it("the default state is an empty query", () => {

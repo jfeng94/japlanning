@@ -1181,7 +1181,7 @@ export function mountApp(root: HTMLElement): AppHandle {
         note(places.length === 0 ? "No data loaded. Check Diagnostics." : `No places in ${regionLabel(state.region)} yet. Add rows with Region = ${state.region} to the data file.`),
       );
     } else if (shown === 0 && state.hideAll) {
-      target.append(note("All places are hidden."), chip("Show all", { onClick: () => filters.dispatch({ type: "setHideAll", value: false }) }));
+      target.append(note("All places are hidden."), chip("Show places", { onClick: () => filters.dispatch({ type: "setHideAll", value: false }) }));
     } else if (shown === 0) {
       const noBookmarks = state.bookmarkedOnly && !places.some((p) => p.region === state.region && bookmarks.has(p.id));
       target.append(

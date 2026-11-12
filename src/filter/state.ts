@@ -7,8 +7,10 @@ import type { LayerConfig, Place, RegionId } from "../data/types.ts";
  * Three groups, each a union inside and ANDed together
  * (docs/proposals/filters-and-areas.md): categories (what), areas
  * (where), flags (narrow). None selected in a group means everything.
- * Hide all is the categories' "none": no places at all, so the subway
- * map can be read; picking a category ends it (Jerry, 2026-11-11).
+ * Hide all is a veil over the whole selection: no places while it's on,
+ * so the subway map can be read, and the selection underneath comes back
+ * untouched when it's off. Only its toggle and Clear change it (Jerry,
+ * 2026-11-11).
  * Nothing here depends on another selection: filters do not cascade.
  * The two filter pages (docs/proposals/filter-pages-and-area-map.md)
  * split them: Filters holds the flags and categories, Area the areas.
@@ -17,7 +19,7 @@ export interface FilterState {
   region: RegionId;
   /** Category chips: "layer/Kind" for a layer with kinds, the bare layer id for one without. Empty = every category. */
   categories: Set<string>;
-  /** Hide all: no category, so no places; categories stays empty while it's on. */
+  /** Hide all: no places while on; the rest of the state is kept underneath. */
   hideAll: boolean;
   /** Area chips picked by hand (src/data/areas.ts). Empty, with Here off, = everywhere. */
   areas: Set<string>;
@@ -43,7 +45,7 @@ export type FilterGroup = "filters" | "area";
 export type FilterAction =
   | { type: "setRegion"; region: RegionId }
   | { type: "toggleCategory"; category: string }
-  /** Hide all on clears the categories; picking one turns it off. */
+  /** Hide all on or off; nothing else changes. */
   | { type: "setHideAll"; value: boolean }
   /** A layer header: every one of its kinds on, or all off. */
   | { type: "setCategories"; categories: string[]; on: boolean }
@@ -141,11 +143,11 @@ export function reduce(state: FilterState, action: FilterAction): FilterState {
     case "setRegion":
       return action.region === state.region ? state : defaultState(action.region);
     case "toggleCategory":
-      return { ...state, hideAll: false, categories: toggled(state.categories, action.category) };
+      return { ...state, categories: toggled(state.categories, action.category) };
     case "setCategories":
-      return { ...state, hideAll: state.hideAll && !action.on, categories: withAll(state.categories, action.categories, action.on) };
+      return { ...state, categories: withAll(state.categories, action.categories, action.on) };
     case "setHideAll":
-      return action.value ? { ...state, hideAll: true, categories: new Set() } : { ...state, hideAll: false };
+      return action.value === state.hideAll ? state : { ...state, hideAll: action.value };
     case "toggleArea":
       return { ...state, areas: toggled(state.areas, action.area) };
     case "setAreas":
