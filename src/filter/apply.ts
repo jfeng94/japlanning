@@ -6,7 +6,7 @@ import type { FilterAction, FilterState } from "./state.ts";
 /**
  * The algebra (docs/proposals/filters-and-areas.md, filter-pages-and-area-map.md):
  *
- *   shown = places in the region
+ *   shown = places in the region, none under Hide all
  *     ∩ (no categories ? all : ∪ selected categories)
  *     ∩ (nothing picked and no Here ? all : area ∈ picked ∪ {Here's} ∪ (adjacent ? their neighbours : ∅))
  *     ∩ (nearby and a fix ? within the radius of you : all)
@@ -93,6 +93,7 @@ export function areaScopeKey(state: FilterState, opts: Pick<ApplyOptions, "hereG
 export function applyFilters(places: Place[], state: FilterState, opts: ApplyOptions = {}): Place[] {
   const scope = areaScope(state, opts);
   const near = state.nearby !== undefined && opts.position ? { from: opts.position, within: state.nearby } : undefined;
+  if (state.hideAll) return [];
   return places.filter((p) => {
     if (p.region !== state.region) return false;
     if (!matchesCategories(p, state.categories)) return false;

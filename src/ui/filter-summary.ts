@@ -39,6 +39,7 @@ export function renderFilterSummary(
 
 function summaryTags(state: FilterState, regionLayers: LayerConfig[], hereLabel: string): HTMLElement[] {
   const tags: HTMLElement[] = [];
+  if (state.hideAll) tags.push(tag("All hidden"));
   if (state.text) tags.push(tag(`“${state.text}”`));
 
   // A layer with every kind on reads as the layer; otherwise its kinds one by one.

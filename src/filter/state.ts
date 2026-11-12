@@ -7,6 +7,8 @@ import type { LayerConfig, Place, RegionId } from "../data/types.ts";
  * Three groups, each a union inside and ANDed together
  * (docs/proposals/filters-and-areas.md): categories (what), areas
  * (where), flags (narrow). None selected in a group means everything.
+ * Hide all is the categories' "none": no places at all, so the subway
+ * map can be read; picking a category ends it (Jerry, 2026-11-11).
  * Nothing here depends on another selection: filters do not cascade.
  * The two filter pages (docs/proposals/filter-pages-and-area-map.md)
  * split them: Filters holds the flags and categories, Area the areas.
@@ -15,6 +17,8 @@ export interface FilterState {
   region: RegionId;
   /** Category chips: "layer/Kind" for a layer with kinds, the bare layer id for one without. Empty = every category. */
   categories: Set<string>;
+  /** Hide all: no category, so no places; categories stays empty while it's on. */
+  hideAll: boolean;
   /** Area chips picked by hand (src/data/areas.ts). Empty, with Here off, = everywhere. */
   areas: Set<string>;
   /** Pick the area chip you are in (resolved from the position by the app). */
@@ -39,6 +43,8 @@ export type FilterGroup = "filters" | "area";
 export type FilterAction =
   | { type: "setRegion"; region: RegionId }
   | { type: "toggleCategory"; category: string }
+  /** Hide all on clears the categories; picking one turns it off. */
+  | { type: "setHideAll"; value: boolean }
   /** A layer header: every one of its kinds on, or all off. */
   | { type: "setCategories"; categories: string[]; on: boolean }
   | { type: "toggleArea"; area: string }
@@ -85,8 +91,9 @@ export function categoriesPresent(places: readonly Place[], layers: readonly Lay
   return present;
 }
 
-/** The layers with anything selected, or every layer when no category is. */
+/** The layers with anything selected, or every layer when no category is; none under Hide all. */
 export function layersInPlay(state: FilterState, layers: LayerConfig[]): LayerConfig[] {
+  if (state.hideAll) return [];
   if (state.categories.size === 0) return layers;
   return layers.filter((l) => state.categories.has(l.id) || categoriesOf(l).some((c) => state.categories.has(c)));
 }
@@ -96,6 +103,7 @@ export function defaultState(region: RegionId): FilterState {
   return {
     region,
     categories: new Set(),
+    hideAll: false,
     areas: new Set(),
     here: false,
     adjacent: false,
@@ -114,6 +122,7 @@ export function hasGroupSelection(state: FilterState, group: FilterGroup): boole
   if (group === "area") return state.areas.size > 0 || state.here;
   return (
     state.categories.size > 0 ||
+    state.hideAll ||
     state.starredOnly ||
     state.bookmarkedOnly ||
     state.openNow ||
@@ -132,9 +141,11 @@ export function reduce(state: FilterState, action: FilterAction): FilterState {
     case "setRegion":
       return action.region === state.region ? state : defaultState(action.region);
     case "toggleCategory":
-      return { ...state, categories: toggled(state.categories, action.category) };
+      return { ...state, hideAll: false, categories: toggled(state.categories, action.category) };
     case "setCategories":
-      return { ...state, categories: withAll(state.categories, action.categories, action.on) };
+      return { ...state, hideAll: state.hideAll && !action.on, categories: withAll(state.categories, action.categories, action.on) };
+    case "setHideAll":
+      return action.value ? { ...state, hideAll: true, categories: new Set() } : { ...state, hideAll: false };
     case "toggleArea":
       return { ...state, areas: toggled(state.areas, action.area) };
     case "setAreas":
@@ -161,7 +172,7 @@ export function reduce(state: FilterState, action: FilterAction): FilterState {
       const fresh = defaultState(state.region);
       if (action.group === "area") return { ...state, areas: fresh.areas, here: false, adjacent: false };
       const { nearby: _n, openAt: _a, ...rest } = state;
-      return { ...rest, categories: fresh.categories, starredOnly: false, bookmarkedOnly: false, openNow: false };
+      return { ...rest, categories: fresh.categories, hideAll: false, starredOnly: false, bookmarkedOnly: false, openNow: false };
     }
     case "clearFilters":
       return defaultState(state.region);

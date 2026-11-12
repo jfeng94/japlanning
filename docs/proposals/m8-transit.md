@@ -492,6 +492,10 @@ the repo's issues page as the app's contact.
   and distance there. The body starts with Show on map.
   - **Then "Subway station" went** (Jerry, 2026-11-11): the badges
     already say it. The small line is the Japanese name alone.
+- **Picking a hidden line shows it** (Jerry, 2026-11-11): tapping the
+  badge or row of a line the Lines button hid turns it back on, so the
+  arrows never step along a line that isn't drawn. For the same reason
+  a station opened from the map starts on its first shown line.
 
 **Deferred and decided** (Jerry, 2026-11-10):
 - **ODPT's guideline items wait until Tokyo Metro's data is used:** the

@@ -11,6 +11,7 @@ import { categoriesOf, defaultState, layersInRegion, type FilterState } from "./
  *
  *   ?r=kyoto                       region (omitted for the default region)
  *   &c=drinks/Coffee&c=drinks/Tea  categories, repeated; a layer id alone when all its kinds are on
+ *   &hide=1                        Hide all (no places; categories are then empty)
  *   &a=Ginza&a=Asakusa             area chips, repeated; a raw area maps to its chip
  *   &here=1 &adj=1                 Here; + Adjacent
  *   &q=glitch                      text
@@ -41,6 +42,7 @@ export function toSearchParams(state: FilterState, ctx: UrlContext): URLSearchPa
     }
   }
   for (const c of state.categories) if (!written.has(c)) p.append("c", c);
+  if (state.hideAll) p.set("hide", "1");
   for (const a of state.areas) p.append("a", a);
   if (state.here) p.set("here", "1");
   if (state.adjacent) p.set("adj", "1");
@@ -66,6 +68,8 @@ export function fromSearchParams(params: URLSearchParams, ctx: UrlContext): Filt
     for (const c of own) known.set(c, [c]);
   }
   state.categories = new Set(params.getAll("c").flatMap((c) => known.get(c) ?? []));
+  // A category in the link wins over Hide all, as picking one ends it.
+  state.hideAll = params.get("hide") === "1" && state.categories.size === 0;
 
   // A chip label stays; a raw area becomes its chip, so a link survives a later merge; anything else drops.
   const areas = areaIndex(ctx.regions.find((x) => x.id === region) ?? { areas: [] });

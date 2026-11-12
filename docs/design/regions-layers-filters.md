@@ -207,6 +207,14 @@ selections) sits at the top of the page, greyed when there's nothing to
 clear:
 
 - **Filters**:
+  0. **Hide all** (2026-11-11), a toggle at the top left, beside Clear:
+     no places on the map or in the list, so the subway lines can be
+     read. It is the categories' "none" (nothing picked is all):
+     turning it on clears the categories, and picking a category, or a
+     layer heading, turns it off, so Hide all then Coffee shows just
+     coffee. Flags and areas leave it alone. Clear turns it off. The
+     list says "All places are hidden" with Show all, and the list's
+     tags read "All hidden".
   1. **Show only** (flags): Bookmarked (this device's bookmarks, kept
      outside the filter state and passed in), Open now or Open at a day
      and time, Nearby, Key branches. Each one on narrows the results.
@@ -290,8 +298,9 @@ search box's job. Pins are coloured by layer.
   position throttle.
 - **Search** matches the name, branch, raw area, area chip, kinds, notes,
   every facet value and the Japanese address, ignoring case and width.
-- The whole state serialises to the URL query string (`c`, `a`, `here`,
-  `adj`, `q`, `star`, `b`, `open`, `near`, `at`; `src/filter/url.ts`), so a
+- The whole state serialises to the URL query string (`c`, `hide`, `a`,
+  `here`, `adj`, `q`, `star`, `b`, `open`, `near`, `at`;
+  `src/filter/url.ts`), so a
   filtered view survives reload and can be shared. Here and Nearby travel
   as themselves, not as where the sender stood.
 
@@ -299,6 +308,7 @@ search box's job. Pins are coloured by layer.
 interface FilterState {
   region: RegionId;
   categories: Set<string>;   // "drinks/Coffee", or a layer id for a layer without kinds
+  hideAll: boolean;          // Hide all: no places; categories stay empty while on
   areas: Set<string>;        // area chips
   here: boolean;
   adjacent: boolean;         // + Adjacent
@@ -312,7 +322,7 @@ interface FilterState {
 ```
 
 ```
-shown = places in the region
+shown = places in the region, none under Hide all
   ∩ (no categories ? all : ∪ selected categories)
   ∩ (nothing picked and no Here ? all : area ∈ picked ∪ {Here's} ∪ (adjacent ? their neighbours : ∅))
   ∩ (nearby and a fix ? within the radius of you : all)

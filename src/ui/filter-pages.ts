@@ -76,13 +76,15 @@ export function renderPageStrip(strip: HTMLElement, page: FilterPage, count: str
 }
 
 /**
- * The top of a page's body: Clear, for that page's selections. Always in
- * its place, greyed when there is nothing to clear, so the first selection
- * doesn't push the chips down under the finger.
+ * The top of a page's body: Clear, for that page's selections, on the
+ * right, after anything given to lead the row. Always in its place,
+ * greyed when there is nothing to clear, so the first selection doesn't
+ * push the chips down under the finger.
  */
-function clearRow(page: FilterPage, ctx: PageContext): HTMLElement {
+function clearRow(page: FilterPage, ctx: PageContext, lead?: HTMLElement): HTMLElement {
   const wrap = document.createElement("div");
   wrap.className = "page-top";
+  if (lead) wrap.append(lead);
   const clear = document.createElement("button");
   clear.type = "button";
   clear.className = "page-clear";
@@ -98,8 +100,14 @@ function clearRow(page: FilterPage, ctx: PageContext): HTMLElement {
 export function renderFiltersPage(body: HTMLElement, state: FilterState, ctx: PageContext): void {
   // Mid-drag on the radius slider: a rebuild would take the thumb from under the finger.
   if (body.dataset["sliding"] === "1") return;
-  body.replaceChildren(clearRow("filters", ctx));
   const { dispatch } = ctx;
+  // Hide all: no places on the map or in the list, so the subway lines can be read; a category ends it.
+  const hide = chip("Hide all", {
+    className: "page-hide",
+    pressed: state.hideAll,
+    onClick: () => dispatch({ type: "setHideAll", value: !state.hideAll }),
+  });
+  body.replaceChildren(clearRow("filters", ctx, hide));
   const at = tokyoWallClock(state.openAt);
   const flags = [
     chip("Bookmarked", {

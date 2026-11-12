@@ -270,15 +270,23 @@ export function mountApp(root: HTMLElement): AppHandle {
   // The subway lines in their colours (docs/proposals/m8-transit.md), above the area shapes and under the pins;
   // the Lines button under fit and locate hides or shows them one by one, remembered on this device.
   const transitLayers = createTransitLayers(view);
-  const linesControl = createLinesControl((hidden) => {
+  let hiddenLines = loadHiddenLines();
+  const applyHiddenLines = (hidden: Set<string>) => {
+    hiddenLines = hidden;
     saveHiddenLines(hidden);
     transitLayers.setHidden(hidden);
-  });
+  };
+  const linesControl = createLinesControl(applyHiddenLines);
   view.map.addControl(linesControl, "top-left");
-  {
-    const hidden = loadHiddenLines();
-    transitLayers.setHidden(hidden);
-    linesControl.setHidden(hidden);
+  transitLayers.setHidden(hiddenLines);
+  linesControl.setHidden(hiddenLines);
+  /** Following a hidden line on a station's card shows it again (Jerry, 2026-11-11). */
+  function showLine(lineId: string): void {
+    if (!hiddenLines.has(lineId)) return;
+    const next = new Set(hiddenLines);
+    next.delete(lineId);
+    applyHiddenLines(next);
+    linesControl.setHidden(next);
   }
   let pins: PinRenderer = createPinRenderer();
   pins.onSelect(onPinSelect);
@@ -349,8 +357,9 @@ export function mountApp(root: HTMLElement): AppHandle {
 
   /**
    * The line a station card's arrows step along: kept while stepping
-   * (stay on the Ginza through Omotesando), the station's first line when
-   * it isn't there, another when its row is tapped.
+   * (stay on the Ginza through Omotesando), the station's first shown
+   * line when it isn't there, another when a badge or row is tapped
+   * (which shows that line if the Lines button hid it).
    */
   let followLine: string | undefined;
 
@@ -359,7 +368,9 @@ export function mountApp(root: HTMLElement): AppHandle {
     const station = isStationSelection(id) ? findStation(transitData, id) : undefined;
     if (!station) return undefined;
     const lines = station.props.lines.flatMap((lineId) => TRANSIT_LINES.filter((l) => l.id === lineId));
-    const following = followLine && station.props.lines.includes(followLine) ? followLine : station.props.lines[0]!;
+    // A station opened from the map starts on its first line the Lines button shows.
+    const firstShown = station.props.lines.find((l) => !hiddenLines.has(l)) ?? station.props.lines[0]!;
+    const following = followLine && station.props.lines.includes(followLine) ? followLine : firstShown;
     const facts = stationsData?.stations[station.props.id];
     return { props: station.props, at: station.at, lines, ...(facts ? { facts } : {}), sources: stationsData?.sources ?? {}, following };
   }
@@ -1067,6 +1078,7 @@ export function mountApp(root: HTMLElement): AppHandle {
         onShowOnMap: () => present({ lng: station.at[0], lat: station.at[1] }),
         onFollow: (lineId: string) => {
           followLine = lineId;
+          showLine(lineId);
           render();
         },
       };
@@ -1168,6 +1180,8 @@ export function mountApp(root: HTMLElement): AppHandle {
       target.append(
         note(places.length === 0 ? "No data loaded. Check Diagnostics." : `No places in ${regionLabel(state.region)} yet. Add rows with Region = ${state.region} to the data file.`),
       );
+    } else if (shown === 0 && state.hideAll) {
+      target.append(note("All places are hidden."), chip("Show all", { onClick: () => filters.dispatch({ type: "setHideAll", value: false }) }));
     } else if (shown === 0) {
       const noBookmarks = state.bookmarkedOnly && !places.some((p) => p.region === state.region && bookmarks.has(p.id));
       target.append(

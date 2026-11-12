@@ -24,7 +24,9 @@ revised" on.
     The followed line's badge sits on a box tinted in its colour, on a
     one-line station too, and the whole header takes the same tint. A
     small line under the name gives the Japanese name, 門前仲町.
-  - Tapping another badge, or another line's row, switches.
+  - Tapping another badge, or another line's row, switches, and shows
+    that line if the Lines button hid it. A station opened from the map
+    starts on its first shown line.
   - On the map, the station's ring takes that line's colour.
 - **Tokyo Metro's lines** (9) say "Train times not in yet". Their arrows
   use OpenStreetMap's station order.

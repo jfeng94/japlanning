@@ -57,6 +57,22 @@ describe("categories", () => {
 });
 
 describe("reduce", () => {
+  it("Hide all clears the categories; picking one ends it; Clear and a layer heading do too", () => {
+    const hidden = run({ type: "toggleCategory", category: COFFEE }, { type: "setHideAll", value: true });
+    expect([hidden.hideAll, hidden.categories.size]).toEqual([true, 0]);
+    expect(layersInPlay(hidden, [coffee])).toEqual([]);
+    expect(hasGroupSelection(hidden, "filters")).toBe(true);
+    const picked = reduce(hidden, { type: "toggleCategory", category: TEA });
+    expect([picked.hideAll, [...picked.categories]]).toEqual([false, [TEA]]);
+    expect(reduce(hidden, { type: "setCategories", categories: [COFFEE, TEA], on: true }).hideAll).toBe(false);
+    expect(reduce(hidden, { type: "setCategories", categories: [COFFEE, TEA], on: false }).hideAll).toBe(true);
+    expect(reduce(hidden, { type: "clearGroup", group: "filters" })).toEqual(defaultState("tokyo"));
+    expect(reduce(hidden, { type: "clearGroup", group: "area" }).hideAll).toBe(true);
+    // A flag doesn't end it: Hide all stays on, and nothing shows.
+    expect(reduce(hidden, { type: "setBookmarkedOnly", value: true }).hideAll).toBe(true);
+    expect(reduce(hidden, { type: "setHideAll", value: false })).toEqual(defaultState("tokyo"));
+  });
+
   it("setRegion resets everything for the new region; the same region keeps identity", () => {
     const s = run({ type: "setText", text: "x" }, { type: "toggleCategory", category: TEA }, { type: "toggleArea", area: "Central" });
     const kyoto = reduce(s, { type: "setRegion", region: "kyoto" });

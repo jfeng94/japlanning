@@ -680,7 +680,13 @@ button {
 .page-top {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   margin: -0.35rem 0 0.15rem;
+}
+
+/* The Filters page's Hide all, on the left of Clear (2026-11-11). */
+.page-hide {
+  margin: 0 auto 0.4rem 0;
 }
 
 .page-title {
