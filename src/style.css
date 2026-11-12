@@ -739,12 +739,6 @@ button {
   white-space: nowrap;
 }
 
-.detail-meta {
-  margin: 0.5rem 0 0.6rem;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
 .detail-actions {
   display: flex;
   flex-wrap: wrap;

@@ -129,8 +129,8 @@ by `npm run transit`.
   - The card's header shows the station's line badges before its
     name; the followed one sits on a box tinted in its colour, the
     header takes the same tint, and the map's ring around the station
-    takes that colour. The body's first line reads "Subway station ·
-    門前仲町" (2026-11-11).
+    takes that colour. A small line under the name reads "Subway
+    station · 門前仲町", like a place's kind and area (2026-11-11).
   - Stepping keeps the line through interchanges. Tapping a badge or a
     line's row switches it. A station tapped on the map starts on its
     first line.

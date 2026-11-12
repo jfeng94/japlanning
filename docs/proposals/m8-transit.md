@@ -487,6 +487,9 @@ the repo's issues page as the app's contact.
   its badge's box, and change with it. The badge's box stacks on it, so
   it still stands out. Pages, the list and place cards keep the plain
   header.
+- **"Subway station · 門前仲町" moved up too** (Jerry, 2026-11-11), to a
+  small line under the name, as a place's card now has its kind, area
+  and distance there. The body starts with Show on map.
 
 **Deferred and decided** (Jerry, 2026-11-10):
 - **ODPT's guideline items wait until Tokyo Metro's data is used:** the

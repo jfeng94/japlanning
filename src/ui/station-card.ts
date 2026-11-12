@@ -35,7 +35,11 @@ export interface StationCardHandlers {
   onFollow: (lineId: string) => void;
 }
 
-/** The panel header: a badge per line and the English name on the left; Directions and the panel's chevron on the right. */
+/**
+ * The panel header: a badge per line, then the English name with a small
+ * line under it ("Subway station · 門前仲町", as a place's has its kind
+ * and area) on the left; Directions and the panel's chevron on the right.
+ */
 export function renderStationStrip(strip: HTMLElement, station: StationCard, toggle: HTMLElement, h: StationCardHandlers): void {
   strip.replaceChildren();
   // The lines that stop here; the one the arrows follow sits on a box tinted in its colour.
@@ -59,10 +63,22 @@ export function renderStationStrip(strip: HTMLElement, station: StationCard, tog
   const title = document.createElement("h2");
   title.className = "strip-title";
   title.textContent = station.props.en;
+  const sub = document.createElement("p");
+  sub.className = "strip-sub";
+  sub.append("Subway station");
+  if (station.props.name !== station.props.en) {
+    const ja = document.createElement("span");
+    ja.lang = "ja";
+    ja.textContent = station.props.name;
+    sub.append(" · ", ja);
+  }
+  const head = document.createElement("div");
+  head.className = "strip-head";
+  head.append(title, sub);
 
   const lead = document.createElement("div");
   lead.className = "strip-lead";
-  lead.append(picks, title);
+  lead.append(picks, head);
 
   const actions = document.createElement("div");
   actions.className = "strip-actions";
@@ -73,20 +89,9 @@ export function renderStationStrip(strip: HTMLElement, station: StationCard, tog
   strip.append(lead, actions);
 }
 
-/** The card's body: what it is and its Japanese name, Show on map, a row per line with its times, then the credit or what isn't in yet. */
+/** The card's body: Show on map, a row per line with its times, then the credit or what isn't in yet. */
 export function renderStationCard(body: HTMLElement, station: StationCard, h: StationCardHandlers): void {
   body.replaceChildren();
-  // "Subway station · 門前仲町": the header has room only for the English name.
-  const meta = document.createElement("p");
-  meta.className = "detail-meta";
-  meta.append("Subway station");
-  if (station.props.name !== station.props.en) {
-    const ja = document.createElement("span");
-    ja.lang = "ja";
-    ja.textContent = station.props.name;
-    meta.append(" · ", ja);
-  }
-
   const actions = document.createElement("div");
   actions.className = "detail-actions";
   actions.append(iconButton("Show on map", centerIcon, h.onShowOnMap));
@@ -119,7 +124,7 @@ export function renderStationCard(body: HTMLElement, station: StationCard, h: St
     lines.append(li);
   }
 
-  body.append(meta, actions, lines);
+  body.append(actions, lines);
   if (!hasAnyTimes(station)) {
     body.append(note("First and last trains and the station's amenities aren't in yet."));
     return;
