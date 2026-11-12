@@ -600,8 +600,18 @@ button {
   font-size: 1rem;
 }
 
-.detail-notes--top {
-  margin: 0.2rem 0 0.4rem;
+/* The card body opens with the rating, the notes or the actions; the meta line that spaced them moved to the header (2026-11-11). */
+/* Two classes: .detail-notes, later in the file, sets margin 0. */
+.detail-notes.detail-notes--top {
+  margin: 0.55rem 0 0.75rem;
+}
+
+.detail-rating + .detail-notes.detail-notes--top {
+  margin-top: 0.2rem;
+}
+
+.body-detail > .detail-actions:first-child {
+  margin-top: 0.6rem;
 }
 
 /* List mode: the order toggle on the left, no Prev/Next (hidden, not removed, so Search stays pinned right).
@@ -1360,6 +1370,21 @@ button {
 
 .strip-bookmark {
   margin-left: -0.35rem;
+}
+
+/* A place's name with a small line under it: kind, area, distance (2026-11-11). */
+.strip-head {
+  flex: 1;
+  min-width: 0;
+}
+
+.strip-sub {
+  margin: 0.05rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .strip-title {

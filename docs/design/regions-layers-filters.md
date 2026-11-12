@@ -161,9 +161,11 @@ Kind column: its rows' kinds follow from the facet named there, and a
 row whose values make no kind warns. Required there: a blank or unknown value
 warns, so the build fails, and an unknown value is dropped rather than
 becoming a category. The kinds are the layer's category chips in the
-Filters page and show in the card's meta line ("Drinks · Coffee ·
-Shibuya · 160 m away"). A layer without `kinds` leaves any Kind column in
-the card's "Also in the sheet".
+Filters page and show in the small line under the card's name in the
+header ("Coffee · Shibuya · 160 m away"; the kind implies the layer, so
+the layer is named only for a place without kinds, 2026-11-11). A layer
+without `kinds` leaves any Kind column in the card's "Also in the
+sheet".
 
 ### Facet columns
 

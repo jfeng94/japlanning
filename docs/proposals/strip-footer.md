@@ -63,6 +63,12 @@ still ends cleanly.
   Bookmark); the title moves into the header, and the meta line (layer,
   neighborhood, distance) becomes the body's first line.
 
+  *Changed 2026-11-11* (Jerry): the meta line moved into the header as
+  a small line under the name, "Coffee · Shinjuku · 160 m away". It
+  drops the layer, since the kind implies it ("Coffee" is a drink,
+  "Pastry" a sweet); a place without kinds (Activities) still names its
+  layer.
+
 The Share and Link buttons stay in the card body, as they are about the
 place rather than navigation.
 

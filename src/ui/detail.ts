@@ -1,8 +1,8 @@
 import type { LayerConfig, Place } from "../data/types.ts";
-import { distanceM, formatDistance, type LatLng } from "../geo/distance.ts";
+import type { LatLng } from "../geo/distance.ts";
 import { openStatus } from "../hours/open.ts";
 import { tag } from "./chips.ts";
-import { detailFields, type DetailRow } from "./detail-fields.ts";
+import { detailFields, summaryLine, type DetailRow } from "./detail-fields.ts";
 import bookmarkIcon from "./icons/bookmark.webp";
 import centerIcon from "./icons/center.webp";
 import directionsIcon from "./icons/directions.webp";
@@ -17,8 +17,6 @@ export interface DetailHandlers {
   origin: string;
   /** Tokyo wall-clock moment to evaluate hours at; undefined means now. */
   at?: Date;
-  /** The device's position, for "1.2 km away" in the meta line. */
-  from?: LatLng;
   /** Ease the map back to this place (after panning away). */
   onShowOnMap: () => void;
 }
@@ -30,19 +28,15 @@ let renderToken = 0;
 
 /**
  * The selected place in the panel body: the rating snapshot, the notes,
- * the meta line, actions, the street-corner essentials (visible at half
- * height), then everything else. The name, Bookmark and Directions live in the panel's header,
- * Back in its footer (renderDetailStrip and the app).
+ * actions, the street-corner essentials (visible at half height), then
+ * everything else. The name with its kind, area and distance, Bookmark
+ * and Directions live in the panel's header, Back in its footer
+ * (renderDetailStrip and the app).
  */
 export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig | undefined, h: DetailHandlers): void {
   const token = ++renderToken;
   const fields = detailFields(place, layer);
   body.replaceChildren();
-
-  const meta = document.createElement("p");
-  meta.className = "detail-meta";
-  const away = h.from ? `${formatDistance(distanceM(h.from, place))} away` : undefined;
-  meta.textContent = [layer?.label, place.kinds.join(", "), place.area, away].filter(Boolean).join(" · ");
 
   // ---- actions (Directions lives in the strip above the card): copy link, website, show on map ----
   const actions = document.createElement("div");
@@ -108,7 +102,7 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
     body.append(notes);
   }
 
-  body.append(meta, actions, essentials);
+  body.append(actions, essentials);
   if (fields.chips.length > 0) body.append(chips);
 
   // ---- details (full height) ----
@@ -141,13 +135,17 @@ export interface DetailStripHandlers {
   onToggleBookmark: (id: string) => void;
   /** The panel's open/collapse chevron, last in the row (Panel.toggleButton). */
   toggle: HTMLElement;
+  /** The place's layer, named under the title when the place has no kinds. */
+  layer?: LayerConfig;
+  /** The device's position, for "1.2 km away" under the title. */
+  from?: LatLng;
 }
 
 /**
  * The panel header while a place is selected: Bookmark, then the name
- * (star, brand) on the left; Directions and the panel's chevron on the
- * right. Bookmark sits apart from Directions so neither is tapped for the
- * other (2026-11-10).
+ * (star, brand) with a small line under it on the left; Directions and
+ * the panel's chevron on the right. Bookmark sits apart from Directions
+ * so neither is tapped for the other (2026-11-10).
  */
 export function renderDetailStrip(strip: HTMLElement, place: Place, h: DetailStripHandlers): void {
   strip.replaceChildren();
@@ -170,9 +168,20 @@ export function renderDetailStrip(strip: HTMLElement, place: Place, h: DetailStr
   }
   title.append(place.name);
 
+  const head = document.createElement("div");
+  head.className = "strip-head";
+  head.append(title);
+  const line = summaryLine(place, h.layer, h.from);
+  if (line) {
+    const sub = document.createElement("p");
+    sub.className = "strip-sub";
+    sub.textContent = line;
+    head.append(sub);
+  }
+
   const lead = document.createElement("div");
   lead.className = "strip-lead";
-  lead.append(bookmark, title);
+  lead.append(bookmark, head);
 
   const actions = document.createElement("div");
   actions.className = "strip-actions";

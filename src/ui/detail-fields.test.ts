@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LayerConfig } from "../data/types.ts";
 import { coffee, place } from "../filter/testing.ts";
-import { detailFields } from "./detail-fields.ts";
+import { detailFields, summaryLine } from "./detail-fields.ts";
 
 const layer: LayerConfig = { ...coffee, rowFacets: ["Format", "Specialty"] };
 
@@ -84,5 +84,22 @@ describe("detailFields", () => {
     const f = detailFields(place({ name: "x" }), undefined);
     expect(f.chips).toEqual([]);
     expect(f.details).toEqual([]);
+  });
+});
+
+describe("summaryLine", () => {
+  it("kind, area and distance; no layer name, since the kind implies it", () => {
+    const p = place({ name: "Covert", kinds: ["Coffee"], area: "Shinjuku", lat: 35.6908, lng: 139.7046 });
+    expect(summaryLine(p, coffee)).toBe("Coffee · Shinjuku");
+    expect(summaryLine(p, coffee, { lat: 35.6908, lng: 139.7064 })).toBe("Coffee · Shinjuku · 160 m away");
+  });
+
+  it("several kinds join with commas", () => {
+    expect(summaryLine(place({ name: "Fuglen", kinds: ["Coffee", "Bar"], area: "Tomigaya" }), coffee)).toBe("Coffee, Bar · Tomigaya");
+  });
+
+  it("names the layer only for a place without kinds", () => {
+    const activities: LayerConfig = { ...coffee, id: "activities", label: "Activities", kinds: undefined };
+    expect(summaryLine(place({ name: "Ghibli Museum", area: "Mitaka" }), activities)).toBe("Activities · Mitaka");
   });
 });

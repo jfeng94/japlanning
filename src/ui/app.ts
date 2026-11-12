@@ -1044,16 +1044,18 @@ export function mountApp(root: HTMLElement): AppHandle {
 
     lastShown = shown;
     if (selected) {
-      renderDetail(detailBody, selected, regionLayers.find((l) => l.id === selected.layerId), {
+      const layer = regionLayers.find((l) => l.id === selected.layerId);
+      renderDetail(detailBody, selected, layer, {
         origin: location.origin,
         at: hoursAt(state),
-        from: position,
         onShowOnMap: () => present(selected),
       });
       renderDetailStrip(detailStrip, selected, {
         isBookmarked: (id) => bookmarks.has(id),
         onToggleBookmark: (id) => bookmarks.toggle(id),
         toggle: detailToggle,
+        layer,
+        from: position,
       });
       const i = shown.findIndex((p) => p.id === selected.id);
       prevButton.disabled = i <= 0;

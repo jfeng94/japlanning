@@ -1,4 +1,5 @@
 import type { LayerConfig, Place } from "../data/types.ts";
+import { distanceM, formatDistance, type LatLng } from "../geo/distance.ts";
 
 /**
  * What the card shows, as data. Pure so the rows and their order are
@@ -81,4 +82,15 @@ export function detailFields(place: Place, layer: LayerConfig | undefined): Deta
   }
 
   return { ...(rating ? { rating } : {}), ...(place.notes ? { notes: place.notes } : {}), essentials, chips, details };
+}
+
+/**
+ * The small line under a place's name: "Coffee · Shinjuku · 160 m away".
+ * The kind says the layer (Coffee is a drink), so the layer is named only
+ * for a place without kinds (Jerry, 2026-11-11).
+ */
+export function summaryLine(place: Place, layer: LayerConfig | undefined, from?: LatLng): string {
+  const what = place.kinds.length > 0 ? place.kinds.join(", ") : layer?.label;
+  const away = from ? `${formatDistance(distanceM(from, place))} away` : undefined;
+  return [what, place.area, away].filter(Boolean).join(" · ");
 }
