@@ -102,6 +102,10 @@ and Directions from being tapped for each other:
    Back from a card that never left the strip leaves the panel on the
    strip.
 
+   *Changed 2026-11-11* (Jerry): Prev/Next leave a collapsed panel
+   collapsed. The map still eases to the next place or station, since it
+   may be off-screen; from full they still drop the card to half.
+
 ## Files
 
 - `src/ui/panel.ts`: a `footer` slot; the strip height counts header plus

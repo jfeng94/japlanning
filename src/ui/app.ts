@@ -329,10 +329,12 @@ export function mountApp(root: HTMLElement): AppHandle {
    * Present a place or station: the card at half (from the strip, or from
    * full where the map is hidden) and the map eased to it at presentation
    * zoom. Height first: it changes the map's padding, which would cancel
-   * an ease already under way.
+   * an ease already under way. `keepStrip`: Prev/Next leave a collapsed
+   * panel collapsed and only move the map (Jerry, 2026-11-11).
    */
-  function present(at: { lng: number; lat: number }): void {
-    if (panel.getHeight() !== "half") panel.setHeight("half");
+  function present(at: { lng: number; lat: number }, keepStrip = false): void {
+    const height = panel.getHeight();
+    if (height !== "half" && !(keepStrip && height === "strip")) panel.setHeight("half");
     view.focus(at.lng, at.lat);
   }
 
@@ -773,23 +775,35 @@ export function mountApp(root: HTMLElement): AppHandle {
   /**
    * Prev/Next in the footer: the neighbour in the current list, or for a
    * station the next one along the line its card follows; the entry is
-   * replaced, so Back still means "to the list".
+   * replaced, so Back still means "to the list". A collapsed panel stays
+   * collapsed (`stepping`).
    */
   function step(delta: 1 | -1): void {
+    const to = stepTarget(delta);
+    if (!to) return;
+    stepping = true;
+    try {
+      select(to);
+    } finally {
+      stepping = false;
+    }
+  }
+
+  /** Whether the selection under way comes from Prev/Next. */
+  let stepping = false;
+
+  /** The selection Prev/Next goes to, if any; for a station, its line stays followed. */
+  function stepTarget(delta: 1 | -1): string | undefined {
     const current = ui.get().selectedId;
     const card = stationCard(current);
     if (card) {
       const { prev, next } = stationSteps(card);
       const to = delta > 0 ? next : prev;
-      if (to) {
-        followLine = card.following;
-        select(STATION_SELECTION + to);
-      }
-      return;
+      if (to) followLine = card.following;
+      return to && STATION_SELECTION + to;
     }
     const i = lastShown.findIndex((p) => p.id === current);
-    const target = i >= 0 ? lastShown[i + delta] : undefined;
-    if (target) select(target.id);
+    return i >= 0 ? lastShown[i + delta]?.id : undefined;
   }
 
   /**
@@ -856,9 +870,10 @@ export function mountApp(root: HTMLElement): AppHandle {
       const target = selectedId ? pointOf(selectedId) : undefined;
       if (target) {
         // Remember the list's height for Back. A list row, Prev/Next or a link presents the place (the card at
-        // half, the map eased to it); a pin or station tapped on the map leaves both where they are (onPinSelect).
+        // half, the map eased to it; Prev/Next leave a collapsed panel collapsed); a pin or station tapped on the
+        // map leaves both where they are (onPinSelect).
         if (listHeight === undefined) listHeight = panel.getHeight();
-        if (presentOnSelect) present(target);
+        if (presentOnSelect) present(target, stepping);
       } else if (listHeight !== undefined) {
         // Back to the list at the height it had. A card that raised the panel from the strip comes back to half, so
         // the list shows; one still on the strip (pins tapped while browsing the map) stays there.
