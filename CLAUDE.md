@@ -302,7 +302,9 @@ is used only as the **directions hand-off**.
    `https://www.google.com/maps/dir/?api=1&destination=<lat>,<lng>&travelmode=transit`
    opens the Google Maps app on iOS if installed. Using coordinates avoids
    mis-matched place search; the trade-off is that Google shows a dropped pin
-   rather than the business name.
+   rather than the business name. A Google place ID per place would open
+   the business instead: `docs/proposals/directions-place-ids.md`
+   (proposed 2026-11-11, waiting on Jerry's Google Cloud project and key).
 7. **Clipboard:** `navigator.clipboard.writeText` needs HTTPS and a user
    gesture. Copy as `Name\nAddress`. If the address starts with `~`, flag it
    as approximate in the UI.
