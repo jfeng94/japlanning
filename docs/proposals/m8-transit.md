@@ -490,6 +490,8 @@ the repo's issues page as the app's contact.
 - **"Subway station · 門前仲町" moved up too** (Jerry, 2026-11-11), to a
   small line under the name, as a place's card now has its kind, area
   and distance there. The body starts with Show on map.
+  - **Then "Subway station" went** (Jerry, 2026-11-11): the badges
+    already say it. The small line is the Japanese name alone.
 
 **Deferred and decided** (Jerry, 2026-11-10):
 - **ODPT's guideline items wait until Tokyo Metro's data is used:** the

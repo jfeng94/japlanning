@@ -36,9 +36,10 @@ export interface StationCardHandlers {
 }
 
 /**
- * The panel header: a badge per line, then the English name with a small
- * line under it ("Subway station · 門前仲町", as a place's has its kind
- * and area) on the left; Directions and the panel's chevron on the right.
+ * The panel header: a badge per line, then the English name with the
+ * Japanese one in a small line under it (where a place's has its kind and
+ * area; the badges already say it's a station) on the left; Directions
+ * and the panel's chevron on the right.
  */
 export function renderStationStrip(strip: HTMLElement, station: StationCard, toggle: HTMLElement, h: StationCardHandlers): void {
   strip.replaceChildren();
@@ -63,18 +64,16 @@ export function renderStationStrip(strip: HTMLElement, station: StationCard, tog
   const title = document.createElement("h2");
   title.className = "strip-title";
   title.textContent = station.props.en;
-  const sub = document.createElement("p");
-  sub.className = "strip-sub";
-  sub.append("Subway station");
-  if (station.props.name !== station.props.en) {
-    const ja = document.createElement("span");
-    ja.lang = "ja";
-    ja.textContent = station.props.name;
-    sub.append(" · ", ja);
-  }
   const head = document.createElement("div");
   head.className = "strip-head";
-  head.append(title, sub);
+  head.append(title);
+  if (station.props.name !== station.props.en) {
+    const ja = document.createElement("p");
+    ja.className = "strip-sub";
+    ja.lang = "ja";
+    ja.textContent = station.props.name;
+    head.append(ja);
+  }
 
   const lead = document.createElement("div");
   lead.className = "strip-lead";

@@ -23,7 +23,7 @@ revised" on.
   - The card's header shows a badge per line before the English name.
     The followed line's badge sits on a box tinted in its colour, on a
     one-line station too, and the whole header takes the same tint. A
-    small line under the name reads "Subway station · 門前仲町".
+    small line under the name gives the Japanese name, 門前仲町.
   - Tapping another badge, or another line's row, switches.
   - On the map, the station's ring takes that line's colour.
 - **Tokyo Metro's lines** (9) say "Train times not in yet". Their arrows
