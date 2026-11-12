@@ -108,8 +108,9 @@ by `npm run transit`.
 - **They replace the basemap's rail and station names** in Tokyo and
   Kyoto; the station names there are ours.
 - **Shared track and renamed platforms** are handled in the config and
-  the build: the Mita runs on the Namboku's track to Meguro (`shares`,
-  drawn dashed), and 新線新宿 is part of Shinjuku (`RENAMED`).
+  the build: the Mita runs on the Namboku's track to Meguro and the
+  Fukutoshin on the Yurakucho's to Hikawadai (`shares`, drawn dashed),
+  and 新線新宿 is part of Shinjuku (`RENAMED`).
 - **Stations are tappable** (2026-11-10): a card with the lines that
   stop there and Directions, opened like a place's (`station:` ids in
   the selection and the URL). Stations never join the list or search.
@@ -118,16 +119,18 @@ by `npm run transit`.
   each line's station order for the card's arrows.
   - Run it after `npm run transit`, and again before the trip, since
     the licence asks us to keep up with timetable changes.
-  - Toei's data is public. Tokyo Metro's needs Jerry's developer token
-    in the `ODPT_TOKEN` environment variable, never in the repo; until
-    then its lines have no times and use OpenStreetMap's order.
-  - The card credits the source and says ODPT isn't responsible for
-    accuracy. Settings gives the repo's issues page as the app's
-    contact.
+  - Every Tokyo line has them (2026-11-12). Toei's data is public.
+    Tokyo Metro's needs Jerry's developer token, in his user
+    `ODPT_TOKEN` environment variable only: never in the repo, a file,
+    the chat or a printed URL. Responses are cached in
+    `.cache/stations/`, so only `--refresh` needs it.
+  - The card credits each operator with its licence, the timetable's
+    date and the day it was fetched, and says ODPT isn't responsible
+    for accuracy. Settings gives Jerry's email as the app's contact,
+    as ODPT's guideline asks.
   - Amenities (elevators, lockers, toilets, escalators) come next.
-  - **Pick-up note:** `docs/research/stations-odpt-state.md` says
-    what to do when the token arrives and what ODPT's guideline still
-    asks (the fetch date on the card, a contact address).
+  - **State of play:** `docs/research/stations-odpt-state.md` (how to
+    rerun, what ODPT's rules ask, what's next).
 - **The card's arrows step along one line.**
   - The card's header shows the station's line badges before its
     name; the followed one sits on a box tinted in its colour, the

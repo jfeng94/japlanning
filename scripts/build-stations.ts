@@ -25,7 +25,7 @@
  * public/transit/<region>.geojson, so run it after `npm run transit`.
  */
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { TRANSIT_LINES, TRANSIT_REGIONS, type TransitLine } from "../src/config/transit.ts";
 import {
@@ -58,7 +58,7 @@ const OPERATORS: Record<string, { api: string; token: boolean; label: string; li
     api: "https://api.odpt.org/api/v4",
     token: true,
     label: "Tokyo Metro",
-    licence: "the Public Transportation Open Data Basic License",
+    licence: "ODPT Basic License",
   },
 };
 
@@ -94,6 +94,8 @@ interface OdptTimetable {
 interface RailwayData {
   id: string;
   operator: string;
+  /** When its responses were fetched (their cache files written), YYYY-MM-DD in Tokyo: ODPT's guideline asks apps to show it. */
+  fetched: string;
   railway: OdptRailway;
   stations: OdptStation[];
   timetables: OdptTimetable[];
@@ -101,9 +103,12 @@ interface RailwayData {
 
 const operatorOf = (railway: string) => railway.replace(/^odpt\.Railway:/, "").split(".")[0]!;
 
+const cacheFile = (railway: string, type: string) => path.join(CACHE_DIR, `${railway.replace(/^odpt\.Railway:/, "")}-${type}.json`);
+const TYPES = ["Railway", "Station", "StationTimetable"] as const;
+
 /** One ODPT query, cached; undefined when the operator needs a token and there is none, or ODPT returns nothing. */
-async function odpt<T>(railway: string, type: string, query: Record<string, string>, refresh: boolean): Promise<T[] | undefined> {
-  const file = path.join(CACHE_DIR, `${railway.replace(/^odpt\.Railway:/, "")}-${type}.json`);
+async function odpt<T>(railway: string, type: (typeof TYPES)[number], query: Record<string, string>, refresh: boolean): Promise<T[] | undefined> {
+  const file = cacheFile(railway, type);
   if (!refresh) {
     const cached = await readFile(file, "utf8").then((t) => JSON.parse(t) as T[], () => undefined);
     if (cached) return cached;
@@ -133,7 +138,10 @@ async function railwayData(id: string, refresh: boolean): Promise<RailwayData | 
   const timetables = await odpt<OdptTimetable>(id, "StationTimetable", { "odpt:railway": id }, refresh);
   const railway = railways?.[0];
   if (!railway || !stations || !timetables) return undefined;
-  return { id, operator: operatorOf(id), railway, stations, timetables };
+  // The oldest of the three, as a date in Tokyo ("sv-SE" writes YYYY-MM-DD).
+  const written = Math.min(...(await Promise.all(TYPES.map((t) => stat(cacheFile(id, t)).then((s) => s.mtimeMs)))));
+  const fetched = new Date(written).toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
+  return { id, operator: operatorOf(id), fetched, railway, stations, timetables };
 }
 
 // ---- our stations ----
@@ -333,7 +341,9 @@ async function buildRegion(region: string, stopLists: Record<string, string[]>, 
       out.order[line.id] = odptOrder(line, data, ourOf, ours);
 
       for (const d of data) {
-        out.sources[d.operator] = { label: OPERATORS[d.operator]!.label, licence: OPERATORS[d.operator]!.licence };
+        const was = out.sources[d.operator]?.fetched;
+        const fetched = was && was < d.fetched ? was : d.fetched;
+        out.sources[d.operator] = { label: OPERATORS[d.operator]!.label, licence: OPERATORS[d.operator]!.licence, fetched };
         for (const [odptId, ourId] of ourOf) {
           if (!d.railway["odpt:stationOrder"].some((e) => e["odpt:station"] === odptId)) continue;
           const { directions, from } = directionsAt(odptId, d, titleOf);
@@ -343,7 +353,8 @@ async function buildRegion(region: string, stopLists: Record<string, string[]>, 
           }
           const facts = (out.stations[ourId] ??= { lines: {} });
           const existing = facts.lines[line.id];
-          const code = d.stations.find((s) => s["owl:sameAs"] === odptId)?.["odpt:stationCode"];
+          // One style for every operator: Toei writes "S-01", Tokyo Metro "G02" (and "Mb05" on the Marunouchi branch).
+          const code = d.stations.find((s) => s["owl:sameAs"] === odptId)?.["odpt:stationCode"]?.replace(/^([A-Za-z]+)-?(\d+)$/, "$1-$2");
           if (existing) {
             // A junction on a branch railway too: its directions join the main line's.
             existing.directions.push(...directions);

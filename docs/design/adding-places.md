@@ -205,7 +205,9 @@ takes two steps, in order:
    can add or move them; `npm run stations` matches them to ODPT's again
    and fails on one it can't place. Tests pin the station counts of a
    few lines; a change there is a prompt to look, not necessarily a
-   fault. `npm run stations` needs `ODPT_TOKEN` for Tokyo Metro's times.
+   fault. `npm run stations` reads Tokyo Metro from its cache; a
+   `--refresh` or a fresh clone needs `ODPT_TOKEN`
+   (`docs/research/stations-odpt-state.md`).
 
 **Before the trip**, run `npm run stations -- --refresh` and commit:
 timetables change with each operator's revision, and ODPT's licence asks

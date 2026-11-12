@@ -210,7 +210,10 @@ function credit(station: StationCard): HTMLParagraphElement {
     const s = station.sources[id];
     const who = s ? `${s.label}, ${s.licence}` : id;
     const when = [...dates].sort().map(formatDate);
-    return when.length ? `${who}; timetable${when.length > 1 ? "s" : ""} from ${when.join(" and ")}` : who;
+    const fetched = s?.fetched ? `fetched ${formatDate(s.fetched)}` : undefined;
+    const timetable = when.length ? `timetable${when.length > 1 ? "s" : ""} from ${when.join(" and ")}` : undefined;
+    const about = [timetable, fetched].filter(Boolean).join(", ");
+    return about ? `${who}; ${about}` : who;
   });
   return note(
     `Train times: ${parts.join(". ")}, via the Public Transportation Open Data Center (ODPT). ODPT and the operators aren't responsible for their accuracy.`,

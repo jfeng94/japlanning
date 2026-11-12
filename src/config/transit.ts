@@ -25,7 +25,8 @@ export interface TransitLine {
   odpt?: string[];
   /**
    * Track the tiles name for another line only: that line's pieces inside the box ([w, s, e, n]) are this line's
-   * too. The map draws them dashed over the other line's colour.
+   * too. The map draws them dashed over the other line's colour. The Mita runs on the Namboku's to Meguro, the
+   * Fukutoshin on the Yurakucho's west of Kotake-mukaihara (Hikawadai).
    */
   shares?: { line: string; bbox: [number, number, number, number] }[];
   colour: string;
@@ -45,7 +46,7 @@ export const TRANSIT_LINES: TransitLine[] = [
   { id: "yurakucho", region: "tokyo", code: "Y", label: "Yurakucho Line", match: "東京メトロ有楽町線", route: "東京メトロ有楽町線", first: "和光市", odpt: ["odpt.Railway:TokyoMetro.Yurakucho"], colour: "#C1A470", source: METRO },
   { id: "hanzomon", region: "tokyo", code: "Z", label: "Hanzomon Line", match: "東京メトロ半蔵門線", route: "東京メトロ半蔵門線", first: "渋谷", odpt: ["odpt.Railway:TokyoMetro.Hanzomon"], colour: "#8F76D6", source: METRO },
   { id: "namboku", region: "tokyo", code: "N", label: "Namboku Line", match: "東京メトロ南北線", route: "東京メトロ南北線", first: "目黒", odpt: ["odpt.Railway:TokyoMetro.Namboku"], colour: "#00AC9B", source: METRO },
-  { id: "fukutoshin", region: "tokyo", code: "F", label: "Fukutoshin Line", match: "東京メトロ副都心線", route: "東京メトロ副都心線", first: "和光市", odpt: ["odpt.Railway:TokyoMetro.Fukutoshin"], colour: "#9C5E31", source: METRO },
+  { id: "fukutoshin", region: "tokyo", code: "F", label: "Fukutoshin Line", match: "東京メトロ副都心線", route: "東京メトロ副都心線", first: "和光市", odpt: ["odpt.Railway:TokyoMetro.Fukutoshin"], shares: [{ line: "yurakucho", bbox: [139.6, 35.742, 139.6795, 35.76] }], colour: "#9C5E31", source: METRO },
   { id: "asakusa", region: "tokyo", code: "A", label: "Asakusa Line", match: "都営地下鉄浅草線", route: "都営浅草線", first: "西馬込", odpt: ["odpt.Railway:Toei.Asakusa"], colour: "#E85298", source: OSM },
   { id: "mita", region: "tokyo", code: "I", label: "Mita Line", match: "都営地下鉄三田線", route: "都営三田線", first: "目黒", odpt: ["odpt.Railway:Toei.Mita"], shares: [{ line: "namboku", bbox: [139.71, 35.628, 139.737, 35.644] }], colour: "#0079C2", source: OSM },
   { id: "shinjuku", region: "tokyo", code: "S", label: "Shinjuku Line", match: "都営地下鉄新宿線", route: "都営新宿線", first: "新宿", odpt: ["odpt.Railway:Toei.Shinjuku"], colour: "#6CBB5A", source: OSM },

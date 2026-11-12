@@ -2,8 +2,8 @@
 
 Status: **accepted** (2026-11-10), narrowed: see "Decisions". Part 1
 done. Station pins wired, with Toei's first and last trains and arrows
-along a line (2026-11-10); Tokyo Metro waits on the ODPT token, then
-amenities and Kyoto. Pick-up note: `docs/research/stations-odpt-state.md`.
+along a line (2026-11-10), and Tokyo Metro's (2026-11-12). Amenities and
+Kyoto come next. State of play: `docs/research/stations-odpt-state.md`.
 
 ## Decisions (Jerry, 2026-11-10)
 
@@ -499,7 +499,53 @@ the repo's issues page as the app's contact.
 
 **Deferred and decided** (Jerry, 2026-11-10):
 - **ODPT's guideline items wait until Tokyo Metro's data is used:** the
-  fetch date on the card and the contact address.
+  fetch date on the card and the contact address. Done 2026-11-12
+  (below).
 - **Toei's colours stay ours;** they're from Toei's site. ODPT's
   Railway data lists other values
   (`docs/research/stations-odpt-state.md`).
+
+### Results: Tokyo Metro's times (2026-11-12)
+
+Jerry's ODPT token arrived. `npm run stations` fetched Tokyo Metro's ten
+railways (the Marunouchi branch is its own) and matched every station of
+ours on its nine lines. All 13 Tokyo lines now have codes and first and
+last trains.
+
+**Three fixes it took:**
+- **麴町.** Tokyo Metro writes Kojimachi with the older 麴, OpenStreetMap
+  with 麹. `normaliseStation` folds the two, as it does ヶ and ケ.
+- **Hikawadai** (at the map's north-west edge) is on the Fukutoshin as
+  well as the Yurakucho: the two share track west of Kotake-mukaihara,
+  which the tiles name for the Yurakucho only. The Fukutoshin's config
+  claims it (`shares`), so it's drawn dashed there and Hikawadai gets
+  both lines.
+- **One style of station code.** Toei writes "S-01", Tokyo Metro "G02".
+  The build writes both as "G-02" (the Marunouchi branch is "Mb-05").
+
+**The Marunouchi branch** now joins the main line at Nakano-sakaue:
+Honancho → Nakano-fujimicho → Nakano-shimbashi → Nakano-sakaue, then on
+along the main line. Nakano-sakaue's card lists three directions (to
+Ikebukuro, Ogikubo and Honancho).
+
+**Lines that run on to other railways** (Hanzomon, Fukutoshin, Namboku
+and others) show only the directions Tokyo Metro's own timetables list
+at the station, named by our railway's end. A last train's "to …" note
+appears only for a stop on our railway.
+
+**ODPT's guideline, met for both operators:**
+- **The fetch date.** The build records each operator's date (the oldest
+  of its cached responses, Tokyo time) in `sources`. The card's credit
+  reads, for example, "Tokyo Metro, ODPT Basic License; timetable from
+  19 Sep 2026, fetched 12 Nov 2026".
+- **The contact** (Jerry, 2026-11-12): his email, in Settings (a mail
+  link) and the README, in place of the issues page.
+- **The colours.** ODPT's `odpt:color` for every Metro line matches
+  ours exactly.
+- **The licence's name** is shortened to "ODPT Basic License" on the
+  card.
+
+**Checked in the pane at 375 px:** Shinjuku (the Marunouchi row now has
+times), Omotesando (three lines), Nakano-shimbashi stepping to
+Nakano-sakaue and on to Nishi-shinjuku, Hikawadai with both lines, and
+the Settings credit.

@@ -29,14 +29,16 @@ export type TransitData = FeatureCollection<MultiLineString | Point, TransitLine
 
 /**
  * A station name as stop lists and tiles both write it, for matching the
- * two in `npm run transit`: no 〈alias〉, (note) or 駅, and one spelling of
- * the small ケ (市ヶ谷 and 市ケ谷 are one station).
+ * two in `npm run transit` and ours with ODPT's in `npm run stations`: no
+ * 〈alias〉, (note) or 駅, one spelling of the small ケ (市ヶ谷 and 市ケ谷
+ * are one station), and of 麹 (Tokyo Metro writes 麴町).
  */
 export function normaliseStation(name: string): string {
   return name
     .replace(/〈[^〉]*〉|（[^）]*）|\([^)]*\)/g, "")
     .replace(/駅$/, "")
     .replace(/[ヶヵ]/g, "ケ")
+    .replace(/麴/g, "麹")
     .replace(/\s+/g, "");
 }
 
@@ -88,8 +90,11 @@ export function findStation(data: TransitData | undefined, selection: string): {
  * /transit/<region>.stations.json.
  */
 export interface StationsFile {
-  /** Who the train times come from, by ODPT operator ("Toei"), for the card's credit. */
-  sources: Record<string, { label: string; licence: string }>;
+  /**
+   * Who the train times come from, by ODPT operator ("Toei"), for the card's credit, with when they were fetched
+   * from ODPT (YYYY-MM-DD; the oldest of the operator's railways), which ODPT's guideline asks apps to show.
+   */
+  sources: Record<string, { label: string; licence: string; fetched?: string }>;
   /**
    * Each line's stations in order, by station id, for the card's arrows:
    * Next steps away from station 01. The main line comes first; a branch

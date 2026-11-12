@@ -24,9 +24,10 @@ GitHub Actions.
 - **Map data** © OpenStreetMap contributors, via Protomaps. Area shapes
   are processed from Japan's 2020 census boundaries (e-Stat).
 - **Train times and station codes** come from the Public Transportation
-  Open Data Center (ODPT); Toei's under CC BY 4.0. ODPT and the operators
-  aren't responsible for their accuracy. Questions about this app go to
-  its issues page, not to the train companies.
+  Open Data Center (ODPT); Toei's under CC BY 4.0, Tokyo Metro's under the
+  ODPT Basic License. ODPT and the operators aren't responsible for their
+  accuracy. Questions about this app go to jfeng94@gmail.com, not to the
+  train companies.
 - **Icons and pin artwork** are images found online, sometimes lightly
   retouched. They are not the maintainer's own work, and the project
   claims no rights to them. It is a personal, non-commercial project; ask

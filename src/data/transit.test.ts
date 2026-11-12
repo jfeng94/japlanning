@@ -115,11 +115,12 @@ describe("stations, checked against the lines' own counts (update on purpose)", 
 });
 
 describe("normaliseStation", () => {
-  it("drops aliases, notes and 駅, and spells the small ケ one way", () => {
+  it("drops aliases, notes and 駅, and spells the small ケ and 麹 one way", () => {
     expect(normaliseStation("明治神宮前〈原宿〉")).toBe("明治神宮前");
     expect(normaliseStation("押上（スカイツリー前）")).toBe("押上");
     expect(normaliseStation("渋谷駅")).toBe("渋谷");
     expect(normaliseStation("市ヶ谷")).toBe(normaliseStation("市ケ谷"));
+    expect(normaliseStation("麴町")).toBe(normaliseStation("麹町"));
   });
 });
 
@@ -162,6 +163,7 @@ describe.each(TRANSIT_REGIONS.map((r) => [r]))("public/transit/%s.stations.json 
       for (const [lineId, lf] of Object.entries(facts.lines)) {
         expect(stations.get(id)!.lines, `${id}: ${lineId}`).toContain(lineId);
         expect(file.sources[lf.source], `${id}: ${lf.source}`).toBeDefined();
+        expect(file.sources[lf.source]!.fetched, `${id}: ${lf.source}`).toMatch(/^\d{4}-\d\d-\d\d$/);
         expect(lf.from, `${id}: ${lineId}`).toMatch(/^\d{4}-\d\d-\d\d$/);
         expect(lf.directions.length, `${id}: ${lineId}`).toBeGreaterThan(0);
         for (const d of lf.directions) {
@@ -177,20 +179,37 @@ describe.each(TRANSIT_REGIONS.map((r) => [r]))("public/transit/%s.stations.json 
   });
 });
 
-describe("Toei's stations (public in ODPT)", () => {
+describe("stations on ODPT's lines (Toei's public, Tokyo Metro's with a token)", () => {
   const geo = built("tokyo");
   const file = builtStations("tokyo");
-  const toei = new Set(TRANSIT_LINES.filter((l) => l.odpt?.some((r) => r.startsWith("odpt.Railway:Toei."))).map((l) => l.id));
+  const inOdpt = new Set(TRANSIT_LINES.filter((l) => l.odpt?.length).map((l) => l.id));
 
   it("all have their code and first and last trains", () => {
+    expect(inOdpt.size).toBe(13);
     for (const f of geo.features) {
       if (f.properties.kind !== "station") continue;
-      for (const lineId of f.properties.lines.filter((x) => toei.has(x))) {
+      for (const lineId of f.properties.lines.filter((x) => inOdpt.has(x))) {
         const lf = file.stations[f.properties.id]?.lines[lineId];
         expect(lf, `${f.properties.id}: ${lineId}`).toBeDefined();
-        expect(lf!.code, `${f.properties.id}: ${lineId}`).toMatch(/^[A-Z]-\d\d$/);
+        // One style for both operators; the Marunouchi branch is "Mb".
+        expect(lf!.code, `${f.properties.id}: ${lineId}`).toMatch(/^[A-Z]b?-\d\d$/);
       }
     }
+  });
+
+  it("credit each operator with its licence and the day it was fetched", () => {
+    expect(file.sources["Toei"]).toMatchObject({ licence: "CC BY 4.0" });
+    expect(file.sources["TokyoMetro"]).toMatchObject({ label: "Tokyo Metro", licence: "ODPT Basic License" });
+  });
+
+  it("match Tokyo Metro's spellings (麴町) and its branch", () => {
+    expect(file.stations["tokyo:麹町"]!.lines["yurakucho"]!.code).toBe("Y-15");
+    expect(file.stations["tokyo:中野新橋"]!.lines["marunouchi"]!.code).toBe("Mb-05");
+    expect(file.stations["tokyo:中野坂上"]!.lines["marunouchi"]!.directions.map((d) => d.label)).toEqual([
+      "to Ikebukuro",
+      "to Ogikubo",
+      "to Honancho",
+    ]);
   });
 
   it("name directions as a visitor reads them, and say where a short last train stops", () => {
@@ -208,6 +227,10 @@ describe("shared track and renamed platforms", () => {
   it("puts the Mita on the Namboku's track to Meguro", () => {
     expect(stations.get("tokyo:目黒")?.lines).toEqual(["namboku", "mita"]);
     expect(stations.get("tokyo:白金台")?.lines).toEqual(["namboku", "mita"]);
+  });
+
+  it("puts the Fukutoshin on the Yurakucho's track west of Kotake-mukaihara", () => {
+    expect(stations.get("tokyo:氷川台")?.lines).toEqual(["yurakucho", "fukutoshin"]);
   });
 
   it("makes the Shinjuku Line's 新線新宿 platforms part of Shinjuku", () => {
@@ -228,6 +251,11 @@ describe("lineNeighbours (the station card's arrows)", () => {
     expect(lineNeighbours(order["ginza"], "tokyo:表参道")).toEqual({ prev: "tokyo:渋谷", next: "tokyo:外苑前" });
     expect(lineNeighbours(order["ginza"], "tokyo:渋谷")).toEqual({ next: "tokyo:表参道" });
     expect(lineNeighbours(order["asakusa"], "tokyo:西馬込").prev).toBeUndefined();
+  });
+
+  it("take the Marunouchi branch to its junction at Nakano-sakaue, where the main line wins", () => {
+    expect(lineNeighbours(order["marunouchi"], "tokyo:中野新橋")).toEqual({ prev: "tokyo:中野富士見町", next: "tokyo:中野坂上" });
+    expect(lineNeighbours(order["marunouchi"], "tokyo:中野坂上")).toEqual({ prev: "tokyo:新中野", next: "tokyo:西新宿" });
   });
 
   it("go round the Oedo's loop at Tochomae and on along its tail", () => {

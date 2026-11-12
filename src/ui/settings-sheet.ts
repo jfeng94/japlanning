@@ -182,6 +182,9 @@ export function renderSettingsSheet(body: HTMLElement, handlers: SettingsSheetHa
   body.append(actions, credits());
 }
 
+/** The app's contact, which ODPT's guideline asks for (Jerry, 2026-11-12). Public, like everything in the app. */
+const CONTACT = "jfeng94@gmail.com";
+
 /** Where the map, the area shapes and the train times come from; e-Stat's terms ask for the source and a note that it was processed. */
 function credits(): HTMLParagraphElement {
   const p = document.createElement("p");
@@ -189,8 +192,11 @@ function credits(): HTMLParagraphElement {
   const link = (text: string, href: string) => {
     const a = document.createElement("a");
     a.href = href;
-    a.target = "_blank";
-    a.rel = "noopener";
+    // A mail link opens the mail app; a page opens beside the app.
+    if (!href.startsWith("mailto:")) {
+      a.target = "_blank";
+      a.rel = "noopener";
+    }
     a.textContent = text;
     return a;
   };
@@ -201,9 +207,9 @@ function credits(): HTMLParagraphElement {
     link("e-Stat", "https://www.e-stat.go.jp/"),
     ". Train times from the ",
     link("Public Transportation Open Data Center", "https://developer.odpt.org/"),
-    " (Toei's under CC BY 4.0); it and the operators aren't responsible for their accuracy. Questions about this app go to its ",
-    // ODPT's licence asks apps to give a contact of their own, so questions don't reach the train companies.
-    link("issues page", "https://github.com/jfeng94/japlanning/issues"),
+    " (Toei's under CC BY 4.0, Tokyo Metro's under the ODPT Basic License); it and the operators aren't responsible for their accuracy. Questions about this app go to ",
+    // ODPT's guideline asks apps to give a contact address of their own, so questions don't reach the train companies.
+    link(CONTACT, `mailto:${CONTACT}`),
     ", not to the train companies.",
   );
   return p;
