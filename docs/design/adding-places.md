@@ -49,6 +49,18 @@ if something is ambiguous enough to stop the research.
   own cells and badges, and open questions go to the follow-up list
   (`docs/research/`) or the findings. A test fails on research wording
   in a note or an Hours cell. Nothing private, ever.
+- **History** (2026-11-12), for cultural sites: shrines, temples,
+  castles, historic gardens and districts, and old shops whose story is
+  the draw. Three or four sentences in its own `History` column, meant
+  to make someone want to go: who founded or built it and when, what
+  happened to it, and one thing you can still see there that the story
+  explains (the 1589 gate, the donor names on the torii). Dates belong
+  here, unlike in Notes; tips, hours and prices stay in Notes. Every fact
+  comes from a source, the place's own history page (由緒, 沿革) first,
+  and the findings show the draft for Jerry's review. Blank for
+  everywhere else. The card shows it as a "History" section at full
+  height, first after the essentials; search matches it, and the same
+  test keeps research wording out of it.
 - **Icon** by Kind (coffee, tea, bar) unless Jerry wants a special one.
 - **Key** only when Jerry says so, or the brand itself calls a branch
   its flagship.
@@ -62,7 +74,7 @@ findings say so.
 
 One table, one row per candidate: name and branch, region and
 area, coordinates, hours and whether verified, the facets found,
-a one-line note, source links, a confidence (high: official source for
+a one-line note, the History draft for a cultural site, source links, a confidence (high: official source for
 identity, position and hours; medium: one of those from a third party;
 low: identity uncertain), and open questions. Below it: anything the
 config lacks (a new Specialty value, a region bounding box), since those

@@ -43,6 +43,9 @@ export interface DetailFields {
 
 const RATING_COLUMNS = ["Google rating", "Google reviews", "Rated on"];
 
+/** A cultural site's story, its own section at full height (docs/design/adding-places.md, 2026-11-12). */
+export const HISTORY_COLUMN = "History";
+
 export function detailFields(place: Place, layer: LayerConfig | undefined): DetailFields {
   const ratingValue = place.extra["Google rating"];
   const rating: DetailRating | undefined = ratingValue
@@ -66,6 +69,10 @@ export function detailFields(place: Place, layer: LayerConfig | undefined): Deta
 
   const details: DetailSection[] = [];
 
+  // History first at full height: the story that makes the place worth the trip, below the street-corner facts.
+  const history = place.extra[HISTORY_COLUMN];
+  if (history) details.push({ title: "History", rows: [{ label: "", value: history }] });
+
   // Branch first, then only the facets this place has a value for; a blank is nothing to read, so it
   // says nothing (2026-11-05). Verified hours end the list with the date they were read, to judge freshness.
   const rows: DetailRow[] = place.branch ? [{ label: "Branch", value: place.branch }] : [];
@@ -76,7 +83,7 @@ export function detailFields(place: Place, layer: LayerConfig | undefined): Deta
   if (place.lastVerified) rows.push({ label: "Hours checked", value: place.lastVerified });
   if (rows.length > 0) details.push({ title: "Details", rows });
 
-  const extra = Object.entries(place.extra).filter(([k]) => !RATING_COLUMNS.includes(k));
+  const extra = Object.entries(place.extra).filter(([k]) => !RATING_COLUMNS.includes(k) && k !== HISTORY_COLUMN);
   if (extra.length > 0) {
     details.push({ title: "Also in the sheet", rows: extra.map(([label, value]) => ({ label, value })) });
   }

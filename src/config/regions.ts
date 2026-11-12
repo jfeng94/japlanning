@@ -141,6 +141,7 @@ export const regions: RegionConfig[] = [
       { label: "Arashiyama", ward: "右京区", adjacent: [] },
       { label: "Demachiyanagi", ward: "左京区", adjacent: ["Hyakumanben", "Shimogamo"] },
       { label: "Fushimi", ward: "伏見区", adjacent: [] },
+      { label: "Fushimi Inari", ward: "伏見区", adjacent: [] },
       { label: "Gion", ward: "東山区", adjacent: ["Kawaramachi", "Kiyomizu", "Okazaki"] },
       { label: "Gojo", ward: "下京区", adjacent: ["Karasuma", "Kawaramachi", "Kiyomizu", "Kyoto Station"] },
       { label: "Hyakumanben", ward: "左京区", adjacent: ["Demachiyanagi", "Okazaki"] },

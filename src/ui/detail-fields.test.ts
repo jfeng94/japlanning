@@ -35,6 +35,13 @@ describe("detailFields", () => {
     expect(f.details[1]!.rows).toEqual([{ label: "Floor", value: "2F" }]);
   });
 
+  it("gives History its own section first, as a paragraph, out of the extras", () => {
+    const f = detailFields(place({ name: "Shrine", facets: { Format: ["Café"] }, extra: { History: "Founded in 711.", Floor: "1F" } }), layer);
+    expect(f.details.map((s) => s.title)).toEqual(["History", "Details", "Also in the sheet"]);
+    expect(f.details[0]!.rows).toEqual([{ label: "", value: "Founded in 711." }]);
+    expect(f.details[2]!.rows).toEqual([{ label: "Floor", value: "1F" }]);
+  });
+
   it("badges hours on the Hours row unless they were verified (docs/proposals/content-pass.md)", () => {
     const unverified = detailFields(place({ name: "x", hours: "8:00–18:00" }), layer);
     expect(unverified.essentials).toEqual([{ label: "Hours", value: "8:00–18:00", flag: "unverified" }]);

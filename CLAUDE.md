@@ -165,7 +165,10 @@ Games), and a **Type** facet saying what the place is ("Kakigori",
 (Ramen, Katsu, Donburi… 17 of them, 2026-11-10) come from its Type
 instead of a Kind column: `FOOD_KINDS` in `src/config/layers.ts` groups
 the types under each kind (`docs/proposals/food-kinds.md`). Places still
-waiting for fitting pin art use the `question` icon. The list's research
+waiting for fitting pin art use the `question` icon. Cultural sites
+(shrines, temples, castles, old shops) also get a **History** column,
+three or four sourced sentences of story shown as their own card
+section (2026-11-12, "History" in `docs/design/adding-places.md`). The list's research
 gaps are in `docs/research/audit-queue.csv`.
 
 **Auditing** (2026-11-10, `docs/design/auditing-places.md`): the goal is

@@ -38,6 +38,7 @@ The fields have their own gaps. Of 436 places:
 | What | Where | The card shows |
 | --- | --- | --- |
 | What it is, why go, what to order; practical tips (cash only, queues, booking, seats) | **Notes**, 2–3 sentences, present tense, no hedging | The notes |
+| A cultural site's story: founding, what happened to it, what you can still see (2026-11-12) | **History**, 3–4 sentences, sourced | A "History" section at full height |
 | Hours from the shop's own site or Instagram | **Hours**, **Hours (OSM)**, **Last verified** = the date read | Hours, no badge |
 | Hours from anywhere else (Google, Tabelog, a listing, an article) | **Hours**, **Hours (OSM)**; Last verified blank | Hours with **unverified** |
 | No hours found | Hours blank | "Hours unknown" |

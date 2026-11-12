@@ -24,7 +24,7 @@ describe("the configured areas", () => {
     // A merge across a ward boundary sits under its first-named area's ward: Kuramae (台東区) + Honjo (墨田区).
     expect(tokyo.sections.find((s) => s.label === "East")!.chips.map((c) => c.label)).toContain("Kuramae");
     const kyoto = areaIndex(regionById("kyoto"));
-    expect(kyoto.chips).toHaveLength(28);
+    expect(kyoto.chips).toHaveLength(29);
     expect(kyoto.sections.map((s) => s.label)).toEqual(["Downtown", "Higashiyama", "North", "Sakyo", "West", "South", "Uji"]);
     for (const flat of ["nara", "hakone"] as const) {
       const ix = areaIndex(regionById(flat));
