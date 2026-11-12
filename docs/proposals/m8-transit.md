@@ -292,7 +292,7 @@ taps pick areas there. The station goes in the link, as places do.
 
 | Operator | Train times and codes | Amenities |
 | --- | --- | --- |
-| Tokyo Metro (9 lines) | ODPT, the national public-transport open-data centre: station timetables (first and last trains derived from them) and station codes. Its own basic licence, with attribution | ODPT's station facilities (barrier-free), checked against tokyometro.jp's station pages, which also list coin lockers |
+| Tokyo Metro (9 lines) | ODPT, the national public-transport open-data centre: station timetables (first and last trains derived from them) and station codes. Its own basic licence, with attribution | ODPT's station facilities (barrier-free), checked against tokyometro.jp's station pages, which also list coin lockers. *ODPT has no facilities after all (2026-11-12): see `docs/proposals/station-amenities.md`.* |
 | Toei (4 lines) | ODPT, CC BY 4.0 | kotsu.metro.tokyo.jp's station pages (elevators, escalators, accessible toilets) |
 | Kyoto City Subway (2 lines) | Not in ODPT (only Kyoto's buses are). By hand from the city's pages, 31 stations | By hand, the same pages |
 

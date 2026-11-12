@@ -128,7 +128,10 @@ by `npm run transit`.
     date and the day it was fetched, and says ODPT isn't responsible
     for accuracy. Settings gives Jerry's email as the app's contact,
     as ODPT's guideline asks.
-  - Amenities (elevators, lockers, toilets, escalators) come next.
+  - Amenities (elevators, lockers, toilets, escalators) come next,
+    proposed in `docs/proposals/station-amenities.md` (2026-11-12):
+    ODPT has none, so Toei's come from Tokyo's open data and Tokyo
+    Metro's from its website and Metro Commerce's locker list.
   - **State of play:** `docs/research/stations-odpt-state.md` (how to
     rerun, what ODPT's rules ask, what's next).
 - **The card's arrows step along one line.**

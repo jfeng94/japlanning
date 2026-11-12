@@ -139,18 +139,13 @@ these bind only Metro, but the app does them for both.
 
 ## Next: amenities and Kyoto
 
-- **Tokyo Metro amenities.** ODPT's `odpt:StationFacility` (token only)
-  should list barrier-free facilities: elevators, escalators, toilets
-  and accessible toilets. Check the real shape when it's fetched.
-  - Coin lockers aren't in ODPT; tokyometro.jp's station pages list
-    them.
-- **Toei amenities.** `StationFacility` isn't public for Toei (404 on
-  api-public). Its station pages on kotsu.metro.tokyo.jp list elevators,
-  escalators and accessible toilets; lockers are to be checked.
+- **Amenities** are proposed in `docs/proposals/station-amenities.md`
+  (2026-11-12). ODPT turned out to have no station facilities at all:
+  `odpt:StationFacility` isn't in its current API, with or without the
+  token. Toei's come from Tokyo's open data, Tokyo Metro's from its
+  website (a decision for Jerry), lockers from Metro Commerce's list.
 - **Kyoto.** Times and amenities by hand from Kyoto City Subway's
   station pages: 31 stations, 2 lines.
-- **The card** needs an amenities row: the four, each yes, no or
-  unknown. Design it with Jerry.
 
 ## Testing tips (the hidden browser pane)
 
