@@ -11,9 +11,10 @@ import { directionsUrl } from "./links.ts";
  * stops there gets a row: its station code, and the first and last trains
  * each way (`npm run stations`). Stations aren't places: they never join
  * the list or search and have no bookmark. The footer's arrows step to the
- * next station along one line: its badge in the card's first line sits
- * on a box tinted in its colour (on a one-line station too), and tapping
- * another badge, or another line's row, switches (Jerry, 2026-11-10).
+ * next station along one line. The header shows a badge per line where
+ * a place's card has its bookmark; the followed line's sits on a box
+ * tinted in its colour (on a one-line station too), and tapping another
+ * badge, or another line's row, switches (Jerry, 2026-11-10 and 11).
  */
 export interface StationCard {
   props: TransitStationProps;
@@ -34,27 +35,34 @@ export interface StationCardHandlers {
   onFollow: (lineId: string) => void;
 }
 
-/** The panel header: the station's marker and name on the left; Directions and the panel's chevron on the right. */
-export function renderStationStrip(strip: HTMLElement, station: StationCard, toggle: HTMLElement): void {
+/** The panel header: a badge per line and the English name on the left; Directions and the panel's chevron on the right. */
+export function renderStationStrip(strip: HTMLElement, station: StationCard, toggle: HTMLElement, h: StationCardHandlers): void {
   strip.replaceChildren();
-  const mark = document.createElement("span");
-  mark.className = "station-mark";
-  mark.setAttribute("aria-hidden", "true");
+  // The lines that stop here; the one the arrows follow sits on a box tinted in its colour.
+  const picks = document.createElement("span");
+  picks.className = "station-picks";
+  for (const line of station.lines) {
+    const pick = document.createElement("button");
+    pick.type = "button";
+    pick.className = "station-pick";
+    pick.style.setProperty("--line-colour", line.colour);
+    const on = line.id === station.following;
+    pick.setAttribute("aria-pressed", String(on));
+    pick.setAttribute("aria-label", on ? `${line.label}: the arrows step along it` : `Step along the ${line.label} with the arrows`);
+    pick.title = line.label;
+    pick.append(badgeFor(line));
+    // The followed line stays followed: a tap on it (a one-line station's only badge) changes nothing.
+    if (!on) pick.addEventListener("click", () => h.onFollow(line.id));
+    picks.append(pick);
+  }
 
   const title = document.createElement("h2");
   title.className = "strip-title";
-  title.append(station.props.en);
-  if (station.props.name !== station.props.en) {
-    const ja = document.createElement("span");
-    ja.className = "strip-title-ja";
-    ja.lang = "ja";
-    ja.textContent = station.props.name;
-    title.append(" ", ja);
-  }
+  title.textContent = station.props.en;
 
   const lead = document.createElement("div");
   lead.className = "strip-lead";
-  lead.append(mark, title);
+  lead.append(picks, title);
 
   const actions = document.createElement("div");
   actions.className = "strip-actions";
@@ -65,26 +73,18 @@ export function renderStationStrip(strip: HTMLElement, station: StationCard, tog
   strip.append(lead, actions);
 }
 
-/** The card's body: what it is, Show on map, a row per line with its times, then the credit or what isn't in yet. */
+/** The card's body: what it is and its Japanese name, Show on map, a row per line with its times, then the credit or what isn't in yet. */
 export function renderStationCard(body: HTMLElement, station: StationCard, h: StationCardHandlers): void {
   body.replaceChildren();
-  // "Subway station", then a badge per line; the one the arrows follow sits on a box tinted in its colour.
+  // "Subway station · 門前仲町": the header has room only for the English name.
   const meta = document.createElement("p");
-  meta.className = "detail-meta station-meta";
+  meta.className = "detail-meta";
   meta.append("Subway station");
-  for (const line of station.lines) {
-    const pick = document.createElement("button");
-    pick.type = "button";
-    pick.className = "station-meta-line";
-    pick.style.setProperty("--line-colour", line.colour);
-    const on = line.id === station.following;
-    pick.setAttribute("aria-pressed", String(on));
-    pick.setAttribute("aria-label", on ? `${line.label}: the arrows step along it` : `Step along the ${line.label} with the arrows`);
-    pick.title = line.label;
-    pick.append(badgeFor(line));
-    // The followed line stays followed: a tap on it (a one-line station's only badge) changes nothing.
-    if (!on) pick.addEventListener("click", () => h.onFollow(line.id));
-    meta.append(pick);
+  if (station.props.name !== station.props.en) {
+    const ja = document.createElement("span");
+    ja.lang = "ja";
+    ja.textContent = station.props.name;
+    meta.append(" · ", ja);
   }
 
   const actions = document.createElement("div");
@@ -97,7 +97,7 @@ export function renderStationCard(body: HTMLElement, station: StationCard, h: St
     const facts = station.facts?.lines[line.id];
     const li = document.createElement("li");
     li.className = "station-line";
-    // A row's head picks its line too: a bigger target than the badge above, marked only there.
+    // A row's head picks its line too: a bigger target than the header's badges, marked only there.
     const head = document.createElement("button");
     head.type = "button";
     head.className = "station-line-head";

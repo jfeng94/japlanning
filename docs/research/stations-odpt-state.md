@@ -20,9 +20,10 @@ revised" on.
     and holidays;
   - a credit naming Toei, CC BY 4.0 and ODPT, with ODPT's disclaimer.
 - **The arrows** step to the next station along one line.
-  - The card's first line reads "Subway station" and a badge per line.
+  - The card's header shows a badge per line before the English name.
     The followed line's badge sits on a box tinted in its colour, on a
-    one-line station too.
+    one-line station too. The body's first line reads "Subway station ·
+    門前仲町".
   - Tapping another badge, or another line's row, switches.
   - On the map, the station's ring takes that line's colour.
 - **Tokyo Metro's lines** (9) say "Train times not in yet". Their arrows

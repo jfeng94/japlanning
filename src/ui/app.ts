@@ -1046,14 +1046,15 @@ export function mountApp(root: HTMLElement): AppHandle {
       prevButton.setAttribute("aria-label", "Previous place");
       nextButton.setAttribute("aria-label", "Next place");
     } else if (station) {
-      renderStationCard(detailBody, station, {
+      const handlers = {
         onShowOnMap: () => present({ lng: station.at[0], lat: station.at[1] }),
-        onFollow: (lineId) => {
+        onFollow: (lineId: string) => {
           followLine = lineId;
           render();
         },
-      });
-      renderStationStrip(detailStrip, station, detailToggle);
+      };
+      renderStationCard(detailBody, station, handlers);
+      renderStationStrip(detailStrip, station, detailToggle, handlers);
       // The arrows step along the line the card follows, naming the station they go to.
       const { prev, next } = stationSteps(station);
       const nameOf = (id?: string) => (id ? findStation(transitData, STATION_SELECTION + id)?.props.en : undefined);

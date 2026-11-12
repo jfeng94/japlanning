@@ -477,6 +477,11 @@ the repo's issues page as the app's contact.
   line's row, which no longer carries a highlight of its own.
 - **On the map,** the open station's ring takes the colour of the line
   being followed, so stepping shows which line it is.
+- **Moved to the header** (Jerry, 2026-11-11): the badges replace the
+  white dot before the station's name, so the header says which lines
+  stop there. The body's first line keeps "Subway station" and takes
+  the Japanese name from the header, which had too little room:
+  "Subway station · 門前仲町".
 
 **Deferred and decided** (Jerry, 2026-11-10):
 - **ODPT's guideline items wait until Tokyo Metro's data is used:** the

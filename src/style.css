@@ -1041,22 +1041,6 @@ button {
 }
 
 /* The station card (src/ui/station-card.ts): its marker in the header, as the map draws it, and one row per line. */
-.station-mark {
-  flex: none;
-  width: 0.9rem;
-  height: 0.9rem;
-  margin: 0 0.3rem 0 0.15rem;
-  border-radius: 50%;
-  background: #fff;
-  border: 2px solid #3b3f45;
-}
-
-.strip-title-ja {
-  color: var(--muted);
-  font-weight: 400;
-  font-size: 0.9rem;
-}
-
 .station-lines {
   list-style: none;
   margin: 0;
@@ -1067,18 +1051,15 @@ button {
 }
 
 /* "Subway station" and a badge per line; the line the arrows follow sits on a box tinted in its colour. */
-.station-meta {
+/* A station header's badges, where a place's card has its bookmark: the circles line up with the body's text. */
+.station-picks {
+  flex: none;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.2rem;
+  margin-left: -0.22rem;
 }
 
-.station-meta > :first-child {
-  margin-left: 0.35rem;
-}
-
-.station-meta-line {
+.station-pick {
   display: inline-flex;
   padding: 0.22rem;
   border: 0;
@@ -1086,7 +1067,7 @@ button {
   background: none;
 }
 
-.station-meta-line[aria-pressed="true"] {
+.station-pick[aria-pressed="true"] {
   background: color-mix(in srgb, var(--line-colour) 22%, transparent);
 }
 
