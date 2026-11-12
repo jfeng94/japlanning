@@ -168,7 +168,9 @@ the types under each kind (`docs/proposals/food-kinds.md`). Places still
 waiting for fitting pin art use the `question` icon. Cultural sites
 (shrines, temples, castles, old shops) also get a **History** column,
 three or four sourced sentences of story shown as their own card
-section (2026-11-12, "History" in `docs/design/adding-places.md`). The list's research
+section (2026-11-12, "History" in `docs/design/adding-places.md`),
+and any place can carry **Events**, dated happenings around the trip
+(a market, an exhibition's last day) shown after it. The list's research
 gaps are in `docs/research/audit-queue.csv`.
 
 **Auditing** (2026-11-10, `docs/design/auditing-places.md`): the goal is

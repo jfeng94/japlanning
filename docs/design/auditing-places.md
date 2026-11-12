@@ -137,3 +137,4 @@ and git history keeps the row.
 About a week before leaving, a last pass over the places that matter
 most: the Key branches and any Jerry names. It re-reads their hours, so
 the Last verified dates are fresh, and checks that nothing has closed.
+It also re-reads every Events cell, since dated events go stale.

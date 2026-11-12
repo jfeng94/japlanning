@@ -61,6 +61,14 @@ if something is ambiguous enough to stop the research.
   everywhere else. The card shows it as a "History" section at full
   height, first after the essentials; search matches it, and the same
   test keeps research wording out of it.
+- **Events** (2026-11-12): dated happenings around the trip that are
+  worth planning for, in its own `Events` column: a market, a festival,
+  an exhibition's last day, an illumination, a part of the place closed
+  on certain days. Each starts with its date ("Dec 21: …", "To Dec 6:
+  …"). Regular hours and closing days stay in Hours; this is for what's
+  special. The card shows it as an "Events" section after History.
+  Refresh it in the pass before the trip ("Before the trip" in
+  `auditing-places.md`), since events go stale.
 - **Icon** by Kind (coffee, tea, bar) unless Jerry wants a special one.
 - **Key** only when Jerry says so, or the brand itself calls a branch
   its flagship.

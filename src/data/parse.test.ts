@@ -49,10 +49,11 @@ describe.each(repoData.map((d) => [d.layer.id, d] as const))("%s data (the repo 
     expect(outside).toEqual([]);
   });
 
-  it("notes, history and hours read as a recommendation, not a research log (docs/proposals/content-pass.md)", () => {
+  it("notes, history, events and hours read as a recommendation, not a research log (docs/proposals/content-pass.md)", () => {
     const LOG = /\bUpdate\b|unverif|unconfirm|Tabelog says|\bper (Tabelog|Google|Retty|Time Out|the line|the list)\b|pinned|\bverify\b|according to|reportedly|not found|could not|couldn't|\(sources?/i;
     const bad = result.places.flatMap((p) => [
       ...(p.notes && LOG.test(p.notes) ? [`${p.id} notes: "${p.notes.match(LOG)![0]}"`] : []),
+      ...(p.extra["Events"] && LOG.test(p.extra["Events"]) ? [`${p.id} events: "${p.extra["Events"].match(LOG)![0]}"`] : []),
       ...(p.extra["History"] && LOG.test(p.extra["History"]) ? [`${p.id} history: "${p.extra["History"].match(LOG)![0]}"`] : []),
       ...(p.hours && LOG.test(p.hours) ? [`${p.id} hours: "${p.hours.match(LOG)![0]}"`] : []),
     ]);

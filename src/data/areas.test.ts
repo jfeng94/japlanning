@@ -7,24 +7,24 @@ describe("the configured areas", () => {
     expect(areaProblems(region)).toEqual([]);
   });
 
-  it("Tokyo: 81 raw areas, 68 chips under eight headings; Kyoto: 28 chips under seven; Nara and Hakone: flat lists", () => {
+  it("Tokyo: 83 raw areas, 70 chips under eight headings; Kyoto: 32 chips under seven; Nara and Hakone: flat lists", () => {
     const tokyo = areaIndex(regionById("tokyo"));
-    expect(tokyo.raw).toHaveLength(81);
-    expect(tokyo.chips).toHaveLength(68);
+    expect(tokyo.raw).toHaveLength(83);
+    expect(tokyo.chips).toHaveLength(70);
     expect(tokyo.sections.map((s) => [s.label, s.chips.length])).toEqual([
       ["Central", 15],
       ["Shibuya", 10],
       ["Shinjuku", 5],
-      ["Meguro · Setagaya", 12],
+      ["Meguro · Setagaya", 13],
       ["East", 15],
-      ["North", 5],
+      ["North", 6],
       ["West", 4],
       ["South", 2],
     ]);
     // A merge across a ward boundary sits under its first-named area's ward: Kuramae (台東区) + Honjo (墨田区).
     expect(tokyo.sections.find((s) => s.label === "East")!.chips.map((c) => c.label)).toContain("Kuramae");
     const kyoto = areaIndex(regionById("kyoto"));
-    expect(kyoto.chips).toHaveLength(29);
+    expect(kyoto.chips).toHaveLength(32);
     expect(kyoto.sections.map((s) => s.label)).toEqual(["Downtown", "Higashiyama", "North", "Sakyo", "West", "South", "Uji"]);
     for (const flat of ["nara", "hakone"] as const) {
       const ix = areaIndex(regionById(flat));

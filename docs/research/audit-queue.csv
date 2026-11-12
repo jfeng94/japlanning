@@ -80,8 +80,6 @@ high,shops:5,Yodobashi Camera Multimedia Akiba,tokyo,Akihabara,status: unclear; 
 high,shops:7,Dear Spiele,tokyo,Nakano,not located: pinned at 中野 station; approximate address; no hours; status: unclear; low-confidence identity,Not researched.,354
 high,shops:8,Amuri Studio,tokyo,Nishi-Shinjuku,not located: pinned at 新宿 station; approximate address; no hours; status: unclear; low-confidence identity,Not researched.,355
 high,activities:3,Immersive Fort Tokyo,tokyo,Odaiba,"rough pin: fixed: its last known address, 江東区青海1-3-15 (the former Venus Fort), by GSI; it may have closed; no hours; status: unclear; low-confidence identity",Not researched. I recall it may have closed in 2024-25; verify it is still open.,358
-high,activities:4,Arashiyama Hanatouro,kyoto,Arashiyama,approximate address; low-confidence identity,Address is the start of the route (Togetsukyo Bridge); 2026 dates not independently verified.,359
-high,activities:5,Tenryu-ji (Hanatouro night opening),kyoto,Arashiyama,no hours; low-confidence identity,Address from memory; night-opening hours/price not verified.,360
 medium,sweets:5,365日,tokyo,Tomigaya,sources disagree,"Address and hours from Rurubu only; official site not checked. Located in Tomigaya, about 1–2 min from Yoyogi-Hachiman Station.",6
 medium,sweets:7,KURAMAE CANNELE (Kuramae),tokyo,Kuramae,sources disagree,"Hours differ between sources; check the Instagram. Ground floor is takeout, 2F is a cafe.",8
 medium,sweets:12,Naniwaya Sohonten (Azabu-Juban (main shop)),tokyo,Azabudai,sources disagree,"One source gives 10:00–20:00 against the Hours' 11:00–19:00, and the closed days vary between sources (Tuesdays and the 3rd Wednesday kept).",13

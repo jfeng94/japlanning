@@ -21,13 +21,13 @@ export function normalise(s: string): string {
 
 /**
  * Search covers what the filters don't: the name and branch, the raw area
- * and its chip, the kinds, the notes and history, every facet value ("pour-over",
+ * and its chip, the kinds, the notes, history and events, every facet value ("pour-over",
  * "kissaten") and the Japanese address ("渋谷").
  */
 export function matchesText(place: Place, query: string): boolean {
   const q = normalise(query);
   if (!q) return true;
-  const fields = [place.name, place.branch, place.area, place.areaGroup, place.notes, place.extra["History"], place.address, ...place.kinds, ...Object.values(place.facets).flat()];
+  const fields = [place.name, place.branch, place.area, place.areaGroup, place.notes, place.extra["History"], place.extra["Events"], place.address, ...place.kinds, ...Object.values(place.facets).flat()];
   return fields.some((s) => typeof s === "string" && normalise(s).includes(q));
 }
 

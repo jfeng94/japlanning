@@ -35,6 +35,12 @@ describe("detailFields", () => {
     expect(f.details[1]!.rows).toEqual([{ label: "Floor", value: "2F" }]);
   });
 
+  it("gives Events its own section after History", () => {
+    const f = detailFields(place({ name: "Temple", extra: { History: "Founded in 794.", Events: "Dec 21: market." } }), layer);
+    expect(f.details.map((s) => s.title)).toEqual(["History", "Events"]);
+    expect(f.details[1]!.rows).toEqual([{ label: "", value: "Dec 21: market." }]);
+  });
+
   it("gives History its own section first, as a paragraph, out of the extras", () => {
     const f = detailFields(place({ name: "Shrine", facets: { Format: ["Café"] }, extra: { History: "Founded in 711.", Floor: "1F" } }), layer);
     expect(f.details.map((s) => s.title)).toEqual(["History", "Details", "Also in the sheet"]);

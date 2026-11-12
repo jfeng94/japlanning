@@ -199,7 +199,7 @@ export const layers: LayerConfig[] = [
     hasHours: true,
     rowFacets: ["Type"],
     facets: [
-      { column: "Type", values: ["Museum", "Immersive art", "Immersive theater", "Illumination", "Night", "Shrine"] },
+      { column: "Type", values: ["Museum", "Immersive art", "Immersive theater", "Illumination", "Night", "Shrine", "Temple", "Garden", "Castle", "Walk"] },
       { column: "Reservation", values: ["Required", "Optional", "No"] },
     ],
   },
