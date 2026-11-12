@@ -455,6 +455,24 @@ proposal in `docs/proposals/` before work starts.
   - The research doc counts 17 spots holding 44 places (as of the
     import).
 
+- **A "pin proxy"** (Jerry, 2026-11-11): a pin you drop on the map that
+  stands in for your location, so the list's Nearest order and the
+  distances on rows and cards are measured from it. For planning ahead
+  (what's near the hotel, or near where we'll be after lunch) and for
+  when the phone has no fix.
+  - **Today** all of that reads the device's position
+    (`docs/design/regions-layers-filters.md`, "Sort" and "Area"); while
+    the pin is down, it would read the pin instead.
+  - **To decide when it's picked up:**
+    - how to drop and move it (a long press on the map, a button, a
+      drag) and how to clear it;
+    - how it looks next to the blue dot;
+    - whether Nearby and Here follow it too, or only the order;
+    - whether it can sit on a place or a station ("near this café");
+    - whether it's remembered on the device or travels in a share link
+      (Here and Nearby travel as themselves today, not as where the
+      sender stood).
+
 - **Images in the card.** A sheet column of Drive image references; a
   build step that downloads, resizes to ~800 px and converts to WebP under
   the site with a manifest per place; a thumbnail row on the card with an
