@@ -52,7 +52,7 @@ Jerry wants to be hands-on with this project. He's an experienced engineer
    sweets, food, music, shops, activities.
 9. **Regions**: Tokyo, Kyoto, Osaka, Nara, Hakone, in one app (Osaka and
    Nara joined 2026-11-09 as day trips; Uji counts as Kyoto). **New York**
-   joined 2026-11-17 as a test region for the location features, for
+   joined 2026-11-16 as a test region for the location features, for
    Jerry's trip there (`docs/proposals/nyc-test-region.md`): its own map
    build and time zone, neighbourhood areas from the city's NTAs, no
    subway lines.
@@ -284,7 +284,7 @@ is used only as the **directions hand-off**.
 
 1. **Evaluate "open now" in the place's city's time, always** (its
    region's `timeZone`: Asia/Tokyo in Japan, America/New_York in New
-   York, 2026-11-17). opening_hours reads
+   York, 2026-11-16). opening_hours reads
    wall-clock time from the JS Date's *local* getters. If the device isn't in
    JST (e.g. planning from California), naive use gives wrong answers. We hit
    this when validating the data: a sandbox in UTC reported every shop closed
@@ -355,7 +355,7 @@ is used only as the **directions hand-off**.
    `docs/design/adding-places.md`). Every region is then re-extracted and
    installed apps download about 115 MB of maps again. Re-extracting on
    every deploy broke the deploy on 2026-11-10. A region can pin a build
-   of its own instead (`basemapBuild`, 2026-11-17): New York's is
+   of its own instead (`basemapBuild`, 2026-11-16): New York's is
    20261116 while Japan's stay on 20261103, so adding or moving one
    region's box re-extracts only that region.
 12. **GitHub Pages sometimes stalls at "syncing_files".** The build

@@ -21,7 +21,7 @@ if something is ambiguous enough to stop the research.
 - **Position.** Coordinates from the official address, cross-checked on
   OpenStreetMap or Google Maps, and inside the region's bounding box.
   The Japanese address from the official source; a `~` prefix when only
-  the area is known. In New York (2026-11-17), the English street
+  the area is known. In New York (2026-11-16), the English street
   address ending "NY <ZIP>", in the same column.
 - **Area.** The raw area the place is in, as a visitor would name it,
   following the address; the ward in the address must be the area's

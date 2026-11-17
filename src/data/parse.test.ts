@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import drinksCsv from "../../data/drinks.csv?raw";
+import nycShapes from "../../public/areas/nyc.geojson?raw";
 import lodgingCsv from "./__fixtures__/stub-lodging.csv?raw";
 import { layers } from "../config/layers.ts";
 import { areasOf, regionById, regionOptions } from "../config/regions.ts";
@@ -8,6 +9,7 @@ import { undrawable } from "../map/label-glyphs.ts";
 import { areaAt, areaIndex, wardFromAddress } from "./areas.ts";
 import { ParseError, parseLayerCsv, slug, splitMulti } from "./parse.ts";
 import { repoData } from "./repo-data.testing.ts";
+import type { AreaShapes } from "./area-shapes.ts";
 import type { LayerConfig, LayerId } from "./types.ts";
 
 const coffee = layers.find((l) => l.id === "drinks")!;
@@ -70,14 +72,15 @@ describe("drinks data", () => {
   const { places } = parseLayerCsv(drinksCsv, coffee, regionOptions());
 
   it("matches the profile of the data (update these when rows change on purpose)", () => {
-    expect(places).toHaveLength(117);
-    expect(places.filter((p) => p.starred)).toHaveLength(12);
+    expect(places).toHaveLength(148);
+    expect(places.filter((p) => p.starred)).toHaveLength(13);
     expect(places.filter((p) => p.addressApproximate)).toHaveLength(30);
     expect(places.filter((p) => p.hoursOsm === undefined)).toHaveLength(44);
-    expect(places.filter((p) => p.lastVerified === undefined)).toHaveLength(75);
-    expect(places.filter((p) => p.facets["Format"]!.length === 0)).toHaveLength(47);
-    expect(places.filter((p) => p.facets["Reservation"]!.length === 0)).toHaveLength(78);
+    expect(places.filter((p) => p.lastVerified === undefined)).toHaveLength(82);
+    expect(places.filter((p) => p.facets["Format"]!.length === 0)).toHaveLength(48);
+    expect(places.filter((p) => p.facets["Reservation"]!.length === 0)).toHaveLength(109);
     expect(places.filter((p) => p.region === "kyoto")).toHaveLength(29);
+    expect(places.filter((p) => p.region === "nyc")).toHaveLength(31);
   });
 
   it("reads the key branch from the Key column, the id from ID and the branch from Branch", () => {
@@ -112,9 +115,20 @@ describe("drinks data", () => {
 
   it("gives every place its kind (the category chips select on it)", () => {
     expect(places.filter((p) => p.kinds.length === 0).map((p) => p.name)).toEqual([]);
-    expect(places.filter((p) => p.kinds.includes("Coffee"))).toHaveLength(74);
-    expect(places.filter((p) => p.kinds.includes("Tea"))).toHaveLength(17);
-    expect(places.filter((p) => p.kinds.includes("Bar"))).toHaveLength(26);
+    expect(places.filter((p) => p.kinds.includes("Coffee"))).toHaveLength(104);
+    expect(places.filter((p) => p.kinds.includes("Tea"))).toHaveLength(18);
+    expect(places.filter((p) => p.kinds.includes("Bar"))).toHaveLength(27);
+  });
+
+  it("Here picks the expected New York neighbourhood at a few landmarks, by its shapes", () => {
+    const nyc = places.filter((p) => p.region === "nyc");
+    const shapes = JSON.parse(nycShapes) as AreaShapes;
+    const here = (lat: number, lng: number) => areaAt(areasOf("nyc"), nyc, { lat, lng }, { bbox: regionById("nyc").bbox!, shapes });
+    expect(here(40.758, -73.9855)).toBe("Midtown"); // Times Square
+    expect(here(40.7265, -73.9817)).toBe("East Village"); // Tompkins Square Park
+    expect(here(40.7596, -73.8301)).toBe("Flushing"); // Main St station
+    expect(here(40.7115, -73.9585)).toBe("Williamsburg"); // Bedford Ave and Grand St
+    expect(here(35.658, 139.7016)).toBeUndefined(); // Shibuya
   });
 
   it("Here picks the expected area at a few landmarks", () => {
@@ -145,7 +159,8 @@ describe("food data (kinds derived from Type, docs/proposals/food-kinds.md)", ()
     const count = (k: string) => places.filter((p) => p.kinds.includes(k)).length;
     expect(Object.fromEntries(food.kinds!.map((k) => [k, count(k)]))).toEqual({
       Ramen: 17, Yakitori: 15, Yakiniku: 10, Katsu: 12, Kushikatsu: 6, Tempura: 13, Gyoza: 11, Okonomiyaki: 7,
-      "Hot pot": 11, Unagi: 10, Tofu: 8, Rice: 14, Onigiri: 6, Donburi: 5, Sushi: 3, Pickles: 6, Fruit: 8,
+      "Hot pot": 12, Unagi: 10, Tofu: 8, Rice: 14, Onigiri: 6, Donburi: 5, Sushi: 3, Pickles: 6, Fruit: 8,
+      Italian: 1,
     });
     const koharuken = places.find((p) => p.name === "Koharuken")!;
     expect(koharuken.facets["Type"]).toEqual(["Donburi", "Katsudon"]);

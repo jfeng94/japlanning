@@ -1,15 +1,30 @@
 # New York: a test region for the location features
 
-Status: **accepted** (Jerry, 2026-11-16), being built. Jerry flies to
-New York on 2026-11-18.
+Status: **built** (2026-11-16), waiting for the field test. Jerry flies
+to New York on 2026-11-18.
 
-- **Done 2026-11-17:** map builds per region, time zones per region, the
-  New York region and its map (published, 40.4 MB from build 20261116;
-  Japan's five copied unchanged), the ZIP-to-borough check, the NTA path
-  in `npm run areas`, the NYC Open Data credit.
-- **To do:** the places (coffee, and the two restaurants Jerry has
-  reservations at: Torrisi and Kimura, Jerry 2026-11-16), then the areas
-  they need, then the deploy.
+## Results (2026-11-16)
+
+- **Map builds and time zones per region**, as proposed. New York's map
+  is published (40.4 MB, build 20261116); the maps workflow copied
+  Japan's five unchanged, so no phone downloads them again.
+- **The places** (reviewed in `docs/research/nyc-review.md`; Jerry took
+  every recommendation): 31 drinks rows (ids 118–148: 30 coffee, 1 tea;
+  Black Fox Pine Street is the key branch) and 2 food rows, the
+  restaurants Jerry has reservations at: Torrisi (159, a new **Italian**
+  food kind, Reservation Required) and Kimura (160, **Motsunabe**
+  joins Hot pot). Six places have third-party hours, unverified.
+- **18 areas** in three sections (Manhattan, Brooklyn, Queens), each
+  one or more NTAs; neighbours from where the shapes touch.
+- **The parser's coordinate check** was Japan's box only; it now uses a
+  New York box for New York's rows.
+- **Checked in the pane** with a faked position at Tompkins Square Park:
+  Black Fox reads Closed at 00:49 New York time (Tokyo time would have
+  said open); the list's nearest-first order starts with the East
+  Village; Here picks East Village (5 places) and + Adjacent adds SoHo &
+  Nolita and Flatiron & NoMad (8); the blue dot sits on the position;
+  the map loads New York's archive. Tests pin a few Here landmarks
+  (Times Square, Tompkins Square, Flushing, Williamsburg).
 
 ## Why
 

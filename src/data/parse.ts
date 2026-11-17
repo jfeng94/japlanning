@@ -41,7 +41,9 @@ const COL = {
 } as const;
 
 /** Rough bounds of Japan; anything outside is a mis-pasted coordinate. */
+/** Where a region's pins may fall, so a typo that moves one to another country is caught: Japan, or New York City. */
 const JAPAN = { west: 122, south: 24, east: 154, north: 46 };
+const NEW_YORK = { west: -74.3, south: 40.4, east: -73.6, north: 41 };
 
 const STAR = "★";
 /** Key-column spellings that mean yes (a Sheets checkbox publishes TRUE/FALSE). */
@@ -166,8 +168,9 @@ export function parseLayerCsv(
       region = raw as RegionId;
     }
 
-    const lat = parseCoordinate(cell("Latitude"), JAPAN.south, JAPAN.north);
-    const lng = parseCoordinate(cell("Longitude"), JAPAN.west, JAPAN.east);
+    const bounds = region === "nyc" ? NEW_YORK : JAPAN;
+    const lat = parseCoordinate(cell("Latitude"), bounds.south, bounds.north);
+    const lng = parseCoordinate(cell("Longitude"), bounds.west, bounds.east);
     if (lat === undefined || lng === undefined) {
       warn(`${name}: bad or missing coordinates; row skipped`, lat === undefined ? "Latitude" : "Longitude");
       return;

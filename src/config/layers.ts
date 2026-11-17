@@ -25,7 +25,7 @@ const FOOD_KINDS: Record<string, string[]> = {
   Tempura: ["Tempura", "Tendon"],
   Gyoza: ["Gyoza"],
   Okonomiyaki: ["Okonomiyaki", "Negiyaki", "Monjayaki"],
-  "Hot pot": ["Sukiyaki", "Shabu-shabu"],
+  "Hot pot": ["Sukiyaki", "Shabu-shabu", "Motsunabe"],
   Unagi: ["Unagi"],
   Tofu: ["Yudofu", "Tofu", "Yuba"],
   Rice: ["Rice", "Kamameshi", "Donabe rice", "Fukagawa-meshi", "Chagayu", "Teishoku"],
@@ -34,6 +34,8 @@ const FOOD_KINDS: Record<string, string[]> = {
   Sushi: ["Kakinoha-zushi"],
   Pickles: ["Tsukemono"],
   Fruit: ["Fruit parlor", "Fruit sando", "Parfait", "Strawberries"],
+  // New York (2026-11-16): Torrisi.
+  Italian: ["Italian"],
 };
 
 export const layers: LayerConfig[] = [
