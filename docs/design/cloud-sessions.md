@@ -64,9 +64,16 @@ cloud it:
   don't (the cloud's GitHub proxy refuses them).
 - **Screenshots instead of a browser.** There is no browser pane, so
   Google Maps can't be read the way the PC does it. Jerry sends the
-  listing's share link (it usually resolves to the pin's coordinates) and a
-  screenshot of the listing. The flow is "On the trip" in
-  `adding-places.md`.
+  listing's share link and a screenshot of the listing. The flow is "On
+  the trip" in `adding-places.md`.
+- **Pins come from the address.** A share link resolves to the place's
+  name and address, not its coordinates (checked 2026-11-17). So the pin
+  comes from a geocoder (both are in "Sources" in `auditing-places.md`):
+  - GSI's in Japan;
+  - Nominatim in New York.
+
+  When the geocoder only finds the block, Jerry drops a pin at the door
+  and sends its coordinates.
 - **Places in an existing area are quick.** A new area means
   `npm run areas`, which first downloads the census blocks (Japan) or the
   neighbourhood shapes (New York) into `.cache/`, which isn't in the repo.
@@ -87,8 +94,10 @@ fallback.
 ## Dry run, in New York (2026-11-18 on)
 
 Before Japan, from the phone:
-1. Start a cloud session on the repo and ask for `node -v`, `npm run ids`
-   and `npm test`. The hook should have put Node 26 on PATH.
+1. Start a cloud session on the repo and say "Read
+   docs/design/cloud-first-run.md and follow it." That handoff walks the
+   session through every check (Node, the scripts, git, the network,
+   pins, a screenshot) and ends with one harmless push and its deploy.
 2. Add one place found in New York by the "On the trip" flow, through to
    a live deploy.
 3. Note anything that got in the way in `docs/research/nyc-field-test.md`.

@@ -47,6 +47,8 @@ cloud instead of his PC, mainly to add places found on the trip
   PC; never ask for the token.
 - **Lasting notes go in the repo.** A memory saved in a cloud session
   doesn't reach the next one.
+- **The first one** follows `docs/design/cloud-first-run.md`, a handoff
+  that checks the setup end to end.
 
 ## Requirements (from Jerry)
 

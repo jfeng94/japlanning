@@ -119,9 +119,11 @@ is lighter, because Jerry is standing there.
    gives the row: name and branch, layer and kind, area, hours, and the
    draft note. It names anything slower than a row: a new area, or a
    place outside the map box.
-   - **Coordinates** come from the link. A cloud session can't open
-     Google Maps, but the link usually resolves to a URL carrying the
-     pin.
+   - **Coordinates** come from the address, through GSI's geocoder in
+     Japan or Nominatim in New York ("Sources" in `auditing-places.md`).
+     A share link carries the name and address but not the pin. When
+     the geocoder only finds the block, Jerry drops a pin at the door
+     and sends its coordinates.
    - **Hours** from the shop's own site or its door sign count as
      verified that day *(recommended)*. Google's stay unverified, as
      before.
