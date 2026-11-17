@@ -14,7 +14,7 @@ to New York on 2026-11-18.
   restaurants Jerry has reservations at: Torrisi (159, a new **Italian**
   food kind, Reservation Required) and Kimura (160, **Motsunabe**
   joins Hot pot). Six places have third-party hours, unverified.
-- **18 areas** in three sections (Manhattan, Brooklyn, Queens), each
+- **18 areas** (21 from 2026-11-17) in three sections (Manhattan, Brooklyn, Queens), each
   one or more NTAs; neighbours from where the shapes touch.
 - **The parser's coordinate check** was Japan's box only; it now uses a
   New York box for New York's rows.
@@ -25,6 +25,17 @@ to New York on 2026-11-18.
   Nolita and Flatiron & NoMad (8); the blue dot sits on the position;
   the map loads New York's archive. Tests pin a few Here landmarks
   (Times Square, Tompkins Square, Flushing, Williamsburg).
+- **Heytea and Warabimochi Kamakura** (2026-11-17, reviewed in
+  `docs/research/nyc-heytea-review.md`; Jerry took every
+  recommendation): 14 Heytea shops as drinks rows (ids 149–162, Tea),
+  the Times Square Lab the key branch and the Gelato Lab (863 Broadway)
+  the one with gelato, named in its branch; Warabimochi Kamakura Chelsea
+  as sweets row 91 (Wagashi, Warabi mochi). All 15 have Google's hours,
+  unverified. Five Heytea shops outside the map box were left out.
+- **Three more areas** for them, 21 in all: Greenwich Village (MN0202)
+  and Lower East Side (MN0302) in Manhattan, Long Island City (QN0201)
+  in Queens. Tests add Washington Square Park and Court Square to the
+  Here landmarks.
 
 ## Why
 

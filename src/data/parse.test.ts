@@ -72,15 +72,15 @@ describe("drinks data", () => {
   const { places } = parseLayerCsv(drinksCsv, coffee, regionOptions());
 
   it("matches the profile of the data (update these when rows change on purpose)", () => {
-    expect(places).toHaveLength(148);
-    expect(places.filter((p) => p.starred)).toHaveLength(13);
+    expect(places).toHaveLength(162);
+    expect(places.filter((p) => p.starred)).toHaveLength(14);
     expect(places.filter((p) => p.addressApproximate)).toHaveLength(30);
     expect(places.filter((p) => p.hoursOsm === undefined)).toHaveLength(44);
-    expect(places.filter((p) => p.lastVerified === undefined)).toHaveLength(82);
-    expect(places.filter((p) => p.facets["Format"]!.length === 0)).toHaveLength(48);
-    expect(places.filter((p) => p.facets["Reservation"]!.length === 0)).toHaveLength(109);
+    expect(places.filter((p) => p.lastVerified === undefined)).toHaveLength(96);
+    expect(places.filter((p) => p.facets["Format"]!.length === 0)).toHaveLength(62);
+    expect(places.filter((p) => p.facets["Reservation"]!.length === 0)).toHaveLength(123);
     expect(places.filter((p) => p.region === "kyoto")).toHaveLength(29);
-    expect(places.filter((p) => p.region === "nyc")).toHaveLength(31);
+    expect(places.filter((p) => p.region === "nyc")).toHaveLength(45);
   });
 
   it("reads the key branch from the Key column, the id from ID and the branch from Branch", () => {
@@ -116,7 +116,7 @@ describe("drinks data", () => {
   it("gives every place its kind (the category chips select on it)", () => {
     expect(places.filter((p) => p.kinds.length === 0).map((p) => p.name)).toEqual([]);
     expect(places.filter((p) => p.kinds.includes("Coffee"))).toHaveLength(104);
-    expect(places.filter((p) => p.kinds.includes("Tea"))).toHaveLength(18);
+    expect(places.filter((p) => p.kinds.includes("Tea"))).toHaveLength(32);
     expect(places.filter((p) => p.kinds.includes("Bar"))).toHaveLength(27);
   });
 
@@ -128,6 +128,8 @@ describe("drinks data", () => {
     expect(here(40.7265, -73.9817)).toBe("East Village"); // Tompkins Square Park
     expect(here(40.7596, -73.8301)).toBe("Flushing"); // Main St station
     expect(here(40.7115, -73.9585)).toBe("Williamsburg"); // Bedford Ave and Grand St
+    expect(here(40.7308, -73.9973)).toBe("Greenwich Village"); // Washington Square Park
+    expect(here(40.7471, -73.9456)).toBe("Long Island City"); // Court Sq station
     expect(here(35.658, 139.7016)).toBeUndefined(); // Shibuya
   });
 
