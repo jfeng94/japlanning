@@ -21,6 +21,11 @@
  * SIMPLIFY_M. The output is committed, so builds never need the network.
  * Licence: the government's standard terms (compatible with CC BY 4.0);
  * the app credits e-Stat and says the shapes are processed from it.
+ *
+ * New York (docs/proposals/nyc-test-region.md) uses the city's 2020
+ * Neighborhood Tabulation Areas instead, from NYC Open Data, downloaded
+ * once into .cache/nyc/: each area lists its NTAs (AreaConfig.nta) and
+ * gets exactly those, with the borough as the ward. No proximity guessing.
  */
 
 import { existsSync } from "node:fs";
@@ -47,6 +52,9 @@ import { distanceM, type LatLng } from "../src/geo/distance.ts";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const CACHE = path.join(ROOT, ".cache", "estat");
+const NTA_FILE = path.join(ROOT, ".cache", "nyc", "nta2020.geojson");
+/** NYC Open Data's 2020 Neighborhood Tabulation Areas (NYC Department of City Planning), all 262. */
+const NTA_URL = "https://data.cityofnewyork.us/resource/9nt8-h7nd.geojson?$limit=500";
 const OUT = path.join(ROOT, "public", "areas");
 
 /** How far a block's centre may be from an area's centre and still join it. */
@@ -251,6 +259,29 @@ async function wardBlocks(ward: string, code: string): Promise<Block[]> {
   return blocks;
 }
 
+// ---------- New York's neighbourhoods (NTAs) ----------
+
+interface NtaFeature {
+  properties: { nta2020: string; ntaname: string; boroname: string };
+  geometry: { type: "Polygon"; coordinates: Position[][] } | { type: "MultiPolygon"; coordinates: Position[][][] };
+}
+
+/** The NTAs as blocks: named by code ("MN0203"), with the borough as the ward. */
+async function ntaBlocks(): Promise<Block[]> {
+  if (!existsSync(NTA_FILE)) {
+    const res = await fetch(NTA_URL, { headers: { "User-Agent": "japlanning-build/1.0 (+https://japan.garbage.house)" } });
+    if (!res.ok) throw new Error(`NYC Open Data: HTTP ${res.status} for the NTAs`);
+    await mkdir(path.dirname(NTA_FILE), { recursive: true });
+    await writeFile(NTA_FILE, await res.text());
+  }
+  const data = JSON.parse(await readFile(NTA_FILE, "utf8")) as { features: NtaFeature[] };
+  return data.features.map((f) => {
+    const polygons = f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
+    const biggest = polygons.map((p) => p[0]!).sort((a, b) => Math.abs(ringAreaM2(b)) - Math.abs(ringAreaM2(a)))[0]!;
+    return { name: f.properties.nta2020, ward: f.properties.boroname, polygons, centre: ringCentroid(biggest) };
+  });
+}
+
 // ---------- assigning blocks to areas ----------
 
 interface AreaPlan {
@@ -328,27 +359,38 @@ async function buildRegion(regionId: RegionId, places: Place[]): Promise<void> {
   const codes = WARD_CODES[regionId] ?? {};
   const regionPlaces = places.filter((p) => p.region === regionId);
 
+  // New York's areas name their NTAs; Japan's are grown from census blocks around their places.
+  const byNta = region.areas.some((a) => a.nta);
   const plans: AreaPlan[] = region.areas.map((a) => {
     const own = regionPlaces.filter((p) => p.area === a.label);
     const centroid = own.length > 0 ? { lat: own.reduce((s, p) => s + p.lat, 0) / own.length, lng: own.reduce((s, p) => s + p.lng, 0) / own.length } : undefined;
     const centre = a.shape?.centre ? { lng: a.shape.centre[0], lat: a.shape.centre[1] } : centroid;
     if (!centre) throw new Error(`${regionId}: ${a.label} has no places and no shape.centre in config`);
+    if (byNta && !a.nta?.length) throw new Error(`${regionId}: ${a.label} names no NTAs (nta in config)`);
     return {
       raw: a.label,
       ward: a.ward,
       centre,
-      reach: a.shape?.reachM ?? REACH_M,
-      include: new Set(a.shape?.include ?? []),
+      reach: byNta ? 0 : (a.shape?.reachM ?? REACH_M),
+      include: new Set(byNta ? a.nta : (a.shape?.include ?? [])),
       exclude: new Set(a.shape?.exclude ?? []),
       places: own,
     };
   });
 
   const blocks: Block[] = [];
-  for (const ward of new Set(plans.map((p) => p.ward))) {
-    const code = codes[ward];
-    if (!code) throw new Error(`${regionId}: no e-Stat code for ${ward}; add it to WARD_CODES in scripts/build-areas.ts`);
-    blocks.push(...(await wardBlocks(ward, code)));
+  if (byNta) {
+    // Only the NTAs some area names, so none is claimed by a place's position alone.
+    const named = new Set(region.areas.flatMap((a) => a.nta ?? []));
+    const all = await ntaBlocks();
+    for (const code of named) if (!all.some((b) => b.name === code)) throw new Error(`${regionId}: no NTA ${code} in NYC Open Data's list`);
+    blocks.push(...all.filter((b) => named.has(b.name)));
+  } else {
+    for (const ward of new Set(plans.map((p) => p.ward))) {
+      const code = codes[ward];
+      if (!code) throw new Error(`${regionId}: no e-Stat code for ${ward}; add it to WARD_CODES in scripts/build-areas.ts`);
+      blocks.push(...(await wardBlocks(ward, code)));
+    }
   }
   const byRaw = assign(blocks, plans);
 
@@ -370,10 +412,15 @@ async function buildRegion(regionId: RegionId, places: Place[]): Promise<void> {
 
   const collection: AreaShapes & { meta: Record<string, string> } = {
     type: "FeatureCollection",
-    meta: {
-      source: "e-Stat, 2020 census small areas (令和2年国勢調査 小地域), processed by scripts/build-areas.ts",
-      licence: "Government of Japan Standard Terms of Use 2.0 (compatible with CC BY 4.0)",
-    },
+    meta: byNta
+      ? {
+          source: "NYC Open Data, 2020 Neighborhood Tabulation Areas (NYC Department of City Planning), processed by scripts/build-areas.ts",
+          licence: "NYC Open Data Terms of Use",
+        }
+      : {
+          source: "e-Stat, 2020 census small areas (令和2年国勢調査 小地域), processed by scripts/build-areas.ts",
+          licence: "Government of Japan Standard Terms of Use 2.0 (compatible with CC BY 4.0)",
+        },
     features,
   };
   await mkdir(OUT, { recursive: true });

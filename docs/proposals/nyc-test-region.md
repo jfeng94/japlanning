@@ -1,7 +1,15 @@
 # New York: a test region for the location features
 
-Status: **proposed** (2026-11-16). Jerry flies to New York on
-2026-11-18; this has to ship tomorrow to be tested there.
+Status: **accepted** (Jerry, 2026-11-16), being built. Jerry flies to
+New York on 2026-11-18.
+
+- **Done 2026-11-17:** map builds per region, time zones per region, the
+  New York region and its map (published, 40.4 MB from build 20261116;
+  Japan's five copied unchanged), the ZIP-to-borough check, the NTA path
+  in `npm run areas`, the NYC Open Data credit.
+- **To do:** the places (coffee, and the two restaurants Jerry has
+  reservations at: Torrisi and Kimura, Jerry 2026-11-16), then the areas
+  they need, then the deploy.
 
 ## Why
 

@@ -21,11 +21,15 @@ if something is ambiguous enough to stop the research.
 - **Position.** Coordinates from the official address, cross-checked on
   OpenStreetMap or Google Maps, and inside the region's bounding box.
   The Japanese address from the official source; a `~` prefix when only
-  the area is known.
+  the area is known. In New York (2026-11-17), the English street
+  address ending "NY <ZIP>", in the same column.
 - **Area.** The raw area the place is in, as a visitor would name it,
   following the address; the ward in the address must be the area's
   (the build checks). A place in a new area brings a new raw area: see
-  "Adding an area" below.
+  "Adding an area" below. In New York the ward is the borough, read from
+  the ZIP, and an area is one or more of the city's Neighborhood
+  Tabulation Areas (`nta` in config), whose shapes `npm run areas`
+  uses as they are.
 - **Hours.** Human-readable plus OSM syntax. `Last verified` is today
   only when the hours were read from the official source; hours from a
   third party go in without a date, so the card badges them

@@ -205,6 +205,8 @@ function credits(): HTMLParagraphElement {
     link("© OpenStreetMap contributors", "https://www.openstreetmap.org/copyright"),
     ". Area shapes processed from the 2020 census boundaries (「国勢調査 境界データ」, Statistics Bureau of Japan), via ",
     link("e-Stat", "https://www.e-stat.go.jp/"),
+    "; New York's from the 2020 Neighborhood Tabulation Areas, via ",
+    link("NYC Open Data", "https://opendata.cityofnewyork.us/"),
     ". Train times from the ",
     link("Public Transportation Open Data Center", "https://developer.odpt.org/"),
     " (Toei's under CC BY 4.0, Tokyo Metro's under the ODPT Basic License); it and the operators aren't responsible for their accuracy. Questions about this app go to ",
