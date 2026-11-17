@@ -3,7 +3,7 @@
  * shapes and docs/proposals/m1-data-layer.md for the record rules.
  */
 
-export type RegionId = "tokyo" | "kyoto" | "osaka" | "nara" | "hakone";
+export type RegionId = "tokyo" | "kyoto" | "osaka" | "nara" | "hakone" | "nyc";
 
 /** Every layer id, as a tuple so LayerId is a checked string union. */
 export const LAYER_IDS = ["drinks", "sweets", "food", "music", "shops", "activities"] as const;
@@ -39,6 +39,11 @@ export interface AreaConfig {
   adjacent: string[];
   /** Corrections to the generated shape (scripts/build-areas.ts); none for most areas. */
   shape?: AreaShapeOverride;
+  /**
+   * New York: the city's 2020 Neighborhood Tabulation Areas the area is made of ("MN0203", West Village), whose
+   * shapes `npm run areas` joins, instead of Japan's census blocks.
+   */
+  nta?: string[];
 }
 
 export interface AreaShapeOverride {

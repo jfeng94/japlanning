@@ -199,12 +199,40 @@ export function areaProblems(region: AreaSource): string[] {
 }
 
 /**
+ * New York City's boroughs by the first three digits of a ZIP code. A
+ * Queens address names its neighbourhood ("Flushing, NY 11354"), not the
+ * borough, so the ZIP is what tells them apart. 110 also covers part of
+ * Nassau County, outside the map.
+ */
+const NYC_ZIP3: Record<string, string> = {
+  "100": "Manhattan",
+  "101": "Manhattan",
+  "102": "Manhattan",
+  "103": "Staten Island",
+  "104": "Bronx",
+  "110": "Queens",
+  "111": "Queens",
+  "112": "Brooklyn",
+  "113": "Queens",
+  "114": "Queens",
+  "116": "Queens",
+};
+
+/** The borough a New York City address names by its ZIP ("70 Pine St, New York, NY 10005" is Manhattan). */
+function boroughFromAddress(address: string): string | undefined {
+  const zip = /,\s*NY\s+(\d{5})(?:-\d{4})?\s*$/.exec(address.replace(/^[~～]/, "").trim())?.[1];
+  return zip ? NYC_ZIP3[zip.slice(0, 3)] : undefined;
+}
+
+/**
  * The ward (区) or city a Japanese address names: 渋谷区 in 東京都渋谷区神宮前,
  * 東山区 in 京都府京都市東山区清水, 宇治市 in 京都府宇治市宇治妙楽, 箱根町 in
- * 神奈川県足柄下郡箱根町. Undefined when there is no address.
+ * 神奈川県足柄下郡箱根町. For a New York address, its borough (by ZIP), which
+ * New York's areas carry as their ward. Undefined when there is no address.
  */
 export function wardFromAddress(address: string | undefined): string | undefined {
   if (!address) return undefined;
+  if (/\bNY\s+\d{5}/.test(address)) return boroughFromAddress(address);
   const rest = address.replace(/^[~～]/, "").replace(/^(?:東京都|北海道|京都府|大阪府|[^都道府県]{2,3}県)/, "");
   const cityWard = /^.+?市(.+?区)/.exec(rest); // a city with wards: 京都市東山区
   if (cityWard) return cityWard[1];

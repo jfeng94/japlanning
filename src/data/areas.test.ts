@@ -120,6 +120,16 @@ describe("wardFromAddress", () => {
     expect(wardFromAddress("神奈川県足柄下郡箱根町湯本")).toBe("箱根町");
     expect(wardFromAddress(undefined)).toBeUndefined();
   });
+
+  it("reads a New York address's borough from its ZIP", () => {
+    expect(wardFromAddress("70 Pine St, New York, NY 10005")).toBe("Manhattan");
+    expect(wardFromAddress("275 Mulberry St, New York, NY 10012")).toBe("Manhattan");
+    expect(wardFromAddress("18 Grattan St, Brooklyn, NY 11206")).toBe("Brooklyn");
+    expect(wardFromAddress("136-20 Roosevelt Ave, Flushing, NY 11354")).toBe("Queens");
+    expect(wardFromAddress("5-11 47th Ave, Long Island City, NY 11101")).toBe("Queens");
+    expect(wardFromAddress("~Flushing, NY 11354")).toBe("Queens");
+    expect(wardFromAddress("1 Main St, Nowhere, NY 12345")).toBeUndefined();
+  });
 });
 
 describe("areaAt (Here)", () => {

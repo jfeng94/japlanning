@@ -267,6 +267,19 @@ export const regions: RegionConfig[] = [
     ],
     bbox: [139.014, 35.198, 139.11, 35.254],
   },
+  {
+    id: "nyc",
+    label: "New York",
+    // A test region for the location features, Jerry's trip of 2026-11-18 (docs/proposals/nyc-test-region.md).
+    timeZone: "America/New_York",
+    // Areas are neighbourhoods, each made of the city's NTAs; the ward is the borough, which the build reads from
+    // the address's ZIP code.
+    areas: [],
+    // All of Manhattan, north Brooklyn (Williamsburg, Bushwick, DUMBO), Long Island City and Flushing: about 40 MB.
+    bbox: [-74.03, 40.67, -73.79, 40.88],
+    // Its own build: Japan's (BASEMAP.build) has left Protomaps, and changing that would re-download every map.
+    basemapBuild: "20261116",
+  },
 ];
 
 export function regionById(id: RegionId): RegionConfig {
