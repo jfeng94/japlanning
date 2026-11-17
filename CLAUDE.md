@@ -26,6 +26,27 @@ Jerry wants to be hands-on with this project. He's an experienced engineer
   trade-offs if you see a better path.
 - Design decisions go in the repo, not in chat or external docs. Update the
   relevant doc in the same change that implements a decision.
+- **The art Jerry supplies is found, not made by him.** The pin artwork
+  and UI icons are images he found and liked, sometimes retouched. Never
+  credit him as their maker: "the icons Jerry picked", never "Jerry's
+  art" (his wish, 2026-11-10).
+
+## Cloud sessions (2026-11-17)
+
+Jerry can also drive a session from his phone that runs on Anthropic's
+cloud instead of his PC, mainly to add places found on the trip
+(`docs/design/cloud-sessions.md`; the flow is "On the trip" in
+`docs/design/adding-places.md`). In one:
+- **Setup is automatic.** A SessionStart hook
+  (`scripts/cloud-session-start.sh`) puts the Node version in `.nvmrc`
+  on PATH and runs `npm ci`. If a script fails, check `node -v` first.
+- **Commit to `main` and push**, as on the PC: Actions deploys only from
+  main.
+- **No browser pane.** Jerry sends screenshots of listings instead.
+- **No `ODPT_TOKEN`.** `npm run stations -- --refresh` waits for Jerry's
+  PC; never ask for the token.
+- **Lasting notes go in the repo.** A memory saved in a cloud session
+  doesn't reach the next one.
 
 ## Requirements (from Jerry)
 

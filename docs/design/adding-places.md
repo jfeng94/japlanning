@@ -1,6 +1,7 @@
 # Adding places
 
-Status: **agreed** (2026-11-05; "Adding an area" 2026-11-09). The
+Status: **agreed** (2026-11-05; "Adding an area" 2026-11-09; "On the
+trip" 2026-11-17). The
 workflow for turning a name on a list into a row in `data/<layer>.csv`.
 Jerry supplies candidates, Claude researches and writes; nothing is
 written before Jerry has seen the findings.
@@ -105,6 +106,29 @@ corrects facts. Nothing is written until he says go.
 - One commit per batch, naming the places: "Data: add 5 tea shops
   (Ginza, Shibuya, Asakusa, Kyoto)". Push; Actions deploys.
 - Report: the ids, the live link, and what was left blank and why.
+
+## On the trip (2026-11-17)
+
+For a place found on the day, usually from a cloud session on Jerry's
+phone (`docs/design/cloud-sessions.md`). The same rules apply; the gate
+is lighter, because Jerry is standing there.
+
+1. **Jerry sends** the Google Maps share link, a screenshot of the
+   listing (name, address, hours), and a word on why he likes it.
+2. **Claude replies in one short message**, not a findings doc. It
+   gives the row: name and branch, layer and kind, area, hours, and the
+   draft note. It names anything slower than a row: a new area, or a
+   place outside the map box.
+   - **Coordinates** come from the link. A cloud session can't open
+     Google Maps, but the link usually resolves to a URL carrying the
+     pin.
+   - **Hours** from the shop's own site or its door sign count as
+     verified that day *(recommended)*. Google's stay unverified, as
+     before.
+   - **The note** uses what Jerry said, in the usual voice.
+3. **Jerry says go.** Claude writes the row, runs the tests, and commits
+   naming the place. Then it pushes to `main`, waits for the deploy, and
+   replies with the place's link once it's live.
 
 ## Adding an area (2026-11-09)
 
