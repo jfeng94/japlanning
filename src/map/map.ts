@@ -15,7 +15,7 @@ import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { Protocol } from "pmtiles";
 
 setWorkerUrl(workerUrl);
-import { archiveUrl } from "../config/basemap.ts";
+import { archiveUrl, regionVersion } from "../config/basemap.ts";
 import { TRANSIT_REGIONS } from "../config/transit.ts";
 import type { RegionConfig } from "../data/types.ts";
 import { createLocateControl, type LocateControl } from "./locate-control.ts";
@@ -97,7 +97,7 @@ export interface MapCallbacks {
  * address, and registered under this, so the address can change freely.
  */
 export function basemapUrl(region: RegionConfig): string {
-  return archiveUrl(region.id, region.bbox);
+  return archiveUrl(region.id, regionVersion(region));
 }
 
 export function mountMap(container: HTMLElement, region: RegionConfig, flavor: Flavor, callbacks: MapCallbacks): MapView {

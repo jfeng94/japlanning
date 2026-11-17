@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { archiveUrl, BASEMAP, versionFileUrl, versionFor } from "../config/basemap.ts";
+import { archiveUrl, BASEMAP, regionVersion, versionFileUrl, versionFor } from "../config/basemap.ts";
 import type { RegionConfig } from "../data/types.ts";
 import { BlobSource, checkPublished, expectedSidecar, MapNotPublishedError, registerStoredBasemaps, statusFor, unregisterStoredBasemap, type StoredBasemap } from "./basemap.ts";
 
-const tokyo: RegionConfig = { id: "tokyo", label: "Tokyo", areas: [], bbox: [139.6, 35.58, 139.85, 35.75] };
-const hakone: RegionConfig = { id: "hakone", label: "Hakone", areas: [] };
+const tokyo: RegionConfig = { id: "tokyo", label: "Tokyo", timeZone: "Asia/Tokyo", areas: [], bbox: [139.6, 35.58, 139.85, 35.75] };
+const hakone: RegionConfig = { id: "hakone", label: "Hakone", timeZone: "Asia/Tokyo", areas: [] };
 const stored = (over: Partial<StoredBasemap> = {}): StoredBasemap => ({
   build: BASEMAP.build,
   maxzoom: BASEMAP.maxzoom,
@@ -26,6 +26,15 @@ describe("statusFor", () => {
   it("a region without a bbox expects nothing and treats any record as stale", () => {
     expect(expectedSidecar(hakone)).toBeUndefined();
     expect(statusFor(hakone, stored()).kind).toBe("stale");
+  });
+
+  it("a region with a build of its own expects that build, and the others keep the shared one", () => {
+    const own = { ...tokyo, basemapBuild: "20261116" };
+    expect(expectedSidecar(own)?.build).toBe("20261116");
+    expect(statusFor(own, stored()).kind).toBe("stale");
+    expect(statusFor(own, stored({ build: "20261116" })).kind).toBe("ready");
+    expect(expectedSidecar(tokyo)?.build).toBe(BASEMAP.build);
+    expect(archiveUrl("tokyo", regionVersion(own))).not.toBe(archiveUrl("tokyo", regionVersion(tokyo)));
   });
 });
 
@@ -62,12 +71,12 @@ describe("registerStoredBasemaps", () => {
 
 describe("the maps site (docs/proposals/maps-site.md)", () => {
   it("addresses an archive on the maps site with its version, and its version file without it", () => {
-    const url = archiveUrl("tokyo", tokyo.bbox);
+    const url = archiveUrl("tokyo", regionVersion(tokyo));
     expect(url.startsWith(`${BASEMAP.site}/tokyo.pmtiles?v=`)).toBe(true);
     expect(decodeURIComponent(url.split("?v=")[1]!)).toBe(`${BASEMAP.build}-${BASEMAP.maxzoom}-139.6,35.58,139.85,35.75`);
     expect(versionFileUrl(url)).toBe(`${BASEMAP.site}/tokyo.pmtiles.json`);
     // A changed box is a new address, so nothing cached for the old map is mixed in.
-    expect(archiveUrl("tokyo", [139.6, 35.58, 139.9, 35.75])).not.toBe(url);
+    expect(archiveUrl("tokyo", versionFor([139.6, 35.58, 139.9, 35.75]))).not.toBe(url);
   });
 
   const reply = (status: number, body: unknown): typeof fetch => {
@@ -81,7 +90,7 @@ describe("the maps site (docs/proposals/maps-site.md)", () => {
   };
 
   it("lets a download go ahead only when the site's version file is the version the app expects", async () => {
-    const url = archiveUrl("tokyo", tokyo.bbox);
+    const url = archiveUrl("tokyo", regionVersion(tokyo));
     const want = versionFor(tokyo.bbox!);
     const ok = reply(200, { ...want, extra: "ignored" });
     await expect(checkPublished(url, want, ok)).resolves.toBeUndefined();

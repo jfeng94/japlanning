@@ -24,6 +24,10 @@ export interface RegionConfig {
   areaSections?: AreaSection[];
   /** [west, south, east, north] in degrees. Basemap extract bounds (M7). */
   bbox?: [number, number, number, number];
+  /** A Protomaps build of its own (YYYYMMDD), instead of BASEMAP.build: see regionVersion in src/config/basemap.ts. */
+  basemapBuild?: string;
+  /** IANA time zone its places' hours are in ("Asia/Tokyo"): open now evaluates there, whatever the phone's zone. */
+  timeZone: string;
 }
 
 export interface AreaConfig {

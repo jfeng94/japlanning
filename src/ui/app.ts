@@ -1,7 +1,7 @@
 import { regionColours, type RegionColours } from "../config/area-colors.ts";
 import { layers } from "../config/layers.ts";
 import { pinRendererKind } from "../config/map.ts";
-import { areasOf, regions } from "../config/regions.ts";
+import { areasOf, regionById, regions } from "../config/regions.ts";
 import { settings, updateSettings, type Settings } from "../config/settings.ts";
 import { createBookmarks, createIdbBookmarkStorage } from "../data/bookmarks.ts";
 import { loadAreaShapes, nearestChip, shapesBounds, type AreaShapes } from "../data/area-shapes.ts";
@@ -25,8 +25,8 @@ import { applyFilters, areaLook, areaScope, areaScopeKey, sinkUnknownHours, tapA
 import { inBbox, sortByDistance } from "../geo/distance.ts";
 import { formatRadius } from "../geo/nearby.ts";
 import { markFor, type Mark } from "../data/marks.ts";
-import { evaluateAll, type HoursState } from "../hours/evaluate-all.ts";
-import { loadParser, tokyoNow, tokyoWallClock, type OpeningHoursCtor } from "../hours/open.ts";
+import { evaluateAll, momentFor, type HoursState } from "../hours/evaluate-all.ts";
+import { loadParser, parseWallClock, type OpeningHoursCtor } from "../hours/open.ts";
 import { categoriesPresent, defaultState, hasActiveFilters, hasGroupSelection, layersInPlay, layersInRegion, reduce, type FilterState } from "../filter/state.ts";
 import { createStore } from "../filter/store.ts";
 import { fromSearchParams, toSearchParams, type UrlContext } from "../filter/url.ts";
@@ -134,8 +134,9 @@ export function mountApp(root: HTMLElement): AppHandle {
   let hoursStates: Map<string, HoursState> | undefined;
   let hoursTimer: ReturnType<typeof setInterval> | undefined;
 
-  /** The Tokyo wall-clock moment the filter and the card evaluate at. */
-  const hoursAt = (state: FilterState): Date | undefined => tokyoWallClock(state.openAt);
+  /** Open at's wall-clock moment, in the city on screen; undefined means now, in each place's own zone. */
+  const hoursAt = (state: FilterState): Date | undefined => parseWallClock(state.openAt);
+  const zoneOf = (p: Place): string => regionById(p.region).timeZone;
   const hoursInput = (): HoursInput | undefined => (hoursStates ? { states: hoursStates, layersWithHours } : undefined);
 
   /**
@@ -155,7 +156,7 @@ export function mountApp(root: HTMLElement): AppHandle {
       });
       return;
     }
-    hoursStates = evaluateAll(parser, places, hoursAt(state) ?? tokyoNow());
+    hoursStates = evaluateAll(parser, places, momentFor(hoursAt(state), zoneOf));
     hoursTimer ??= setInterval(() => {
       refreshHours();
       render();
@@ -1059,6 +1060,7 @@ export function mountApp(root: HTMLElement): AppHandle {
       renderDetail(detailBody, selected, layer, {
         origin: location.origin,
         at: hoursAt(state),
+        timeZone: zoneOf(selected),
         onShowOnMap: () => present(selected),
       });
       renderDetailStrip(detailStrip, selected, {

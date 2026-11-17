@@ -32,7 +32,7 @@ import { access, chmod, mkdir, open, readFile, rm, stat, writeFile } from "node:
 import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { BASEMAP, sameVersion, versionFor, type BasemapVersion } from "../src/config/basemap.ts";
+import { BASEMAP, planetUrl, regionVersion, sameVersion, type BasemapVersion } from "../src/config/basemap.ts";
 import { regions } from "../src/config/regions.ts";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
@@ -42,7 +42,6 @@ const SPRITES_DIR = path.join(ROOT, "public", "sprites");
 const LOCK_FILE = path.join(ROOT, "src", "config", "assets-lock.json");
 const CACHE_DIR = path.join(ROOT, ".cache", "pmtiles", BASEMAP.cli.version);
 const RELEASE_BASE = `https://github.com/protomaps/go-pmtiles/releases/download/v${BASEMAP.cli.version}`;
-const PLANET_URL = `https://build.protomaps.com/${BASEMAP.build}.pmtiles`;
 const BUILDS_URL = "https://build-metadata.protomaps.dev/builds.json";
 const UA = "japlanning-build/1.0 (+https://japan.garbage.house)";
 
@@ -203,16 +202,16 @@ async function wholeArchive(file: string): Promise<boolean> {
 }
 
 /** After a failed extract: if Protomaps has dropped the pinned build, say which builds it still has. */
-async function explainMissingBuild(): Promise<void> {
+async function explainMissingBuild(build: string): Promise<void> {
   try {
-    const head = await fetch(PLANET_URL, { method: "HEAD", headers: { "User-Agent": UA } });
+    const head = await fetch(planetUrl(build), { method: "HEAD", headers: { "User-Agent": UA } });
     if (head.status !== 404) return;
     const builds = (await (await fetch(BUILDS_URL, { headers: { "User-Agent": UA } })).json()) as { key: string }[];
     const newest = builds.map((b) => b.key.replace(".pmtiles", "")).sort().at(-1);
     console.error(
-      `Protomaps no longer has build ${BASEMAP.build}; it keeps about a week of daily builds. ` +
-        `Set build in src/config/basemap.ts to a current one (newest: ${newest}). ` +
-        "Every region is then extracted again, and installed apps download their maps again.",
+      `Protomaps no longer has build ${build}; it keeps about a week of daily builds. ` +
+        `Set build in src/config/basemap.ts, or the region's basemapBuild, to a current one (newest: ${newest}). ` +
+        "Every region on that build is then extracted again, and installed apps download those maps again.",
     );
   } catch {
     /* the explanation is a courtesy; the extract error above stands */
@@ -236,12 +235,12 @@ async function main(): Promise<void> {
   }
   await mkdir(OUT_DIR, { recursive: true });
 
-  let failed = false;
+  const failed = new Set<string>();
   for (const region of targets) {
     const bbox = region.bbox!;
     const out = path.join(OUT_DIR, `${region.id}.pmtiles`);
     const sidecarPath = `${out}.json`;
-    const want = versionFor(bbox);
+    const want = regionVersion(region)!;
 
     if (await exists(out)) {
       try {
@@ -261,22 +260,22 @@ async function main(): Promise<void> {
 
     const cli = await ensureCli();
 
-    console.log(`${region.id}: extracting ${BASEMAP.build} bbox=${bbox.join(",")} maxzoom=${BASEMAP.maxzoom}`);
+    console.log(`${region.id}: extracting ${want.build} bbox=${bbox.join(",")} maxzoom=${BASEMAP.maxzoom}`);
     const r = spawnSync(
       cli,
-      ["extract", PLANET_URL, out, `--bbox=${bbox.join(",")}`, `--maxzoom=${BASEMAP.maxzoom}`],
+      ["extract", planetUrl(want.build), out, `--bbox=${bbox.join(",")}`, `--maxzoom=${BASEMAP.maxzoom}`],
       { stdio: ["ignore", "inherit", "inherit"] },
     );
     if (r.status !== 0) {
-      failed = true;
+      failed.add(want.build);
       console.error(`${region.id}: extract failed (exit ${r.status})`);
       continue;
     }
     await writeFile(sidecarPath, JSON.stringify(want));
     console.log(`${region.id}: ${await sizeMb(out)} MB -> ${path.relative(ROOT, out)}`);
   }
-  if (failed) {
-    await explainMissingBuild();
+  if (failed.size > 0) {
+    for (const build of failed) await explainMissingBuild(build);
     process.exit(1);
   }
 }

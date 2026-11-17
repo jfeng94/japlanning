@@ -9,11 +9,12 @@ const regions: RegionConfig[] = [
   {
     id: "tokyo",
     label: "Tokyo",
+    timeZone: "Asia/Tokyo",
     areas: [...AREAS, { label: "Tsukiji", ward: "中央区", adjacent: [] }],
     areaGroups: [{ label: "Central", areas: ["Central", "Tsukiji"] }],
   },
-  { id: "kyoto", label: "Kyoto", areas: [{ label: "Gion", ward: "東山区", adjacent: [] }] },
-  { id: "hakone", label: "Hakone", areas: [] },
+  { id: "kyoto", label: "Kyoto", timeZone: "Asia/Tokyo", areas: [{ label: "Gion", ward: "東山区", adjacent: [] }] },
+  { id: "hakone", label: "Hakone", timeZone: "Asia/Tokyo", areas: [] },
 ];
 const ctx: UrlContext = { regions, layers: allLayers, defaultRegion: "tokyo" };
 

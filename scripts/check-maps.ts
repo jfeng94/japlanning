@@ -13,14 +13,14 @@
  * says which workflow to run.
  */
 
-import { archiveUrl, sameVersion, versionFileUrl, versionFor, versionTag, type BasemapVersion } from "../src/config/basemap.ts";
+import { archiveUrl, regionVersion, sameVersion, versionFileUrl, versionTag, type BasemapVersion } from "../src/config/basemap.ts";
 import { regions } from "../src/config/regions.ts";
 
 const UA = "japlanning-build/1.0 (+https://japan.garbage.house)";
 
 let bad = 0;
 for (const region of regions.filter((r) => r.bbox)) {
-  const want = versionFor(region.bbox!);
+  const want = regionVersion(region)!;
   const url = versionFileUrl(archiveUrl(region.id));
   let have: BasemapVersion | undefined;
   let why = "";

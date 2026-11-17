@@ -15,8 +15,10 @@ import { showToast } from "./toast.ts";
 export interface DetailHandlers {
   /** `location.origin`, for share links. */
   origin: string;
-  /** Tokyo wall-clock moment to evaluate hours at; undefined means now. */
+  /** Open at's wall-clock moment to evaluate hours at; undefined means now. */
   at?: Date;
+  /** The place's city's time zone, for "now". */
+  timeZone: string;
   /** Ease the map back to this place (after panning away). */
   onShowOnMap: () => void;
 }
@@ -74,7 +76,7 @@ export function renderDetail(body: HTMLElement, place: Place, layer: LayerConfig
       const status = document.createElement("span");
       status.className = "open-status";
       dd.append(" ", status);
-      void openStatus(place.hoursOsm, h.at, h.at === undefined).then((s) => {
+      void openStatus(place.hoursOsm, h.timeZone, h.at, h.at === undefined).then((s) => {
         if (token !== renderToken) return;
         // Just the state ("Open", "Closed today"); the "until 18:00" / "opens 9:00" tail is noise next to the hours.
         status.textContent = s.label.split(" · ")[0] ?? s.label;

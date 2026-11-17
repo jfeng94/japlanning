@@ -22,6 +22,7 @@ export const regions: RegionConfig[] = [
   {
     id: "tokyo",
     label: "Tokyo",
+    timeZone: "Asia/Tokyo",
     areas: [
       { label: "Akasaka", ward: "港区", adjacent: ["Azabudai", "Nishi-Azabu", "Toranomon"] },
       { label: "Akihabara", ward: "千代田区", adjacent: ["Hongo", "Jimbocho", "Kuramae", "Ueno"] },
@@ -140,6 +141,7 @@ export const regions: RegionConfig[] = [
   {
     id: "kyoto",
     label: "Kyoto",
+    timeZone: "Asia/Tokyo",
     // Uji counts as Kyoto (decided 2026-11-05).
     areas: [
       { label: "Arashiyama", ward: "右京区", adjacent: [] },
@@ -206,6 +208,7 @@ export const regions: RegionConfig[] = [
   {
     id: "osaka",
     label: "Osaka",
+    timeZone: "Asia/Tokyo",
     // Joined 2026-11-09 with Jerry's trip list, as a day trip; Sakai counts as Osaka.
     areas: [
       { label: "Abeno", ward: "阿倍野区", adjacent: [] },
@@ -239,6 +242,7 @@ export const regions: RegionConfig[] = [
   {
     id: "nara",
     label: "Nara",
+    timeZone: "Asia/Tokyo",
     // Joined 2026-11-09 with Jerry's trip list, as a day trip. One city, so one flat list.
     areas: [
       { label: "JR Nara", ward: "奈良市", adjacent: ["Kintetsu Nara", "Nara Park", "Naramachi"] },
@@ -253,6 +257,7 @@ export const regions: RegionConfig[] = [
   {
     id: "hakone",
     label: "Hakone",
+    timeZone: "Asia/Tokyo",
     // First pins 2026-11-09. One town, so one flat list.
     areas: [
       { label: "Gora", ward: "箱根町", adjacent: ["Moto-Hakone"] },

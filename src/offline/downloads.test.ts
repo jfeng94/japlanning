@@ -3,9 +3,9 @@ import type { RegionConfig } from "../data/types.ts";
 import type { BasemapStore, StoredBasemap } from "./basemap.ts";
 import { createDownloadManager } from "./downloads.ts";
 
-const tokyo: RegionConfig = { id: "tokyo", label: "Tokyo", areas: [], bbox: [139.6, 35.58, 139.85, 35.75] };
-const kyoto: RegionConfig = { id: "kyoto", label: "Kyoto", areas: [], bbox: [135.65, 34.86, 135.85, 35.1] };
-const hakone: RegionConfig = { id: "hakone", label: "Hakone", areas: [] };
+const tokyo: RegionConfig = { id: "tokyo", label: "Tokyo", timeZone: "Asia/Tokyo", areas: [], bbox: [139.6, 35.58, 139.85, 35.75] };
+const kyoto: RegionConfig = { id: "kyoto", label: "Kyoto", timeZone: "Asia/Tokyo", areas: [], bbox: [135.65, 34.86, 135.85, 35.1] };
+const hakone: RegionConfig = { id: "hakone", label: "Hakone", timeZone: "Asia/Tokyo", areas: [] };
 
 /** A store whose download reports two progress steps, then succeeds or fails by region. */
 function fakeStore(failFor: string[] = []): BasemapStore & { calls: string[] } {

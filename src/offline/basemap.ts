@@ -1,6 +1,6 @@
 import { createStore, del, get, set } from "idb-keyval";
 import { PMTiles, type Protocol, type Source } from "pmtiles";
-import { sameVersion, versionFileUrl, versionFor, type BasemapVersion } from "../config/basemap.ts";
+import { regionVersion, sameVersion, versionFileUrl, type BasemapVersion } from "../config/basemap.ts";
 import type { RegionConfig, RegionId } from "../data/types.ts";
 
 /**
@@ -38,12 +38,12 @@ export type BasemapStatus =
   | { kind: "stale"; meta: StoredBasemap };
 
 /** The sidecar an archive extracted for this build and region would carry. */
-export function expectedSidecar(region: Pick<RegionConfig, "bbox">): BasemapVersion | undefined {
-  return region.bbox ? versionFor(region.bbox) : undefined;
+export function expectedSidecar(region: Pick<RegionConfig, "bbox" | "basemapBuild">): BasemapVersion | undefined {
+  return regionVersion(region);
 }
 
 /** "ready" when the stored sidecar matches what the app expects for the region. */
-export function statusFor(region: Pick<RegionConfig, "bbox">, meta: StoredBasemap | undefined): BasemapStatus {
+export function statusFor(region: Pick<RegionConfig, "bbox" | "basemapBuild">, meta: StoredBasemap | undefined): BasemapStatus {
   if (!meta) return { kind: "none" };
   return sameVersion(meta, expectedSidecar(region)) ? { kind: "ready", meta } : { kind: "stale", meta };
 }

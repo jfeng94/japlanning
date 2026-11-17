@@ -55,10 +55,25 @@ export interface BasemapVersion {
   bbox: readonly [number, number, number, number];
 }
 
-/** The version an archive for this bbox must have, from the config. */
-export function versionFor(bbox: readonly [number, number, number, number]): BasemapVersion {
-  return { build: BASEMAP.build, maxzoom: BASEMAP.maxzoom, bbox };
+/** The version an archive for this bbox must have, from the config: the shared build unless one is given. */
+export function versionFor(bbox: readonly [number, number, number, number], build: string = BASEMAP.build): BasemapVersion {
+  return { build, maxzoom: BASEMAP.maxzoom, bbox };
 }
+
+/**
+ * A region's archive version: its bbox, and its own build where it pins one (`basemapBuild`), else the shared
+ * one. A region added after the shared build left Protomaps pins a current build of its own, so the other
+ * regions' maps stay as they are and no phone downloads them again (docs/proposals/nyc-test-region.md).
+ */
+export function regionVersion(region: {
+  bbox?: readonly [number, number, number, number];
+  basemapBuild?: string;
+}): BasemapVersion | undefined {
+  return region.bbox ? versionFor(region.bbox, region.basemapBuild) : undefined;
+}
+
+/** Protomaps' planet archive for a build. */
+export const planetUrl = (build: string) => `https://build.protomaps.com/${build}.pmtiles`;
 
 /** Same build, zoom and bbox. Tolerates extra fields in what a server sent. */
 export function sameVersion(a: BasemapVersion | undefined, b: BasemapVersion | undefined): boolean {
@@ -78,10 +93,10 @@ export function versionTag(v: BasemapVersion): string {
   return `${v.build}-${v.maxzoom}-${v.bbox.join(",")}`;
 }
 
-/** The maps site's address for a region's archive; its version file is this without the query, plus ".json". */
-export function archiveUrl(regionId: string, bbox?: readonly [number, number, number, number]): string {
+/** The maps site's address for a region's archive (with its version, from regionVersion); its version file is this without the query, plus ".json". */
+export function archiveUrl(regionId: string, version?: BasemapVersion): string {
   const base = `${BASEMAP.site}/${regionId}.pmtiles`;
-  return bbox ? `${base}?v=${encodeURIComponent(versionTag(versionFor(bbox)))}` : base;
+  return version ? `${base}?v=${encodeURIComponent(versionTag(version))}` : base;
 }
 
 /** The version file's address for an archive address from archiveUrl. */

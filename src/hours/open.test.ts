@@ -3,18 +3,20 @@ process.env["TZ"] = "America/Los_Angeles";
 
 import OpeningHours from "opening_hours";
 import { describe, expect, it } from "vitest";
-import { evaluate, openStatus, tokyoNow } from "./open.ts";
+import { evaluate, openStatus, TOKYO_TZ, zoneNow } from "./open.ts";
 
 const OH = OpeningHours as unknown as Parameters<typeof evaluate>[0];
+const NEW_YORK = "America/New_York";
 const at = (iso: string) => new Date(iso);
-const status = (hours: string, iso: string) => evaluate(OH, hours, at(iso));
+const status = (hours: string, iso: string, zone = TOKYO_TZ) => evaluate(OH, hours, at(iso), zone);
+const tokyoNow = (now: Date) => zoneNow(TOKYO_TZ, now);
 
 const GLITCH = "Mo-Fr 08:00-19:00; Sa,Su 09:00-19:00";
 const FUGLEN = "Mo,Tu 07:00-23:00; We-Su 07:00-01:00";
 const THIRD_WED_OFF = "Mo-Su 09:00-20:00; We[3] off";
 const TUE_OFF = "Mo,We-Su 11:00-17:30; Tu off";
 
-describe("tokyoNow", () => {
+describe("zoneNow", () => {
   it("has Tokyo's wall clock in its local fields, whatever the process TZ", () => {
     expect(process.env["TZ"]).toBe("America/Los_Angeles");
     const t = tokyoNow(at("2026-11-04T09:30:00Z")); // 18:30 Wed in Tokyo, 01:30 Wed in LA
@@ -24,6 +26,27 @@ describe("tokyoNow", () => {
   it("crosses the date line correctly", () => {
     const t = tokyoNow(at("2026-11-04T15:30:00Z")); // 00:30 Thu in Tokyo, still Wed in LA and UTC
     expect([t.getDate(), t.getHours(), t.getDay()]).toEqual([5, 0, 4]);
+  });
+
+  it("has New York's wall clock, daylight saving included", () => {
+    // 2026-11-01 is when New York falls back: UTC-4 before, UTC-5 after.
+    const summer = zoneNow(NEW_YORK, at("2026-10-31T13:30:00Z")); // 09:30 Sat, EDT
+    expect([summer.getDate(), summer.getHours(), summer.getMinutes(), summer.getDay()]).toEqual([31, 9, 30, 6]);
+    const winter = zoneNow(NEW_YORK, at("2026-11-18T14:30:00Z")); // 09:30 Wed, EST
+    expect([winter.getDate(), winter.getHours(), winter.getMinutes(), winter.getDay()]).toEqual([18, 9, 30, 3]);
+  });
+});
+
+describe("evaluate in New York time", () => {
+  it("the same instant is open in New York and closed in Tokyo", () => {
+    // 14:30Z Wed 18 Nov: 09:30 Wed in New York (open), 23:30 Wed in Tokyo (closed).
+    expect(status(GLITCH, "2026-11-18T14:30:00Z", NEW_YORK)).toEqual({ state: "open", label: "Open · until 19:00" });
+    expect(status(GLITCH, "2026-11-18T14:30:00Z").state).toBe("closed");
+  });
+
+  it("closes at New York's 19:00, not Tokyo's", () => {
+    // 00:30Z Thu 19 Nov is 19:30 Wed in New York.
+    expect(status(GLITCH, "2026-11-19T00:30:00Z", NEW_YORK)).toEqual({ state: "closed", label: "Closed today · opens Thu 08:00" });
   });
 });
 
@@ -66,12 +89,12 @@ describe("evaluate in Tokyo time", () => {
 
 describe("open at a picked time", () => {
   it("labels say when they're for", async () => {
-    const { evaluateLocal, tokyoWallClock } = await import("./open.ts");
-    expect(evaluateLocal(OH, GLITCH, tokyoWallClock("2026-11-10T10:00")!, false)).toEqual({
+    const { evaluateLocal, parseWallClock } = await import("./open.ts");
+    expect(evaluateLocal(OH, GLITCH, parseWallClock("2026-11-10T10:00")!, false)).toEqual({
       state: "open",
       label: "Open at Tue 10:00 · until 19:00",
     });
-    expect(evaluateLocal(OH, GLITCH, tokyoWallClock("2026-11-10T20:00")!, false)).toEqual({
+    expect(evaluateLocal(OH, GLITCH, parseWallClock("2026-11-10T20:00")!, false)).toEqual({
       state: "closed",
       label: "Closed at Tue 20:00 · opens Wed 08:00",
     });
@@ -80,11 +103,11 @@ describe("open at a picked time", () => {
 
 describe("openStatus (async, lazy parser)", () => {
   it("blank hours are unknown with no label", async () => {
-    expect(await openStatus(undefined)).toEqual({ state: "unknown", label: "" });
-    expect(await openStatus("  ")).toEqual({ state: "unknown", label: "" });
+    expect(await openStatus(undefined, TOKYO_TZ)).toEqual({ state: "unknown", label: "" });
+    expect(await openStatus("  ", TOKYO_TZ)).toEqual({ state: "unknown", label: "" });
   });
 
   it("loads the parser and evaluates at a Tokyo wall-clock Date", async () => {
-    expect((await openStatus(GLITCH, tokyoNow(at("2026-11-04T09:30:00Z")), true)).state).toBe("open");
+    expect((await openStatus(GLITCH, TOKYO_TZ, tokyoNow(at("2026-11-04T09:30:00Z")), true)).state).toBe("open");
   });
 });

@@ -5,7 +5,8 @@ import type { LayerConfig } from "../data/types.ts";
 import { areaLook } from "../filter/apply.ts";
 import { categoriesOf, type FilterAction, type FilterState } from "../filter/state.ts";
 import { formatRadius, NEARBY_STOPS, walkMinutes } from "../geo/nearby.ts";
-import { clock, DAY, tokyoNow, tokyoWallClock, wallClockString } from "../hours/open.ts";
+import { regionById } from "../config/regions.ts";
+import { clock, DAY, parseWallClock, wallClockString, zoneNow } from "../hours/open.ts";
 import { chip } from "./chips.ts";
 
 /**
@@ -118,7 +119,7 @@ export function renderFiltersPage(body: HTMLElement, state: FilterState, ctx: Pa
   const every = ctx.layers.flatMap(categoriesOf).filter((c) => !ctx.present || ctx.present.has(c));
   const selectAll = () => dispatch({ type: "setCategories", categories: every, on: true });
   body.replaceChildren(clearRow("filters", ctx, hide, every.length > 0 ? selectAll : undefined));
-  const at = tokyoWallClock(state.openAt);
+  const at = parseWallClock(state.openAt);
   const flags = [
     chip("Bookmarked", {
       pressed: state.bookmarkedOnly,
@@ -291,9 +292,9 @@ function radiusRow(body: HTMLElement, radius: number, ctx: PageContext): HTMLEle
   return wrap;
 }
 
-/** Under Open now: the phone's own date and time pickers; one empty half is filled from Tokyo's current time. */
+/** Under Open now: the phone's own date and time pickers; one empty half is filled from the city's current time. */
 function openAtRow(state: FilterState, dispatch: (a: FilterAction) => void): HTMLElement {
-  const at = tokyoWallClock(state.openAt);
+  const at = parseWallClock(state.openAt);
   const wrap = document.createElement("div");
   wrap.className = "open-at";
   const title = document.createElement("span");
@@ -312,7 +313,7 @@ function openAtRow(state: FilterState, dispatch: (a: FilterAction) => void): HTM
   }
   const commit = () => {
     if (!date.value && !time.value) return;
-    const now = wallClockString(tokyoNow());
+    const now = wallClockString(zoneNow(regionById(state.region).timeZone));
     dispatch({ type: "setOpenAt", value: `${date.value || now.slice(0, 10)}T${time.value || now.slice(11, 16)}` });
   };
   date.addEventListener("change", commit);

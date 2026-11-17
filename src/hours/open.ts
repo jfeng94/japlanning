@@ -1,15 +1,17 @@
 /**
  * Open / closed from an OpenStreetMap `opening_hours` string, evaluated in
- * Asia/Tokyo whatever the device's time zone.
+ * the place's own city's time zone (its region's `timeZone`: Asia/Tokyo in
+ * Japan, America/New_York in New York) whatever the device's.
  *
  * The opening_hours library reads the wall clock from a Date's *local*
  * getters (getDay, getHours...). So we hand it a Date whose local fields
- * equal Tokyo's wall clock: on a phone in California that Date is "wrong"
- * as an instant but right as a clock, which is what the library wants.
- * Dates it returns (next change) are in the same frame, so their local
- * getters are Tokyo wall-clock values too and can be formatted directly.
+ * equal the city's wall clock: on a phone in California that Date is
+ * "wrong" as an instant but right as a clock, which is what the library
+ * wants. Dates it returns (next change) are in the same frame, so their
+ * local getters are wall-clock values too and can be formatted directly.
  */
 
+/** Japan's zone: every region's but New York's. */
 export const TOKYO_TZ = "Asia/Tokyo";
 
 export type OpenState = "open" | "closed" | "unknown" | "unparsable";
@@ -20,28 +22,39 @@ export interface OpenStatus {
   label: string;
 }
 
-const tokyoParts = new Intl.DateTimeFormat("en-US", {
-  timeZone: TOKYO_TZ,
-  hourCycle: "h23",
-  year: "numeric",
-  month: "numeric",
-  day: "numeric",
-  hour: "numeric",
-  minute: "numeric",
-  second: "numeric",
-});
+const formats = new Map<string, Intl.DateTimeFormat>();
+function partsFormat(zone: string): Intl.DateTimeFormat {
+  let f = formats.get(zone);
+  if (!f) {
+    f = new Intl.DateTimeFormat("en-US", {
+      timeZone: zone,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+    });
+    formats.set(zone, f);
+  }
+  return f;
+}
 
-/** A Date whose local fields are Tokyo's wall clock at `now`. */
-export function tokyoNow(now: Date = new Date()): Date {
+/** A Date whose local fields are the zone's wall clock at `now`. */
+export function zoneNow(zone: string, now: Date = new Date()): Date {
   const p: Record<string, number> = {};
-  for (const part of tokyoParts.formatToParts(now)) {
+  for (const part of partsFormat(zone).formatToParts(now)) {
     if (part.type !== "literal") p[part.type] = Number(part.value);
   }
   return new Date(p["year"]!, p["month"]! - 1, p["day"]!, p["hour"]!, p["minute"]!, p["second"]!);
 }
 
-/** "YYYY-MM-DDTHH:MM" (a Tokyo wall-clock moment, as the URL and pickers carry it) to the same kind of Date, or undefined. */
-export function tokyoWallClock(s: string | undefined): Date | undefined {
+/**
+ * "YYYY-MM-DDTHH:MM" (a wall-clock moment in the city on screen, as the URL and Open at's pickers carry it) to the
+ * same kind of Date, or undefined. No zone is involved: the string is already a wall clock.
+ */
+export function parseWallClock(s: string | undefined): Date | undefined {
   const m = s ? /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(s) : null;
   if (!m) return undefined;
   const [, y, mo, d, h, mi] = m.map(Number) as [number, number, number, number, number, number];
@@ -49,7 +62,7 @@ export function tokyoWallClock(s: string | undefined): Date | undefined {
   return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
-/** The inverse: a Tokyo wall-clock Date to "YYYY-MM-DDTHH:MM". */
+/** The inverse: a wall-clock Date to "YYYY-MM-DDTHH:MM". */
 export function wallClockString(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -71,21 +84,22 @@ export const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * Status for the card. `at` is a Tokyo wall-clock Date (from tokyoNow or
- * tokyoWallClock); when it isn't "now", the label says when it's for.
+ * Status for the card, in the place's zone. `at` is a wall-clock Date (from
+ * parseWallClock, Open at's pick); without it, now in the zone. When it
+ * isn't "now", the label says when it's for.
  */
-export async function openStatus(hoursOsm: string | undefined, at?: Date, isNow = at === undefined): Promise<OpenStatus> {
+export async function openStatus(hoursOsm: string | undefined, zone: string, at?: Date, isNow = at === undefined): Promise<OpenStatus> {
   if (!hoursOsm || hoursOsm.trim() === "") return { state: "unknown", label: "" };
   const OpeningHours = await loadParser();
-  return evaluateLocal(OpeningHours, hoursOsm, at ?? tokyoNow(), isNow);
+  return evaluateLocal(OpeningHours, hoursOsm, at ?? zoneNow(zone), isNow);
 }
 
-/** Synchronous core taking an instant; converts to Tokyo wall clock. For tests. */
-export function evaluate(OpeningHours: OpeningHoursCtor, hoursOsm: string, now: Date): OpenStatus {
-  return evaluateLocal(OpeningHours, hoursOsm, tokyoNow(now), true);
+/** Synchronous core taking an instant; converts to the zone's wall clock. For tests. */
+export function evaluate(OpeningHours: OpeningHoursCtor, hoursOsm: string, now: Date, zone: string): OpenStatus {
+  return evaluateLocal(OpeningHours, hoursOsm, zoneNow(zone, now), true);
 }
 
-/** Synchronous core taking a Tokyo wall-clock Date. */
+/** Synchronous core taking a wall-clock Date. */
 export function evaluateLocal(OpeningHours: OpeningHoursCtor, hoursOsm: string, t: Date, isNow = true): OpenStatus {
   let oh: InstanceType<OpeningHoursCtor>;
   try {

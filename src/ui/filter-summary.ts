@@ -2,7 +2,7 @@ import { iconAssetUrl, isIconId } from "../config/icons.ts";
 import type { LayerConfig } from "../data/types.ts";
 import { categoriesOf, layersInPlay, type FilterState } from "../filter/state.ts";
 import { formatRadius } from "../geo/nearby.ts";
-import { clock, DAY, tokyoWallClock } from "../hours/open.ts";
+import { clock, DAY, parseWallClock } from "../hours/open.ts";
 import { tag } from "./chips.ts";
 
 /**
@@ -57,7 +57,7 @@ function summaryTags(state: FilterState, regionLayers: LayerConfig[], hereLabel:
   if (state.nearby !== undefined) tags.push(tag(`Within ${formatRadius(state.nearby)}`));
 
   if (state.openNow) {
-    const at = tokyoWallClock(state.openAt);
+    const at = parseWallClock(state.openAt);
     tags.push(tag(at ? `Open ${DAY[at.getDay()]} ${clock(at)}` : "Open now"));
   }
   if (state.bookmarkedOnly) tags.push(tag("Bookmarked"));
