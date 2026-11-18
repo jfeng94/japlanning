@@ -165,6 +165,12 @@ export interface Place {
    * the business rather than a dropped pin (docs/proposals/directions-place-ids.md).
    */
   googlePlaceId?: string;
+  /**
+   * Closed for good (the Permanently closed column). Kept in the sheet so its
+   * ID is never reused; the app's loader drops it, so it has no pin, row,
+   * search hit or count. Scripts see it.
+   */
+  closed?: true;
   /** Japanese address with any leading ~ stripped. */
   address?: string;
   /** True when the sheet marked the address with a leading ~ (area-level only). */

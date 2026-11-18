@@ -287,7 +287,7 @@ async function main(): Promise<void> {
   for (const layer of layers) {
     const text = await readFile(path.join(ROOT, "data", `${layer.id}.csv`), "utf8");
     for (const p of parseLayerCsv(text, layer, regionOptions()).places) {
-      if (NO_LISTING.has(p.id) || p.googlePlaceId) continue;
+      if (NO_LISTING.has(p.id) || p.googlePlaceId || p.closed) continue;
       if (wanted.size > 0 && !wanted.has(p.id)) continue;
       places.push(p);
     }

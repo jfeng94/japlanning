@@ -125,7 +125,8 @@ async function main(): Promise<void> {
   const places: Place[] = [];
   for (const layer of layers) {
     const text = await readFile(path.join(ROOT, "data", `${layer.id}.csv`), "utf8");
-    places.push(...parseLayerCsv(text, layer, regionOptions()).places);
+    // A place closed for good isn't audited or counted.
+    places.push(...parseLayerCsv(text, layer, regionOptions()).places.filter((p) => !p.closed));
   }
   const queue = new Map(
     Papa.parse<QueueRow>(await readFile(path.join(ROOT, QUEUE), "utf8"), { header: true, skipEmptyLines: true }).data.map((r) => [r.id, r]),

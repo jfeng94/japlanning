@@ -147,8 +147,12 @@ const fromBundled: Source = async (layer, deps, parse) => {
 
 // ---- helpers ----
 
+/** The app's parser: a place marked Permanently closed never reaches it (no pin, row, search hit or count). */
 function parserFor(layer: LayerConfig): (text: string) => ParseResult {
-  return (text) => parseLayerCsv(text, layer, { ...regionOptions(), icons: ICON_IDS });
+  return (text) => {
+    const result = parseLayerCsv(text, layer, { ...regionOptions(), icons: ICON_IDS });
+    return { ...result, places: result.places.filter((p) => !p.closed) };
+  };
 }
 
 function withReasons(result: LoadResult, reasons: string[]): LoadResult {

@@ -39,6 +39,7 @@ const COL = {
   lastVerified: "Last verified",
   icon: "Icon",
   googlePlaceId: "Place ID",
+  closed: "Permanently closed",
 } as const;
 
 /** Rough bounds of Japan; anything outside is a mis-pasted coordinate. */
@@ -155,6 +156,12 @@ export function parseLayerCsv(
       warn(`${name}: Key "${cell(COL.key)}" is not ★, yes or no; treated as no`, COL.key);
     }
     const starred = starPrefix || (rawKey !== undefined && KEY_YES.has(rawKey));
+    // Closed for good (2026-11-18): kept in the sheet, its ID never reused; the app's loader drops it.
+    const rawClosed = cell(COL.closed)?.toLowerCase();
+    if (rawClosed !== undefined && !KEY_YES.has(rawClosed) && !KEY_NO.has(rawClosed)) {
+      warn(`${name}: Permanently closed "${cell(COL.closed)}" is not yes or no; treated as no`, COL.closed);
+    }
+    const closed = rawClosed !== undefined && KEY_YES.has(rawClosed);
 
     // Region: the layer's, or the row's own cell when the layer spans regions.
     let region: RegionId;
@@ -274,6 +281,7 @@ export function parseLayerCsv(
       kinds: placeKinds,
       facets,
       extra,
+      ...(closed ? { closed: true } : {}),
     });
   });
 

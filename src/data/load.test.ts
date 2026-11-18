@@ -64,6 +64,13 @@ describe("loadLayer source chain", () => {
     expect(await store.get(KEY)).toEqual({ text: GOOD, fetchedAt: NOW.toISOString() });
   });
 
+  it("leaves out places marked Permanently closed", async () => {
+    const csv = "Name,Latitude,Longitude,Permanently closed\nOpen,35.6,139.7,\nGone,35.6,139.7,TRUE\n";
+    const { deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: ok(csv) }));
+    const r = await loadLayer(coffee, d);
+    expect(r.places.map((p) => p.name)).toEqual(["Open"]);
+  });
+
   it("network 500 with cache: returns cache, leaves it untouched, explains why", async () => {
     const { store, deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: status(500) }), { [KEY]: cachedEntry });
     const r = await loadLayer(coffee, d);

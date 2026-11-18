@@ -122,6 +122,14 @@ before and after goes in the message.
 A dropped place is deleted from its data file. Its ID is never reused,
 and git history keeps the row.
 
+A place that has **closed for good** stays in its data file with
+`TRUE` in the **Permanently closed** column (Jerry, 2026-11-18): the
+app leaves it out (no pin, row, search hit or count), and so does the
+audit, but the row and its research remain. The first eleven were
+those Google listed as closed for good when the place IDs were looked
+up (2026-11-18); confirming them from another source is still an
+audit job, and a wrong one is undone by clearing the cell.
+
 ## Tools
 
 - **GSI geocoder:** `msearch.gsi.go.jp/address-search/AddressSearch?q=`,
