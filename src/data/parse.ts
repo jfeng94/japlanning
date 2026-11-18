@@ -38,6 +38,7 @@ const COL = {
   notes: "Notes",
   lastVerified: "Last verified",
   icon: "Icon",
+  googlePlaceId: "Place ID",
 } as const;
 
 /** Rough bounds of Japan; anything outside is a mis-pasted coordinate. */
@@ -264,6 +265,7 @@ export function parseLayerCsv(
       hours: cell(COL.hours),
       hoursOsm: cell(COL.hoursOsm),
       link: cell(COL.link),
+      googlePlaceId: cell(COL.googlePlaceId),
       address,
       addressApproximate: approxPrefix !== undefined,
       notes: cell(COL.notes),

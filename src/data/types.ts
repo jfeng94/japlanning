@@ -160,6 +160,11 @@ export interface Place {
   /** OpenStreetMap opening_hours syntax. */
   hoursOsm?: string;
   link?: string;
+  /**
+   * Google's place ID (the Place ID column), so the Google Maps button opens
+   * the business rather than a dropped pin (docs/proposals/directions-place-ids.md).
+   */
+  googlePlaceId?: string;
   /** Japanese address with any leading ~ stripped. */
   address?: string;
   /** True when the sheet marked the address with a leading ~ (area-level only). */

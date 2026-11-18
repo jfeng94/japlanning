@@ -4,14 +4,21 @@ import type { Place } from "../data/types.ts";
  * The place's page in Google Maps, opened in the Maps app on iOS if
  * installed. A page, not directions: Directions is one tap from there,
  * and the page can be looked around first (Jerry, 2026-11-18; it was a
- * transit directions link until then). Coordinates, not a place search,
- * so the pin is never mis-matched; Google shows a dropped pin rather
- * than the business until places carry Google's place ID
- * (docs/proposals/directions-place-ids.md).
+ * transit directions link until then).
+ *
+ * With Google's place ID, the business's own page: the name goes in the
+ * query and the ID picks the listing (the app ignores an ID next to
+ * coordinates; Jerry's iPhone test, 2026-11-18). Without one, the page
+ * of a dropped pin at our coordinates, never a search that could land on
+ * another branch (docs/proposals/directions-place-ids.md).
  */
-export function googleMapsUrl(place: Pick<Place, "lat" | "lng">): string {
+export function googleMapsUrl(place: Pick<Place, "lat" | "lng"> & Partial<Pick<Place, "name" | "googlePlaceId">>): string {
+  const base = "https://www.google.com/maps/search/?api=1";
+  if (place.googlePlaceId && place.name) {
+    return `${base}&query=${encodeURIComponent(place.name)}&query_place_id=${encodeURIComponent(place.googlePlaceId)}`;
+  }
   const at = `${place.lat.toFixed(6)},${place.lng.toFixed(6)}`;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(at)}`;
+  return `${base}&query=${encodeURIComponent(at)}`;
 }
 
 /** A link straight to one place: region and id, never the filter state. This is what Share copies. */

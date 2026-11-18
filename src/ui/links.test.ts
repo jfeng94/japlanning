@@ -9,6 +9,13 @@ describe("googleMapsUrl", () => {
       "https://www.google.com/maps/search/?api=1&query=35.693743%2C139.761305",
     );
   });
+
+  it("opens the business by name and Google's place ID when the place has one", () => {
+    const place = { lat: 40.7445731, lng: -73.9956399, name: "Warabimochi Kamakura", googlePlaceId: "ChIJv0bt7bhZwokR2qT9JseR0_M" };
+    expect(googleMapsUrl(place)).toBe(
+      "https://www.google.com/maps/search/?api=1&query=Warabimochi%20Kamakura&query_place_id=ChIJv0bt7bhZwokR2qT9JseR0_M",
+    );
+  });
 });
 
 describe("shareUrl", () => {

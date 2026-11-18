@@ -355,6 +355,16 @@ describe("edge cases", () => {
     expect(without.places[0]!.extra).toEqual({ Kind: "Hotel" });
   });
 
+  it("reads Google's place ID from the Place ID column, not into extra", () => {
+    const { places, warnings } = parseLayerCsv(
+      csv(["Name,Latitude,Longitude,Place ID", "a,35.6,139.7,ChIJd6O9frKNGGARI6fggBYmYYQ", "b,35.6,139.7,"]),
+      lodging,
+    );
+    expect(places.map((p) => p.googlePlaceId)).toEqual(["ChIJd6O9frKNGGARI6fggBYmYYQ", undefined]);
+    expect(places[0]!.extra).toEqual({});
+    expect(warnings).toEqual([]);
+  });
+
   it("derives kinds from a facet column for a layer with kindsFrom: every kind a value is in, in chip order; none warns", () => {
     const groups = { Noodles: ["Ramen", "Soba"], Rice: ["Onigiri", "Donburi"] };
     const derived: LayerConfig = {
