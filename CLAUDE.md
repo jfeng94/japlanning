@@ -350,7 +350,8 @@ is used only as the **directions hand-off**.
    mis-matched place search; the trade-off is that Google shows a dropped pin
    rather than the business name. A Google place ID per place would open
    the business instead: `docs/proposals/directions-place-ids.md`
-   (proposed 2026-11-11, waiting on Jerry's Google Cloud project and key).
+   (proposed 2026-11-11; the key is set on Jerry's PC as `GOOGLE_MAPS_KEY`
+   since 2026-11-18, and the iPhone test comes next).
 7. **Clipboard:** `navigator.clipboard.writeText` needs HTTPS and a user
    gesture. Copy as `Name\nAddress`. If the address starts with `~`, flag it
    as approximate in the UI.

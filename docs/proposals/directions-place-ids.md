@@ -1,7 +1,8 @@
 # Directions to the business, not a dropped pin
 
-Status: **proposed** (2026-11-11). Waiting on Jerry's Google Cloud
-project and API key; nothing is built yet.
+Status: **proposed** (2026-11-11). Jerry's key is set on his PC as
+`GOOGLE_MAPS_KEY` (2026-11-18); next is the iPhone test below. Nothing
+is built yet.
 
 ## Why
 
