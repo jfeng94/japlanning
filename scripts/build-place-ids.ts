@@ -6,6 +6,12 @@
  *
  *   npm run placeids                    every place without a Place ID
  *   npm run placeids -- drinks:77 ...   just these
+ *   npm run placeids -- --apply         write the accepted IDs into data/
+ *
+ * Each finding's decision starts as "accept" when nothing about it is in
+ * doubt (`autoAccept`), else blank; Claude and Jerry settle the rest in
+ * .cache/place-ids/findings.csv before --apply, which writes the Place ID
+ * column of every row marked "accept" and leaves the others blank.
  *
  * The key is never in a request this script builds when it runs in a cloud
  * session: the cloud's proxy adds the X-Goog-Api-Key header (a network secret
@@ -81,31 +87,50 @@ function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng: numbe
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-/** Letters and digits only, lower case, full-width folded: "COVERT COFFEE" and "Covert Coffee" compare equal. */
+/**
+ * Letters and digits only, lower case, without accents or long vowels,
+ * full-width folded: "COVERT COFFEE" and "Covert Coffee" compare equal, as
+ * do Himitsudō and Himitsudo, Shouten and Shoten.
+ */
 export function normName(s: string): string {
-  return s.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+  return s
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, "")
+    .replace(/ou|oo/g, "o")
+    .replace(/uu/g, "u");
 }
 
-/** Words that say what a place is, not which: "Wayfarer Hotel" is WAYFARER Kyoto Shijo on Google. */
-const GENERIC = new Set(["the", "and", "co", "hotel", "coffee", "cafe", "café", "tea", "bar", "shop", "store", "roasters", "roastery", "bakery"]);
+/**
+ * Words that say what a place is, not which: "Wayfarer Hotel" is WAYFARER
+ * Kyoto Shijo on Google, "Kameido Gyoza Honten" is Kameido Gyoza Main Store.
+ */
+const GENERIC = new Set([
+  "the", "and", "co", "hotel", "coffee", "cafe", "tea", "bar", "shop", "store", "roasters", "roastery", "bakery",
+  "honten", "sohonten", "honpo", "main", "temple", "shrine",
+]);
 
 /**
- * Our brand appears in Google's name, or Google's in ours, or every word of
- * ours that isn't generic appears in Google's.
+ * Our brand appears in Google's name or Google's in ours; or every word of
+ * ours that isn't generic appears in Google's; or, for a name of three or
+ * more such words, most of them, one at least four letters long ("Yaesu
+ * Unagi Hashimoto" is Yaesu Hashimoto). Two-word names must match whole:
+ * "Baji Tofu" is not Oni-tofu.
  */
 export function namesMatch(ours: string, google: string): boolean {
   const [a, b] = [normName(ours), normName(google)];
   if (a === "" || b === "") return false;
   if (a.includes(b) || b.includes(a)) return true;
-  const words = ours.normalize("NFKC").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w !== "" && !GENERIC.has(w));
-  return words.length > 0 && words.every((w) => b.includes(w));
+  const words = ours
+    .split(/[^\p{L}\p{N}]+/u)
+    .map(normName)
+    .filter((w) => w !== "" && !GENERIC.has(w));
+  const found = words.filter((w) => b.includes(w));
+  if (words.length > 0 && found.length === words.length) return true;
+  return words.length >= 3 && found.length * 2 >= words.length && found.some((w) => w.length >= 4);
 }
 
-/**
- * The name and the address. The branch only helps when the address is
- * approximate: next to an exact one, a description like "Shinjuku 3-chome
- * (Musashino Bldg B1F)" made Google miss the shop for its other branches.
- */
 function queryFor(p: Place): string {
   return [p.name, p.addressApproximate ? p.branch : undefined, p.address].filter(Boolean).join(" ");
 }
@@ -212,7 +237,51 @@ export function judge(p: Place, found: GooglePlace[]): Finding {
   };
 }
 
+/**
+ * Accepted without review: the name and address match ours, Google doesn't
+ * say it closed for good, and its pin is within 500 m of ours (further
+ * means a pin of ours to fix, or another branch).
+ */
+export function autoAccept(f: Finding): boolean {
+  return (
+    !f.flags.includes("name") &&
+    !f.flags.includes("address") &&
+    !f.flags.includes("none") &&
+    f.status !== "CLOSED_PERMANENTLY" &&
+    typeof f.distanceM === "number" &&
+    f.distanceM <= 500
+  );
+}
+
+/** Writes each accepted ID into its layer's Place ID column, by the row's ID. */
+async function apply(): Promise<void> {
+  const rows = Papa.parse<Record<string, string>>(await readFile(path.join(CACHE, "findings.csv"), "utf8"), {
+    header: true,
+    skipEmptyLines: true,
+  }).data;
+  const accepted = new Map(rows.filter((r) => r.decision === "accept" && r.googleId).map((r) => [r.place, r.googleId!]));
+  for (const layer of layers) {
+    const file = path.join(ROOT, "data", `${layer.id}.csv`);
+    const parsed = Papa.parse<Record<string, string>>(await readFile(file, "utf8"), { header: true, skipEmptyLines: "greedy" });
+    const fields = parsed.meta.fields ?? [];
+    let written = 0;
+    for (const row of parsed.data) {
+      const id = accepted.get(`${layer.id}:${row.ID}`);
+      if (id && !row["Place ID"]) {
+        row["Place ID"] = id;
+        written++;
+      }
+    }
+    if (written === 0) continue;
+    const columns = fields.includes("Place ID") ? fields : [...fields, "Place ID"];
+    await writeFile(file, Papa.unparse(parsed.data, { columns, newline: "\n" }) + "\n");
+    console.log(`  ${layer.id}: ${written} Place IDs written`);
+  }
+  console.log("Now run npm run import -- <layer> for each, to normalise the files, and the tests.");
+}
+
 async function main(): Promise<void> {
+  if (process.argv.includes("--apply")) return apply();
   const wanted = new Set(process.argv.slice(2));
   const places: Place[] = [];
   for (const layer of layers) {
@@ -238,13 +307,14 @@ async function main(): Promise<void> {
     if ((i + 1) % 50 === 0) console.log(`  ${i + 1} / ${places.length}`);
   }
 
-  const csv = Papa.unparse(findings.map((f) => ({ ...f, flags: f.flags.join(" "), decision: f.flags.length === 0 ? "accept" : "" })));
+  const csv = Papa.unparse(findings.map((f) => ({ ...f, flags: f.flags.join(" "), decision: autoAccept(f) ? "accept" : "" })), { newline: "\n" });
   const out = path.join(CACHE, wanted.size > 0 ? "findings-partial.csv" : "findings.csv");
   await writeFile(out, csv + "\n");
 
   const count = (flag: string) => findings.filter((f) => f.flags.includes(flag)).length;
   console.log(`\n${findings.length} looked up, ${errors} errors -> ${path.relative(ROOT, out)}`);
   console.log(`  clean (name and address match, within ${FAR_M} m, one listing, operating): ${findings.filter((f) => f.flags.length === 0).length}`);
+  console.log(`  accepted without review (autoAccept): ${findings.filter(autoAccept).length}`);
   for (const flag of ["none", "name", "address", "far", "two-listings", "status", "approx"]) console.log(`  ${flag.padEnd(13)} ${count(flag)}`);
 }
 

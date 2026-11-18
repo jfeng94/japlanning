@@ -52,7 +52,14 @@ The **Places API (New) Text Search**, run by a script over every place
 - **Review.** The findings flag each match whose name or address
   differs, that is over 100 m from our pin, that has a second listing
   nearby, that Google says is closed, or whose address of ours is
-  approximate; the rest are accepted. Jerry reviews the flagged ones,
+  approximate. Accepted without review (`autoAccept`): name and address
+  match, not closed for good, within 500 m. Claude judges the rest on
+  the evidence (a Japanese-script name like 長寿庵 蕎匠 for Choju-an
+  Kyosho, a translation like Human Beings Everybody Noodles) and leaves
+  doubtful ones blank. `npm run placeids -- --apply` writes the
+  accepted IDs, then `npm run import` per layer normalises the files.
+  The first run (2026-11-18): 512 places, 486 accepted, 15 without a
+  reliable match, 11 that Google says closed for good. Jerry reviews the flagged ones,
   as in `docs/design/adding-places.md` (findings, review, then rows).
   Accepted IDs go into a new **`Place ID`** column in each layer's CSV.
   The loader already tolerates new columns.
