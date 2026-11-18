@@ -79,7 +79,7 @@ describe("detailFields", () => {
 
   it("a layer without hours (lodging) says nothing about them", () => {
     const lodging: LayerConfig = { ...layer, id: "lodging", label: "Lodging", hasHours: false, facets: [] };
-    const f = detailFields(place({ name: "Home base", address: "154-30 25th Ave, Whitestone, NY 11357", facets: {} }), lodging);
+    const f = detailFields(place({ name: "fufu spawn point", address: "154-30 25th Ave, Whitestone, NY 11357", facets: {} }), lodging);
     expect(f.essentials).toEqual([{ label: "Address", value: "154-30 25th Ave, Whitestone, NY 11357" }]);
   });
 

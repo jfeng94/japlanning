@@ -36,10 +36,12 @@ to New York on 2026-11-18.
   and Lower East Side (MN0302) in Manhattan, Long Island City (QN0201)
   in Queens. Tests add Washington Square Park and Court Square to the
   Here landmarks.
-- **Home base and the lodging layer** (2026-11-18): two lodging rows
-  under the tent pin, each "Home base" at its building's address with
-  the neighbourhood as the branch: Whitestone (1) and Hell's Kitchen (2,
-  the building only, no unit number). Whitestone needed a 22nd area, **Whitestone** (QN0702 and QN0704: the house's
+- **The lodging layer** (2026-11-18): two lodging rows under the tent
+  pin, each at its building's address and named after a pet: fufu spawn
+  point (1, Whitestone) and charchar spawn point (2, Hell's Kitchen, the
+  building only, no unit number). They began as "Home base" with the
+  neighbourhood as the branch, renamed the same day. Whitestone needed a
+  22nd area, **Whitestone** (QN0702 and QN0704: the house's
   block falls in Murray Hill-Broadway Flushing, 100 m short of
   Whitestone-Beechhurst, though its ZIP is Whitestone's), next to
   Flushing.

@@ -207,8 +207,8 @@ export const layers: LayerConfig[] = [
   },
   {
     // Where the group sleeps (2026-11-18, docs/design/regions-layers-filters.md, "Lodging"): a reference, so no
-    // hours, and its pins stay on the Area page's map. A friend's home goes in as "Home base" with its
-    // neighbourhood as the branch: the address is public, nobody's name is.
+    // hours, and its pins stay on the Area page's map. A friend's home goes in named after a pet ("fufu spawn
+    // point"): the address is public, nobody's name is.
     id: "lodging",
     label: "Lodging",
     dataUrl: "/data/lodging.csv",

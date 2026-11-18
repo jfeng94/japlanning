@@ -295,7 +295,7 @@ export const regions: RegionConfig[] = [
       { label: "Upper East Side", ward: "Manhattan", adjacent: ["Midtown"], nta: ["MN0801", "MN0802", "MN0803"] },
       { label: "Upper West Side", ward: "Manhattan", adjacent: ["Harlem", "Hell's Kitchen", "Midtown"], nta: ["MN0701", "MN0702", "MN0703"] },
       { label: "West Village", ward: "Manhattan", adjacent: ["Chelsea & Hudson Yards", "Flatiron & NoMad", "Greenwich Village", "SoHo & Nolita"], nta: ["MN0203"] },
-      // Home base (2026-11-18). Its block falls in the city's Murray Hill-Broadway Flushing NTA, 100 m south of
+      // fufu spawn point, lodging (2026-11-18). Its block falls in the city's Murray Hill-Broadway Flushing NTA, 100 m south of
       // Whitestone-Beechhurst, though the post office calls it Whitestone (11357), so the area takes both.
       { label: "Whitestone", ward: "Queens", adjacent: ["Flushing"], nta: ["QN0702", "QN0704"] },
       { label: "Williamsburg", ward: "Brooklyn", adjacent: ["Bushwick", "Greenpoint"], nta: ["BK0102"] },

@@ -195,10 +195,11 @@ Holds no private information: name, coordinates, address, link and notes
 true`, so its pins stay on the Area page's map beside the bookmarks,
 whatever the filters say. The tent is its pin.
 
-A friend's home (2026-11-18, the first rows) goes in under a neutral
-name, **Home base**, with its neighbourhood as the branch ("Whitestone"),
-at its exact address so Directions go to the door. The address is
-public; nobody's name is tied to it. The planned `Who` column (first
+A friend's home (2026-11-18, the first rows) goes in **named after a
+pet**, indirectly ("fufu spawn point"; at first "Home base", renamed the
+same day), at its exact address so Directions go to the door, and with
+no branch, since the area already says where it is. The address is
+public; nobody's name is tied to it, and a flat's unit number stays out. The planned `Who` column (first
 names, whose hotel a pin is) is left out until a hotel needs it, and
 never names the host of a home.
 

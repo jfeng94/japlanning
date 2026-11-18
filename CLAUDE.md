@@ -81,8 +81,8 @@ cloud instead of his PC, mainly to add places found on the trip
    subway lines.
 10. **Group use**: several travellers install the same URL. Lodging is a
     shared quick reference, never private data. A friend's home goes in
-    under a neutral name, "Home base", with its neighbourhood as the
-    branch: the address is public, nobody's name is (Jerry, 2026-11-18).
+    named after a pet, not a person ("fufu spawn point"): the address is
+    public, nobody's name is (Jerry, 2026-11-18).
 
 ## Devices
 
