@@ -127,6 +127,7 @@ the same address; the one Jerry's share link names was used.
 - Coordinates plus ID, in a directions link: **a dropped pin.** The app
   ignores the ID next to coordinates.
 - The name plus the ID, in a directions link: **the shop.**
+- The name plus the ID, in the search link: **the shop's page.**
 - Jerry then chose the page over directions, so the link becomes the
   search link with the name and the ID (above). The script's findings
   table will have to settle shops with two listings.
