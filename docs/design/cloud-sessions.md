@@ -85,7 +85,10 @@ cloud it:
 - **Places in an existing area are quick.** A new area means
   `npm run areas`, which first downloads the census blocks (Japan) or the
   neighbourhood shapes (New York) into `.cache/`, which isn't in the repo.
-  It works; it just takes a few extra minutes.
+  It takes a few extra minutes, and needs `NODE_USE_ENV_PROXY=1` in
+  front (`NODE_USE_ENV_PROXY=1 npm run areas -- hakone`): Node's own
+  `fetch` ignores the cloud's proxy without it and fails with
+  "ENOTFOUND" (2026-11-18).
 - **Station timetables wait for the PC.** `npm run stations -- --refresh`
   needs `ODPT_TOKEN`, which never leaves the PC.
 - **Memory doesn't carry over.** Notes a session saves stay in that

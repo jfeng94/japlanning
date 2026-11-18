@@ -190,7 +190,9 @@ of two kinds matches either kind's chip.
 ### Lodging
 
 Holds no private information: name, coordinates, address, link and notes
-(`data/lodging.csv`). No confirmation numbers, dates or prices.
+(`data/lodging.csv`). No confirmation numbers, PINs or prices. A hotel's
+notes do give the group's check-in and check-out days, with its times
+(Jerry, 2026-11-18): first "No dates" too, changed for the first hotels.
 `hasHours: false`, so the audit never asks for its hours. `onAreaMap:
 true`, so its pins stay on the Area page's map beside the bookmarks,
 whatever the filters say. The tent is its pin.
@@ -202,6 +204,13 @@ no branch, since the area already says where it is. The address is
 public; nobody's name is tied to it, and a flat's unit number stays out. The planned `Who` column (first
 names, whose hotel a pin is) is left out until a hotel needs it, and
 never names the host of a home.
+
+**Hotels** (2026-11-18, from Jerry's booking emails): the brand as the
+name and the place as the branch where the brand has others (BOOK HOTEL
+· Jimbocho, Wayfarer Hotel · Shijo, lyf · Ginza), and a note that opens
+with the stay ("Check in Wed Dec 16 from 15:00; check out Sun Dec 20 by
+11:00"), then how to get there. Mizunoto, in Hakone, needed a new area,
+Kowakudani.
 
 ## Filter model
 

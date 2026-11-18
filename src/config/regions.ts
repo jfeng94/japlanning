@@ -260,10 +260,13 @@ export const regions: RegionConfig[] = [
     timeZone: "Asia/Tokyo",
     // First pins 2026-11-09. One town, so one flat list.
     areas: [
-      { label: "Gora", ward: "箱根町", adjacent: ["Moto-Hakone"] },
+      { label: "Gora", ward: "箱根町", adjacent: ["Kowakudani", "Moto-Hakone"] },
       { label: "Hakone-Yumoto", ward: "箱根町", adjacent: ["Hatajuku"] },
       { label: "Hatajuku", ward: "箱根町", adjacent: ["Hakone-Yumoto", "Moto-Hakone"] },
-      { label: "Moto-Hakone", ward: "箱根町", adjacent: ["Gora", "Hatajuku"] },
+      // Mizunoto, lodging (2026-11-18). Its census block is 二ノ平, where Kowakien and Yunessun are; the inn's
+      // address says 小涌谷.
+      { label: "Kowakudani", ward: "箱根町", adjacent: ["Gora", "Moto-Hakone"] },
+      { label: "Moto-Hakone", ward: "箱根町", adjacent: ["Gora", "Hatajuku", "Kowakudani"] },
     ],
     bbox: [139.014, 35.198, 139.11, 35.254],
   },
