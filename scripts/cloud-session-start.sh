@@ -4,12 +4,19 @@
 # Local sessions return at once. In the cloud it:
 #   1. puts the Node version CI uses (.nvmrc) on PATH: the cloud machine
 #      ships Node 20-22, and the scripts and Vitest want what CI runs;
-#   2. runs npm ci when package-lock.json or .nvmrc has changed.
+#   2. runs npm ci when package-lock.json or .nvmrc has changed;
+#   3. sets NODE_USE_ENV_PROXY=1, so Node's fetch goes through the proxy.
 # It never fails the session: a problem is reported to Claude and the
 # session goes on.
 
 [ "$CLAUDE_CODE_REMOTE" = "true" ] || exit 0
 cd "$CLAUDE_PROJECT_DIR" || exit 0
+
+# Node's own fetch ignores the cloud's HTTPS proxy unless this is set, so
+# scripts that download (npm run areas) fail with ENOTFOUND without it.
+if [ -n "$CLAUDE_ENV_FILE" ] && ! grep -qs NODE_USE_ENV_PROXY "$CLAUDE_ENV_FILE"; then
+  echo "export NODE_USE_ENV_PROXY=1" >> "$CLAUDE_ENV_FILE"
+fi
 
 want=$(tr -dc '0-9' < .nvmrc)
 dir="$HOME/.local/node$want"

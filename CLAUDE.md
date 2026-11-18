@@ -39,7 +39,9 @@ cloud instead of his PC, mainly to add places found on the trip
 `docs/design/adding-places.md`). In one:
 - **Setup is automatic.** A SessionStart hook
   (`scripts/cloud-session-start.sh`) puts the Node version in `.nvmrc`
-  on PATH and runs `npm ci`. If a script fails, check `node -v` first.
+  on PATH, runs `npm ci`, and sets `NODE_USE_ENV_PROXY=1` so Node's
+  `fetch` goes through the cloud's proxy. If a script fails, check
+  `node -v` first.
 - **Commit to `main` and push**, as on the PC: Actions deploys only from
   main.
 - **No browser pane.** Jerry sends screenshots of listings instead.

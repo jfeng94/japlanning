@@ -54,6 +54,10 @@ cloud it:
   PATH for the session.
 - **Installs packages:** `npm ci`, again only when `package-lock.json`
   or `.nvmrc` has changed.
+- **Points Node's `fetch` at the proxy** (2026-11-18). Node's own
+  `fetch` ignores the cloud's HTTPS proxy and fails with "ENOTFOUND"
+  unless `NODE_USE_ENV_PROXY=1` is set, so the hook sets it for the
+  session. Scripts that download, like `npm run areas`, need it.
 - **Never blocks the session.** It tells Claude what went wrong, and the
   session carries on.
 
@@ -85,10 +89,9 @@ cloud it:
 - **Places in an existing area are quick.** A new area means
   `npm run areas`, which first downloads the census blocks (Japan) or the
   neighbourhood shapes (New York) into `.cache/`, which isn't in the repo.
-  It takes a few extra minutes, and needs `NODE_USE_ENV_PROXY=1` in
-  front (`NODE_USE_ENV_PROXY=1 npm run areas -- hakone`): Node's own
-  `fetch` ignores the cloud's proxy without it and fails with
-  "ENOTFOUND" (2026-11-18).
+  It takes a few extra minutes. If it fails with "ENOTFOUND", the
+  session is missing the hook's `NODE_USE_ENV_PROXY=1`: put it in front
+  (`NODE_USE_ENV_PROXY=1 npm run areas -- hakone`).
 - **Station timetables wait for the PC.** `npm run stations -- --refresh`
   needs `ODPT_TOKEN`, which never leaves the PC.
 - **Memory doesn't carry over.** Notes a session saves stay in that
