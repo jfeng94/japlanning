@@ -75,6 +75,7 @@ repo (`src/config/layers.ts`):
 | Music | Café · Shop · Concert | Type, Reservation | musicbox |
 | Shops | Kitchen · Baking · Games | Type | question |
 | Activities | none: one chip | Type, Reservation | bingbong |
+| Lodging | none: one chip | none | tent |
 
 Sweets, Food, Music, Shops and Activities joined 2026-11-09 from Jerry's
 trip list, as a first cut he may reshape: the list's categories became
@@ -82,7 +83,8 @@ layers (Coffee and Cocktails went into Drinks as Coffee and Bar; Kitchen
 shopping, Baking shopping and Board games became Shops), and its "What"
 column became **Type**, what the place is ("Kakigori", "Ramen; Tsukemen",
 "Knives"), multi-valued and from a fixed list per layer like any facet.
-Lodging is still to come, with `onAreaMap` (below).
+Lodging joined 2026-11-18 with New York's home base, with `onAreaMap`
+(below).
 
 **Food's kinds** (2026-11-10, `docs/proposals/food-kinds.md`) come from
 its Type rather than a Kind column: the config groups the Type values
@@ -187,11 +189,18 @@ of two kinds matches either kind's chip.
 
 ### Lodging
 
-Holds no private information: name, coordinates, address, link, notes, and a
-`Who` column (first names) so the group can see whose hotel a pin is. No
-confirmation numbers, dates or prices. `hasHours: false`. `onAreaMap:
+Holds no private information: name, coordinates, address, link and notes
+(`data/lodging.csv`). No confirmation numbers, dates or prices.
+`hasHours: false`, so the audit never asks for its hours. `onAreaMap:
 true`, so its pins stay on the Area page's map beside the bookmarks,
-whatever the filters say.
+whatever the filters say. The tent is its pin.
+
+A friend's home (2026-11-18, the first rows) goes in under a neutral
+name, **Home base**, with its neighbourhood as the branch ("Whitestone"),
+at its exact address so Directions go to the door. The address is
+public; nobody's name is tied to it. The planned `Who` column (first
+names, whose hotel a pin is) is left out until a hotel needs it, and
+never names the host of a home.
 
 ## Filter model
 

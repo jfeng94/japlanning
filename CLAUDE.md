@@ -71,8 +71,8 @@ cloud instead of his PC, mainly to add places found on the trip
    parks only. **No third-party POIs** (shops, restaurants). Our pins are the
    only POIs.
 8. **Multiple location types** (layers), each with its own schema, addable
-   without code changes beyond config. Six so far (2026-11-09): drinks,
-   sweets, food, music, shops, activities.
+   without code changes beyond config. Seven so far: drinks, sweets,
+   food, music, shops, activities (2026-11-09) and lodging (2026-11-18).
 9. **Regions**: Tokyo, Kyoto, Osaka, Nara, Hakone, in one app (Osaka and
    Nara joined 2026-11-09 as day trips; Uji counts as Kyoto). **New York**
    joined 2026-11-16 as a test region for the location features, for
@@ -80,7 +80,9 @@ cloud instead of his PC, mainly to add places found on the trip
    build and time zone, neighbourhood areas from the city's NTAs, no
    subway lines.
 10. **Group use**: several travellers install the same URL. Lodging is a
-    shared quick reference, never private data.
+    shared quick reference, never private data. A friend's home goes in
+    under a neutral name, "Home base", with its neighbourhood as the
+    branch: the address is public, nobody's name is (Jerry, 2026-11-18).
 
 ## Devices
 
@@ -537,5 +539,4 @@ proposal in `docs/proposals/` before work starts.
   Preact/Svelte if the UI grows?
 - The 2026-11-09 layers (sweets, food, music, shops, activities) are a
   first cut from Jerry's trip list: are those the right splits and kinds?
-  Lodging's schema is still to come.
 - Does the iPad need the offline basemap, or is online-only fine there?

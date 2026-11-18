@@ -6,7 +6,7 @@
 export type RegionId = "tokyo" | "kyoto" | "osaka" | "nara" | "hakone" | "nyc";
 
 /** Every layer id, as a tuple so LayerId is a checked string union. */
-export const LAYER_IDS = ["drinks", "sweets", "food", "music", "shops", "activities"] as const;
+export const LAYER_IDS = ["drinks", "sweets", "food", "music", "shops", "activities", "lodging"] as const;
 export type LayerId = (typeof LAYER_IDS)[number];
 
 export interface RegionConfig {

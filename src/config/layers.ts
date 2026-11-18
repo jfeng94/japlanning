@@ -205,6 +205,19 @@ export const layers: LayerConfig[] = [
       { column: "Reservation", values: ["Required", "Optional", "No"] },
     ],
   },
+  {
+    // Where the group sleeps (2026-11-18, docs/design/regions-layers-filters.md, "Lodging"): a reference, so no
+    // hours, and its pins stay on the Area page's map. A friend's home goes in as "Home base" with its
+    // neighbourhood as the branch: the address is public, nobody's name is.
+    id: "lodging",
+    label: "Lodging",
+    dataUrl: "/data/lodging.csv",
+    color: "#3d6e8f",
+    icon: "tent",
+    hasHours: false,
+    onAreaMap: true,
+    facets: [],
+  },
 ];
 
 export function layerById(id: LayerId): LayerConfig {

@@ -99,11 +99,15 @@ function gapOfTag(tag: string): Gap {
   return "other";
 }
 
+/** Layers whose places have hours to find; the rest (lodging) are never short of them. */
+const HAS_HOURS = new Set(layers.filter((l) => l.hasHours).map((l) => l.id));
+
 function gapsOf(p: Place, queue: QueueRow | undefined, question: string | undefined): Set<Gap> {
   const gaps = new Set<Gap>();
   if (question) gaps.add("decide");
   for (const tag of queue?.problem.split(";").map((t) => t.trim()).filter(Boolean) ?? []) gaps.add(gapOfTag(tag));
   if (p.addressApproximate) gaps.add("address");
+  if (!HAS_HOURS.has(p.layerId)) return gaps; // lodging: nothing to open or close
   if (!p.hours) gaps.add("no-hours");
   else if (!p.lastVerified) gaps.add("unverified");
   return gaps;

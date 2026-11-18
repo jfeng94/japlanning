@@ -306,7 +306,8 @@ sits on Yakitori Imai's address.
 - **Layers and kinds:** the 2026-11-09 split is a first cut from the
   list's categories (`docs/design/regions-layers-filters.md`,
   "Layers"). Food got its kinds on 2026-11-10.
-- **Lodging:** its schema is still to come (same doc, "Lodging").
+- **Lodging:** joined 2026-11-18 (same doc, "Lodging"); New York's
+  home bases are its first rows.
 
 ## Scratch data
 

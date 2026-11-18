@@ -282,7 +282,7 @@ export const regions: RegionConfig[] = [
       { label: "East Village", ward: "Manhattan", adjacent: ["Flatiron & NoMad", "Greenwich Village", "Lower East Side", "SoHo & Nolita"], nta: ["MN0303"] },
       { label: "Financial District", ward: "Manhattan", adjacent: ["Chinatown", "DUMBO & Brooklyn Heights", "Tribeca"], nta: ["MN0101"] },
       { label: "Flatiron & NoMad", ward: "Manhattan", adjacent: ["Chelsea & Hudson Yards", "East Village", "Greenwich Village", "Midtown", "West Village"], nta: ["MN0501"] },
-      { label: "Flushing", ward: "Queens", adjacent: [], nta: ["QN0707"] },
+      { label: "Flushing", ward: "Queens", adjacent: ["Whitestone"], nta: ["QN0707"] },
       { label: "Greenpoint", ward: "Brooklyn", adjacent: ["Bushwick", "Williamsburg"], nta: ["BK0101"] },
       { label: "Greenwich Village", ward: "Manhattan", adjacent: ["Chelsea & Hudson Yards", "East Village", "Flatiron & NoMad", "Lower East Side", "SoHo & Nolita", "West Village"], nta: ["MN0202"] },
       { label: "Harlem", ward: "Manhattan", adjacent: ["Upper West Side"], nta: ["MN1001", "MN1002"] },
@@ -295,6 +295,9 @@ export const regions: RegionConfig[] = [
       { label: "Upper East Side", ward: "Manhattan", adjacent: ["Midtown"], nta: ["MN0801", "MN0802", "MN0803"] },
       { label: "Upper West Side", ward: "Manhattan", adjacent: ["Harlem", "Hell's Kitchen", "Midtown"], nta: ["MN0701", "MN0702", "MN0703"] },
       { label: "West Village", ward: "Manhattan", adjacent: ["Chelsea & Hudson Yards", "Flatiron & NoMad", "Greenwich Village", "SoHo & Nolita"], nta: ["MN0203"] },
+      // Home base (2026-11-18). Its block falls in the city's Murray Hill-Broadway Flushing NTA, 100 m south of
+      // Whitestone-Beechhurst, though the post office calls it Whitestone (11357), so the area takes both.
+      { label: "Whitestone", ward: "Queens", adjacent: ["Flushing"], nta: ["QN0702", "QN0704"] },
       { label: "Williamsburg", ward: "Brooklyn", adjacent: ["Bushwick", "Greenpoint"], nta: ["BK0102"] },
     ],
     areaSections: [
@@ -303,6 +306,7 @@ export const regions: RegionConfig[] = [
       { label: "Queens", wards: ["Queens"], hue: "violet" },
     ],
     // All of Manhattan, north Brooklyn (Williamsburg, Bushwick, DUMBO), Long Island City and Flushing: about 40 MB.
+    // Whitestone's home base is 1.6 km inside the east edge.
     bbox: [-74.03, 40.67, -73.79, 40.88],
     // Its own build: Japan's (BASEMAP.build) has left Protomaps, and changing that would re-download every map.
     basemapBuild: "20261116",

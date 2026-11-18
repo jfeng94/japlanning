@@ -60,12 +60,9 @@ export function detailFields(place: Place, layer: LayerConfig | undefined): Deta
     essentials.push({ label: "Address", value: place.address, ...(place.addressApproximate ? { flag: "approximate" as const } : {}) });
   }
   // Hours not read from the shop's own site or Instagram carry their badge here, as an approximate address does
-  // (docs/proposals/content-pass.md, 2026-11-10).
-  essentials.push(
-    place.hours
-      ? { label: "Hours", value: place.hours, ...(place.lastVerified ? {} : { flag: "unverified" as const }) }
-      : { label: "Hours", value: "Hours unknown", flag: "unknown" },
-  );
+  // (docs/proposals/content-pass.md, 2026-11-10). A layer without hours (lodging) has nothing unknown to say.
+  if (place.hours) essentials.push({ label: "Hours", value: place.hours, ...(place.lastVerified ? {} : { flag: "unverified" as const }) });
+  else if (layer?.hasHours !== false) essentials.push({ label: "Hours", value: "Hours unknown", flag: "unknown" });
 
   const rowFacets = layer?.rowFacets ?? layer?.facets.slice(0, 2).map((f) => f.column) ?? [];
   const chips = rowFacets.flatMap((column) => place.facets[column] ?? []);
