@@ -35,10 +35,13 @@ interface Stop {
 /**
  * The trip in the order the group visits (Jerry, 2026-11-10): Tokyo, then
  * Nara and Uji on a day trip, then the rest of Kyoto. Osaka and Hakone
- * aren't placed yet, so they come last. The queue works through the
- * stops in this order; a place belongs to the first stop it matches.
+ * aren't placed yet, so they come last. New York, Jerry's trip from
+ * 2026-11-18, comes before all of them (2026-11-18). The queue works
+ * through the stops in this order; a place belongs to the first stop it
+ * matches.
  */
 const TRIP: Stop[] = [
+  { region: "nyc" },
   { region: "tokyo" },
   { region: "nara" },
   { region: "kyoto", section: "Uji" },

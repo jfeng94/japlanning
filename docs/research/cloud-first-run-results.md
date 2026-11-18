@@ -72,7 +72,8 @@ Nothing was written to `data/`: this run makes no data changes.
 
 ## Proposed fixes
 
-None are made. Each waits for Jerry's go.
+All four made on 2026-11-18, on Jerry's go, in the commit after this
+file's first one.
 
 1. **The audit doesn't know New York.** `TRIP` in `scripts/audit.ts`
    lists only the Japan stops, so New York's 48 places land in

@@ -42,11 +42,13 @@ one place.
 
 The trip's stops in the order the group visits (Jerry, 2026-11-10):
 
-1. **Tokyo.**
-2. **Nara**, then **Uji**, on one day trip. Uji is the Kyoto region's
+1. **New York**, Jerry's trip from 2026-11-18, before Japan (added
+   2026-11-18; until then its places counted as "unplaced").
+2. **Tokyo.**
+3. **Nara**, then **Uji**, on one day trip. Uji is the Kyoto region's
    Uji section, so it gets its own line on the scorecard.
-3. **The rest of Kyoto.**
-4. **Osaka** and **Hakone**, last until they have a place in the
+4. **The rest of Kyoto.**
+5. **Osaka** and **Hakone**, last until they have a place in the
    itinerary.
 
 The stops are `TRIP` in `scripts/audit.ts`. Within a stop, the worst gap

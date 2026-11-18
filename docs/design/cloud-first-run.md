@@ -88,7 +88,7 @@ The environment should have **Full** network access.
 
 | Try | Expect |
 | --- | --- |
-| `curl -sI https://www.heytea.com/ \| head -1` | an HTTP status line, not a blocked-host error |
+| `curl -sS -o /dev/null -w '%{http_code}\n' https://www.heytea.com/` | the site's status, such as `200`, not a blocked-host error |
 | WebFetch `https://warabimochi-kamakura-usa.com/` | the shop's site; say in a line what it is |
 | WebSearch "Heytea Gelato Lab 863 Broadway" | results about the shop at Union Square |
 

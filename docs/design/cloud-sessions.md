@@ -28,7 +28,10 @@ Claude can't do these, since they grant access to his accounts:
 
 1. **Connect GitHub.** Start a session in the Claude app's Code tab (or
    at claude.ai/code) and pick `jfeng94/japlanning`. When asked, install
-   the Claude GitHub App on that repository.
+   the Claude GitHub App on that repository. Without it, a session can
+   still clone and fetch, since the repo is public, but every push fails
+   with a 403 and "Claude doesn't have GitHub access to
+   jfeng94/japlanning" (the first run, 2026-11-17).
 2. **Set up the environment** in the session's environment settings:
    - **Network access: Full.** The default, Limited, reaches only
      package registries and GitHub, which blocks shop websites and
@@ -62,6 +65,11 @@ cloud it:
 - **Watching the deploy:** `gh run list` and `gh run watch` work. `gh`
   commands that use GitHub's GraphQL API, like `gh pr` and `gh issue`,
   don't (the cloud's GitHub proxy refuses them).
+- **A network change reaches curl, not WebFetch.** Switched to Full
+  mid-session, curl reached every site within seconds, while WebFetch
+  kept refusing them ("ENOTFOUND"), as if it kept the network the
+  session started with (the first run, 2026-11-17). Read sites with curl
+  until the next session.
 - **Screenshots instead of a browser.** There is no browser pane, so
   Google Maps can't be read the way the PC does it. Jerry sends the
   listing's share link and a screenshot of the listing. The flow is "On
