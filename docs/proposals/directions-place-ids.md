@@ -29,22 +29,37 @@ reviews in Google.
 The **Places API (New) Text Search**, run by a script over every place
 (about 440; 147 of them have only an area-level `~` address):
 
-- **`npm run placeids`** (`scripts/build-place-ids.ts`, new). For each row
-  without a Place ID, it searches `<Name> <Branch> <Address (JA)>`,
-  biased to a small circle around our pin. Responses are cached in
-  `.cache/place-ids/` (gitignored), so a rerun asks only for new rows.
+- **`npm run placeids`** (`scripts/build-place-ids.ts`, built
+  2026-11-18). For each row without a Place ID, it searches `<Name>
+  <Address (JA)>`, biased to a circle around our pin (300 m, or 1.5 km
+  for a `~` address, which adds the branch). The branch stays out of
+  exact queries: Covert Coffee's "Shinjuku 3-chome (Musashino Bldg
+  B1F)" made Google return its other two branches and miss the shop.
+  Friends' homes are never searched. Responses are cached in
+  `.cache/place-ids/` (gitignored) for 30 days, so a rerun asks only
+  for new rows.
+- **Picking the listing.** Of up to five answers, the nearest whose name
+  matches ours, preferring one at our address: our first two address
+  numbers (3-27 of 新宿3-27-10, or 232 7 of "232 7th Ave") in a row in
+  Google's. Generic words (Hotel, Coffee, Bar…) needn't match, so
+  "Wayfarer Hotel" is WAYFARER Kyoto Shijo. Tests:
+  `scripts/build-place-ids.test.ts`.
 - **Cost.** A search that returns only IDs is billed under "Text Search
   Essentials (IDs Only)", which Google's price list shows as unlimited
-  at no charge. Asking for Google's name, location and address too, to
-  check each match, moves it to a paid tier with a free monthly
-  allowance. Check that tier's cap on the pricing page before the first
-  run; 440 requests should fit well inside it.
-- **Review.** The script writes a findings table (our name, Google's
-  name, Google's address, the distance between the two pins) and flags
-  any match more than about 100 m away or with a different name. Jerry
-  reviews it, as in `docs/design/adding-places.md` (findings table,
-  review, then rows). Accepted IDs go into a new **`Place ID`** column
-  in each layer's CSV. The loader already tolerates new columns.
+  at no charge. Asking for Google's name, location, address and status
+  too, to check each match, is Text Search Pro: 5,000 free calls a
+  month (pricing page, read 2026-11-18), and a run is about 510.
+- **Review.** The findings flag each match whose name or address
+  differs, that is over 100 m from our pin, that has a second listing
+  nearby, that Google says is closed, or whose address of ours is
+  approximate; the rest are accepted. Jerry reviews the flagged ones,
+  as in `docs/design/adding-places.md` (findings, review, then rows).
+  Accepted IDs go into a new **`Place ID`** column in each layer's CSV.
+  The loader already tolerates new columns.
+- **Google's terms** let us store place IDs, but not its names,
+  addresses or (beyond 30 days) coordinates. So the findings, which
+  show them, stay in `.cache/place-ids/findings.csv` and the chat, never
+  the repo; only the IDs are committed.
 - **No match** leaves the cell blank, and that place's link keeps the
   coordinates, as today.
 - **A possible bonus**, off by default: Google's location could suggest

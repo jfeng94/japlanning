@@ -22,6 +22,7 @@
     "check-maps": "node scripts/check-maps.ts",
     "areas": "node scripts/build-areas.ts",
     "audit": "node scripts/audit.ts",
+    "placeids": "node scripts/build-place-ids.ts",
     "transit": "node scripts/build-transit.ts",
     "stations": "node scripts/build-stations.ts"
   },
