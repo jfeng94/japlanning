@@ -38,6 +38,10 @@ export const ICONS = {
   musicbox: "musicbox.webp", // listening cafés
   pen: "pen.png", // stationery
   tent: "tent.png", // lodging
+  // Donuts, ceramics and kitchen tools (2026-11-18).
+  donut: "donut.png", // donut shops
+  vase: "vase.png", // ceramics and tableware
+  scissors: "scissors.png", // kitchen tools, and Kappabashi-style tool streets
   // A place still waiting for fitting artwork: grep the data for ",question," to find them.
   question: "question.png",
 } as const;
