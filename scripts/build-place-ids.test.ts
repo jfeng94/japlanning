@@ -12,6 +12,14 @@ describe("namesMatch", () => {
     expect(namesMatch("Wayfarer Hotel", "WAYFARER Kyoto Shijo")).toBe(true);
     expect(namesMatch("Bear Pond Espresso", "Bear Pond")).toBe(true);
     expect(namesMatch("Covert Coffee", "Glitch Coffee")).toBe(false);
+    expect(namesMatch("Himitsudo", "Himitsudō")).toBe(true);
+    expect(namesMatch("Tomiz (Tomizawa Shoten)", "Tomizawa Shouten Jiyugaoka Store")).toBe(true);
+    expect(namesMatch("Kameido Gyoza Honten", "Kameido Gyoza Main Store")).toBe(true);
+    expect(namesMatch("Yaesu Unagi Hashimoto", "Yaesu Hashimoto")).toBe(true);
+    expect(namesMatch("Baji Tofu", "Oni-tofu")).toBe(false);
+    expect(namesMatch("Utsuwa Haku", "Utsuwaya Saisai")).toBe(false);
+    expect(namesMatch("Tori Kago", "鳥かご")).toBe(false);
+    expect(namesMatch("Kyoto Narita", "Koyamakitakamifusacho")).toBe(false);
     expect(namesMatch("Coffee", "")).toBe(false);
   });
 });
