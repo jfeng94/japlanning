@@ -1,13 +1,17 @@
 import type { Place } from "../data/types.ts";
 
 /**
- * Google Maps directions deep link. Coordinates, not a place search, so
- * the destination is never mis-matched; Google shows a dropped pin
- * rather than the business name. Opens the Maps app on iOS if installed.
+ * The place's page in Google Maps, opened in the Maps app on iOS if
+ * installed. A page, not directions: Directions is one tap from there,
+ * and the page can be looked around first (Jerry, 2026-11-18; it was a
+ * transit directions link until then). Coordinates, not a place search,
+ * so the pin is never mis-matched; Google shows a dropped pin rather
+ * than the business until places carry Google's place ID
+ * (docs/proposals/directions-place-ids.md).
  */
-export function directionsUrl(place: Pick<Place, "lat" | "lng">): string {
-  const dest = `${place.lat.toFixed(6)},${place.lng.toFixed(6)}`;
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&travelmode=transit`;
+export function googleMapsUrl(place: Pick<Place, "lat" | "lng">): string {
+  const at = `${place.lat.toFixed(6)},${place.lng.toFixed(6)}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(at)}`;
 }
 
 /** A link straight to one place: region and id, never the filter state. This is what Share copies. */

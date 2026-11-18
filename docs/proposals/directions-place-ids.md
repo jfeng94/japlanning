@@ -1,8 +1,11 @@
 # Directions to the business, not a dropped pin
 
-Status: **proposed** (2026-11-11). Jerry's key is set on his PC as
-`GOOGLE_MAPS_KEY` (2026-11-18); next is the iPhone test below. Nothing
-is built yet.
+Status: **proposed** (2026-11-11). Jerry's key is set on his PC and in
+the cloud environment (2026-11-18), and the iPhone test has run (below):
+the app takes the ID next to the place's name, not next to coordinates.
+Since 2026-11-18 the button opens the place's page rather than
+directions, so the link with an ID is the search link. The lookup
+script is next; nothing for it is built yet.
 
 ## Why
 
@@ -50,16 +53,24 @@ The **Places API (New) Text Search**, run by a script over every place
 
 ## The link
 
-`directionsUrl` (`src/ui/links.ts`), when the place has an ID:
+`googleMapsUrl` (`src/ui/links.ts`, named `directionsUrl` until
+2026-11-18). Jerry wants the button to open the place's page, not
+directions, since Directions is one tap from there (2026-11-18). So
+today, with no IDs, it opens a dropped pin's page:
 
 ```
-https://www.google.com/maps/dir/?api=1&destination=<lat>,<lng>&destination_place_id=<id>&travelmode=transit
+https://www.google.com/maps/search/?api=1&query=<lat>,<lng>
 ```
 
-Without one, it stays as it is now. `Place` gains `placeId?: string`,
-read from the column. Tests go in `src/ui/links.test.ts`. Whether
-`destination` should be our coordinates or the place's name is for the
-iPhone test to decide.
+When the place has an ID, the name goes in `query`, since the app
+ignores an ID next to coordinates (the test below):
+
+```
+https://www.google.com/maps/search/?api=1&query=<name>&query_place_id=<id>
+```
+
+`Place` gains `placeId?: string`, read from the column. Tests go in
+`src/ui/links.test.ts`.
 
 ## Setup (Jerry)
 
@@ -83,6 +94,14 @@ Jerry's:
    ```
    The script reads `GOOGLE_MAPS_KEY` and never prints a request that
    carries it.
+6. **For cloud sessions** (done 2026-11-18): the same key as a network
+   secret on the cloud environment, so the PC isn't needed on the trip.
+   In the environment's settings, Add secret: the API-key type, allowed
+   website `places.googleapis.com`, header `X-Goog-Api-Key`, no
+   prefix. The cloud's proxy adds the header to every request to that
+   host; the key never reaches the session. Claude's own "save a key"
+   form can't do it, since it only sends `Authorization: Bearer`. The
+   script then runs without `GOOGLE_MAPS_KEY` and sends no key itself.
 
 ## Before building: test one link on the iPhone
 
@@ -99,6 +118,18 @@ whether the app uses the place ID. So first:
 If the app ignores the ID, the fallback is Google's search link
 (`/maps/search/?api=1&query=…&query_place_id=…`). It opens the
 business's page, one tap from Directions.
+
+**Result (2026-11-18, in New York, from a cloud session).** The ID came
+from the Places API, not the Finder page, for Warabimochi Kamakura
+Chelsea (sweets 91), so the directions could be followed there; Covert
+Coffee's lookup worked too. Google has two listings for that shop at
+the same address; the one Jerry's share link names was used.
+- Coordinates plus ID, in a directions link: **a dropped pin.** The app
+  ignores the ID next to coordinates.
+- The name plus the ID, in a directions link: **the shop.**
+- Jerry then chose the page over directions, so the link becomes the
+  search link with the name and the ID (above). The script's findings
+  table will have to settle shops with two listings.
 
 ## Keeping them fresh
 

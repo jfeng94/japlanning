@@ -92,6 +92,13 @@ cloud it:
   It takes a few extra minutes. If it fails with "ENOTFOUND", the
   session is missing the hook's `NODE_USE_ENV_PROXY=1`: put it in front
   (`NODE_USE_ENV_PROXY=1 npm run areas -- hakone`).
+- **Google's Places API works from here** (2026-11-18): Jerry's key is
+  a network secret on the environment, for `places.googleapis.com` in
+  the `X-Goog-Api-Key` header, so requests need no key of their own
+  ("Setup" in `docs/proposals/directions-place-ids.md`).
+- **The PC's folders can't be reached from a cloud session** (checked
+  2026-11-18): the Claude app on the PC doesn't offer them to cloud
+  sessions, so anything that needs the PC waits for a session there.
 - **Station timetables wait for the PC.** `npm run stations -- --refresh`
   needs `ODPT_TOKEN`, which never leaves the PC.
 - **Memory doesn't carry over.** Notes a session saves stay in that

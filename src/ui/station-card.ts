@@ -3,7 +3,7 @@ import type { DirectionTimes, LineFacts, Service, StationFacts, StationsFile, Tr
 import { iconAnchor, iconButton } from "./detail.ts";
 import centerIcon from "./icons/center.webp";
 import directionsIcon from "./icons/directions.webp";
-import { directionsUrl } from "./links.ts";
+import { googleMapsUrl } from "./links.ts";
 
 /**
  * A subway station's card (docs/proposals/m8-transit.md, "Part 2,
@@ -82,7 +82,7 @@ export function renderStationStrip(strip: HTMLElement, station: StationCard, tog
   const actions = document.createElement("div");
   actions.className = "strip-actions";
   const [lng, lat] = station.at;
-  const directions = iconAnchor("Directions", directionsIcon, directionsUrl({ lat, lng }));
+  const directions = iconAnchor("Open in Google Maps", directionsIcon, googleMapsUrl({ lat, lng }));
   directions.className = "icon-button";
   actions.append(directions, toggle);
   strip.append(lead, actions);

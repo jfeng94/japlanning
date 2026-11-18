@@ -66,7 +66,8 @@ cloud instead of his PC, mainly to add places found on the trip
 2b. **Bookmark** places of interest on the device, and filter to just
    those.
 3. Show **current location** (blue dot).
-4. **Deep link into Google Maps** for directions.
+4. **Deep link into Google Maps**: the place's page, one tap from
+   directions (2026-11-18).
 5. **Copy name + address** to clipboard.
 6. **Offline map**: no repeated tile downloads; must work with no signal.
 7. **Simple "atlas" basemap**: roads, rail/subway lines, stations, water and
@@ -344,14 +345,17 @@ is used only as the **directions hand-off**.
    `src/config/assets-lock.json`, and the worker precaches them. Japanese
    text uses `localIdeographFontFamily` (device CJK fonts); the airplane-mode
    pass checks station names.
-6. **Directions deep link:**
-   `https://www.google.com/maps/dir/?api=1&destination=<lat>,<lng>&travelmode=transit`
-   opens the Google Maps app on iOS if installed. Using coordinates avoids
-   mis-matched place search; the trade-off is that Google shows a dropped pin
-   rather than the business name. A Google place ID per place would open
-   the business instead: `docs/proposals/directions-place-ids.md`
-   (proposed 2026-11-11; the key is set on Jerry's PC as `GOOGLE_MAPS_KEY`
-   since 2026-11-18, and the iPhone test comes next).
+6. **Google Maps link** (`googleMapsUrl` in `src/ui/links.ts`):
+   `https://www.google.com/maps/search/?api=1&query=<lat>,<lng>` opens
+   the place's page in the Google Maps app on iOS if installed, not
+   directions: Directions is one tap from there, and the page can be
+   looked around first (Jerry, 2026-11-18; a transit directions link
+   until then). Using coordinates avoids mis-matched place search; the
+   trade-off is that Google shows a dropped pin rather than the
+   business. A Google place ID per place would open the business
+   instead: `docs/proposals/directions-place-ids.md` (proposed
+   2026-11-11; the key works from the PC and from cloud sessions, and
+   the iPhone test ran on 2026-11-18).
 7. **Clipboard:** `navigator.clipboard.writeText` needs HTTPS and a user
    gesture. Copy as `Name\nAddress`. If the address starts with `~`, flag it
    as approximate in the UI.

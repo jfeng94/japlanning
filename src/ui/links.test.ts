@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { directionsUrl, linkLabel, parseSharedLink, shareUrl } from "./links.ts";
+import { googleMapsUrl, linkLabel, parseSharedLink, shareUrl } from "./links.ts";
 
 const HOST = "japan.garbage.house";
 
-describe("directionsUrl", () => {
-  it("uses coordinates and transit mode", () => {
-    expect(directionsUrl({ lat: 35.6937428, lng: 139.7613047 })).toBe(
-      "https://www.google.com/maps/dir/?api=1&destination=35.693743%2C139.761305&travelmode=transit",
+describe("googleMapsUrl", () => {
+  it("opens the place's page at its coordinates, not directions", () => {
+    expect(googleMapsUrl({ lat: 35.6937428, lng: 139.7613047 })).toBe(
+      "https://www.google.com/maps/search/?api=1&query=35.693743%2C139.761305",
     );
   });
 });

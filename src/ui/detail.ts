@@ -9,7 +9,7 @@ import directionsIcon from "./icons/directions.webp";
 import linkIcon from "./icons/link.webp";
 import copyLinkIcon from "./icons/copy-link.webp";
 import starIcon from "./icons/star.webp";
-import { directionsUrl, linkLabel, shareUrl } from "./links.ts";
+import { googleMapsUrl, linkLabel, shareUrl } from "./links.ts";
 import { showToast } from "./toast.ts";
 
 export interface DetailHandlers {
@@ -187,7 +187,7 @@ export function renderDetailStrip(strip: HTMLElement, place: Place, h: DetailStr
 
   const actions = document.createElement("div");
   actions.className = "strip-actions";
-  const directions = iconAnchor("Directions", directionsIcon, directionsUrl(place));
+  const directions = iconAnchor("Open in Google Maps", directionsIcon, googleMapsUrl(place));
   directions.className = "icon-button";
   actions.append(directions, h.toggle);
   strip.append(lead, actions);
