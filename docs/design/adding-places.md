@@ -103,6 +103,11 @@ corrects facts. Nothing is written until he says go.
   (`npm run ids`), in ID order; config additions in the same change.
 - `npm test` and `npm run snapshot` green; `npm run import -- <layer>`
   round-trips the file to normalise quoting.
+- **Google's place ID** (2026-11-18), so the Google Maps button opens
+  the shop: `npm run placeids -- <layer>:<id> ...` looks the new rows
+  up, then a clear match is accepted and a doubtful one decided in
+  `.cache/place-ids/findings-partial.csv` (copy it over `findings.csv`)
+  before `npm run placeids -- --apply`. No match leaves it blank.
 - One commit per batch, naming the places: "Data: add 5 tea shops
   (Ginza, Shibuya, Asakusa, Kyoto)". Push; Actions deploys.
 - Report: the ids, the live link, and what was left blank and why.

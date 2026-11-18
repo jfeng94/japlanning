@@ -247,6 +247,7 @@ through what needs Jerry one place at a time, from
 | Address (JA) | string | Japanese address. **Leading `~` = approximate** (area-level only). Always names its ward (区) or city, which the build checks against the Area. New York's rows hold the English street address ending "NY <ZIP>"; the ZIP gives the borough, checked the same way. |
 | Notes | string | Free text |
 | Last verified | date | YYYY-MM-DD; blank = hours unverified |
+| Place ID | string | Google's place ID (2026-11-18), so the Google Maps button opens the business's page instead of a dropped pin. From `npm run placeids` (`docs/proposals/directions-place-ids.md`); blank when Google has no reliable match. The only Google data we keep: its terms allow storing IDs, not names, addresses or pins. |
 | Google rating, Google reviews, Rated on | number, integer, date | A dated snapshot of the Google Maps rating and review count, taken by hand from an aggregator that mirrors Google (no Places API key, decided 2026-11-05). Blank when none was reachable. Shown in the card's "Also in the sheet" section until there is UI for it. |
 
 **Any enum field except Region, Area and Kind may be blank (unknown).**
@@ -352,10 +353,10 @@ is used only as the **directions hand-off**.
    looked around first (Jerry, 2026-11-18; a transit directions link
    until then). Using coordinates avoids mis-matched place search; the
    trade-off is that Google shows a dropped pin rather than the
-   business. A Google place ID per place would open the business
-   instead: `docs/proposals/directions-place-ids.md` (proposed
-   2026-11-11; the key works from the PC and from cloud sessions, and
-   the iPhone test ran on 2026-11-18).
+   business. With Google's place ID (the Place ID column, 486 places
+   since 2026-11-18) it opens the business instead:
+   `search/?api=1&query=<name>&query_place_id=<id>`
+   (`docs/proposals/directions-place-ids.md`).
 7. **Clipboard:** `navigator.clipboard.writeText` needs HTTPS and a user
    gesture. Copy as `Name\nAddress`. If the address starts with `~`, flag it
    as approximate in the UI.

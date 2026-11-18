@@ -1,11 +1,11 @@
 # Directions to the business, not a dropped pin
 
-Status: **proposed** (2026-11-11). Jerry's key is set on his PC and in
-the cloud environment (2026-11-18), and the iPhone test has run (below):
-the app takes the ID next to the place's name, not next to coordinates.
-Since 2026-11-18 the button opens the place's page rather than
-directions, so the link with an ID is the search link. The lookup
-script is next; nothing for it is built yet.
+Status: **done** (proposed 2026-11-11, built 2026-11-18). Jerry's key
+is set on his PC and in the cloud environment, and the iPhone test has
+run (below): the app takes the ID next to the place's name, not next to
+coordinates. The button opens the place's page rather than directions,
+so the link with an ID is the search link. 486 of 512 places have an
+ID; new places get one as they're added (`adding-places.md`, "Write").
 
 ## Why
 
