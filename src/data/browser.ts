@@ -7,6 +7,6 @@ export function browserDeps(): LoadDeps {
     fetch: (url, init) => fetch(url, init),
     store: createIdbStore(),
     now: () => new Date(),
-    bundledBuiltAt: new Date(__BUILD_TIME__),
+    // The bundled copy is dated by its own Last-Modified header, not __BUILD_TIME__, which follows code only.
   };
 }

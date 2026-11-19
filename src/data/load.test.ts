@@ -89,6 +89,15 @@ describe("loadLayer source chain", () => {
     expect(await store.get(KEY)).toEqual(cachedEntry);
   });
 
+  it("dates the bundled copy by its Last-Modified header when it has one", async () => {
+    const modified = "Wed, 18 Nov 2026 12:00:00 GMT";
+    const withDate = () => new Response(BUNDLED, { status: 200, headers: { "Last-Modified": modified } });
+    const { deps: d } = deps(scriptedFetch({ "/data/drinks.csv": withDate }));
+    const r = await loadLayer(coffee, d);
+    expect(r.source).toBe("bundled");
+    expect(r.fetchedAt).toEqual(new Date(modified));
+  });
+
   it("network down, no cache, bundled present: returns bundled with build time", async () => {
     const { deps: d } = deps(scriptedFetch({ "/data/drinks.csv": ok(BUNDLED) }));
     const r = await loadLayer(coffee, d);

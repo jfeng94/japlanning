@@ -22,6 +22,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The whole history, without old file contents: vite.config.ts stamps the build with the last
+          # commit that changed the app shell, so a data-only deploy leaves installed apps' shell alone.
+          fetch-depth: 0
+          filter: blob:none
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc

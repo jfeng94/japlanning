@@ -16,7 +16,11 @@ export interface LoadDeps {
   timeoutMs?: number;
   /** Where the copy bundled with the site lives (the same file the network tier fetches). Default /data/<id>.csv. */
   bundledUrl?: (layerId: LayerId) => string;
-  /** When the bundled snapshot was taken; reported as its fetchedAt. */
+  /**
+   * When the bundled snapshot was taken, if its response carries no
+   * Last-Modified header (tests do without one). The deployed site's always
+   * does: GitHub Pages sends the deploy's time, which is the snapshot's.
+   */
   bundledBuiltAt?: Date;
 }
 
@@ -107,7 +111,7 @@ export async function loadAllLayersStaged(
 
 const fromNetwork: Source = async (layer, deps, parse) => {
   try {
-    const text = await fetchText(deps, layer.dataUrl);
+    const { text } = await fetchText(deps, layer.dataUrl);
     const parsed = parse(text); // throws ParseError on an unusable sheet
     const fetchedAt = deps.now();
     await deps.store.set(cacheKey(layer.id), { text, fetchedAt: fetchedAt.toISOString() });
@@ -134,11 +138,12 @@ const fromCache: Source = async (layer, deps, parse) => {
 const fromBundled: Source = async (layer, deps, parse) => {
   try {
     const url = (deps.bundledUrl ?? defaultBundledUrl)(layer.id);
-    const text = await fetchText(deps, url);
+    const { text, lastModified } = await fetchText(deps, url);
     const parsed = parse(text);
+    // Dated by the file itself, not the app's build stamp, which follows code changes only (vite.config.ts).
     return {
       ok: true,
-      result: { layerId: layer.id, source: "bundled", fetchedAt: deps.bundledBuiltAt, ...parsed },
+      result: { layerId: layer.id, source: "bundled", fetchedAt: lastModified ?? deps.bundledBuiltAt, ...parsed },
     };
   } catch (e) {
     return { ok: false, reason: `bundled: ${describe(e)}` };
@@ -166,17 +171,20 @@ function none(layer: LayerConfig, reasons: string[]): LoadResult {
 const defaultBundledUrl = (layerId: LayerId) => `/data/${layerId}.csv`;
 
 /**
- * GET a URL as text, failing on non-2xx or after the timeout.
- * `cache: "no-store"` bypasses the browser's HTTP cache so our store is the
- * only cache in play; Google already marks the CSV private, max-age=300.
+ * GET a URL as text, with its Last-Modified date when the server sends a
+ * valid one; fails on non-2xx or after the timeout. `cache: "no-store"`
+ * bypasses the browser's HTTP cache so our store is the only cache in play.
  */
-async function fetchText(deps: LoadDeps, url: string): Promise<string> {
+async function fetchText(deps: LoadDeps, url: string): Promise<{ text: string; lastModified?: Date }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), deps.timeoutMs ?? DEFAULT_TIMEOUT_MS);
   try {
     const res = await deps.fetch(url, { cache: "no-store", signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.text();
+    const text = await res.text();
+    const header = res.headers.get("Last-Modified");
+    const date = header ? new Date(header) : undefined;
+    return { text, lastModified: date && !Number.isNaN(date.getTime()) ? date : undefined };
   } finally {
     clearTimeout(timer);
   }
