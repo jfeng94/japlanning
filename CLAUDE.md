@@ -408,6 +408,20 @@ is used only as the **directions hand-off**.
    reached GitHub. `gh workflow run deploy.yml --ref main` started one.
    When watching a deploy, wait for the run whose commit is the one
    pushed: the latest run listed can still be the previous push's.
+13. **A data-only deploy must leave the app shell alone** (2026-11-19).
+   Installed apps re-download the whole precached shell (58 files,
+   about 1.5 MB over the wire) and show the Update toast whenever the
+   service worker's version changes, and that version hashes every
+   precached file. GitHub Pages' ETags change on every deploy, so the
+   HTTP cache doesn't help. The CSVs aren't precached (the loader
+   fetches them on every online launch), so only a shell change should
+   change the version. Until 2026-11-19 the build stamp (`__BUILD_SHA__`,
+   `__BUILD_TIME__`) came from HEAD and the clock and made every deploy
+   an update; it now follows the last commit to the shell's paths
+   (`SHELL_PATHS` in `vite.config.ts`), which needs `deploy.yml`'s full
+   history. Keep the build deterministic: two builds of the same shell
+   must give the same `sw.js` version (build, change only a CSV, build
+   again, compare).
 
 ## Basemap extracts (starting point)
 
