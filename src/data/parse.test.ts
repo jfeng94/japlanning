@@ -162,7 +162,7 @@ describe("food data (kinds derived from Type, docs/proposals/food-kinds.md)", ()
     expect(Object.fromEntries(food.kinds!.map((k) => [k, count(k)]))).toEqual({
       Ramen: 17, Yakitori: 15, Yakiniku: 10, Katsu: 12, Kushikatsu: 6, Tempura: 13, Gyoza: 11, Okonomiyaki: 7,
       "Hot pot": 12, Unagi: 10, Tofu: 8, Rice: 14, Onigiri: 6, Donburi: 5, Sushi: 3, Pickles: 6, Fruit: 8,
-      Italian: 1,
+      Italian: 1, Chinese: 1,
     });
     const koharuken = places.find((p) => p.name === "Koharuken")!;
     expect(koharuken.facets["Type"]).toEqual(["Donburi", "Katsudon"]);

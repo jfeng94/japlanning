@@ -36,6 +36,8 @@ const FOOD_KINDS: Record<string, string[]> = {
   Fruit: ["Fruit parlor", "Fruit sando", "Parfait", "Strawberries"],
   // New York (2026-11-16): Torrisi.
   Italian: ["Italian"],
+  // New York (2026-11-18): Szechuan Mountain House.
+  Chinese: ["Sichuan"],
 };
 
 export const layers: LayerConfig[] = [

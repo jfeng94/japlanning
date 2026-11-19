@@ -45,6 +45,11 @@ to New York on 2026-11-18.
   block falls in Murray Hill-Broadway Flushing, 100 m short of
   Whitestone-Beechhurst, though its ZIP is Whitestone's), next to
   Flushing.
+- **Szechuan Mountain House, Flushing** (2026-11-18, from a cloud
+  session after dinner there): food row 161, the original branch (2016)
+  and so the key one, under a new **Chinese** food kind (Type
+  Sichuan). Listings disagree on its closing time, so the hours stay
+  loose and unverified. The first row with a **Visited** date.
 
 ## Why
 

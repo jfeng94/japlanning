@@ -136,6 +136,13 @@ is lighter, because Jerry is standing there.
 3. **Jerry says go.** Claude writes the row, runs the tests, and commits
    naming the place. Then it pushes to `main`, waits for the deploy, and
    replies with the place's link once it's live.
+4. **Where we went** (2026-11-18). When Jerry says the group went
+   somewhere, its row's **Visited** column gets that day's date, in the
+   place's own city (New York's evening is already tomorrow in UTC).
+   Several visits are separated by `;`. A place found that way that
+   isn't in the data yet is added first, as above. The column is public,
+   like the rest of the data (Jerry chose that over a record kept on his
+   phone, 2026-11-18), and holds dates only, never who went.
 
 ## Adding an area (2026-11-09)
 
