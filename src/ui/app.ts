@@ -1201,14 +1201,27 @@ export function mountApp(root: HTMLElement): AppHandle {
   /** Staged: whatever is on the device renders first, the network result replaces it. */
   async function reload(): Promise<void> {
     loading = true;
+    /** The last update only confirmed the saved data, so the screen is already right. */
+    let settledQuietly = false;
     diagnostics.update(results, true);
     render();
     try {
       await loadAllLayersStaged(layers, browserDeps(), (latest, done) => {
+        // A refresh that only confirmed the saved copy hands back the same places arrays
+        // (docs/proposals/weak-signal.md): then only the status line changes, and the list and pins
+        // aren't redrawn under someone browsing them while a slow connection catches up.
+        const before = new Map(results.map((r) => [r.layerId, r.places]));
+        const same =
+          places.length > 0 && latest.length === results.length && latest.every((r) => before.get(r.layerId) === r.places);
         results = latest;
-        places = latest.flatMap((r) => r.places);
         loading = !done;
         diagnostics.update(results, loading);
+        settledQuietly = same;
+        if (same) {
+          renderStatus(status, results, loading);
+          return;
+        }
+        places = latest.flatMap((r) => r.places);
         refreshHours();
         render();
         onDataArrived();
@@ -1216,7 +1229,8 @@ export function mountApp(root: HTMLElement): AppHandle {
     } finally {
       loading = false;
       diagnostics.update(results, false);
-      render();
+      if (settledQuietly) renderStatus(status, results, false);
+      else render();
       // Data is in; now the big files, once per launch, in the background.
       if (!autoDownloadTried) {
         autoDownloadTried = true;

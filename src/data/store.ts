@@ -5,6 +5,12 @@ export interface CachedText {
   text: string;
   /** ISO 8601. A string rather than a Date so it round-trips through any storage. */
   fetchedAt: string;
+  /**
+   * The server's ETag for this text, sent back as If-None-Match so an
+   * unchanged file comes back as an empty 304 (2026-11-23). Copies saved
+   * before then have none, and get one on their next refresh.
+   */
+  etag?: string;
 }
 
 /**

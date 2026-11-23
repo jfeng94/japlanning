@@ -172,6 +172,10 @@ Decisions made while building:
   fallback. The first cut served the cached page first, and an older
   worker then pointed at hashed assets a newer deploy had removed; a
   stale shell is a worse failure than one extra request online.
+  *Reversed 2026-11-23* (`docs/proposals/weak-signal.md`): on weak
+  signal the network-first page stalled every launch, and the files the
+  first cut lost were under `/basemap/`, which the worker no longer
+  passes through; the page now comes from the worker's own cache.
 - **The worker's version** hashes the precached files and the worker's
   own source, so a change to either produces a new worker and nothing
   else does.

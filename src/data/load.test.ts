@@ -10,7 +10,7 @@ import {
   type LoadDeps,
 } from "./load.ts";
 import { createMemoryStore, type CachedText } from "./store.ts";
-import type { LayerConfig, LayerId } from "./types.ts";
+import type { LayerConfig, LayerId, LoadResult } from "./types.ts";
 
 // In production the network tier and the bundled copy fetch the same path (/data/<id>.csv, with
 // different cache modes); the test gives the network tier its own URL so the scripted fetch can
@@ -26,14 +26,14 @@ const CACHED = "Name,Latitude,Longitude\nCached,35.6,139.7\n";
 const BUNDLED = "Name,Latitude,Longitude\nBundled,35.6,139.7\n";
 const BROKEN = "Name,Latitude\nNoLongitude,35.6\n"; // missing required column
 
-type Script = Record<string, () => Response | Promise<Response>>;
+type Script = Record<string, (init?: RequestInit) => Response | Promise<Response>>;
 
 /** fetch that answers from a URL→response script; unknown URLs throw like a network error. */
 function scriptedFetch(script: Script): FetchLike {
-  return async (url) => {
+  return async (url, init) => {
     const handler = script[url];
     if (!handler) throw new TypeError(`Failed to fetch ${url}`);
-    return handler();
+    return handler(init);
   };
 }
 
@@ -192,6 +192,69 @@ describe("loadLayerStaged", () => {
     expect((await run(d)).emitted).toEqual([
       ["none", [], true, `network: Failed to fetch ${coffee.dataUrl}; cache: empty; bundled: HTTP 404`],
     ]);
+  });
+});
+
+describe("conditional refresh (docs/proposals/weak-signal.md)", () => {
+  const saved: CachedText = { text: CACHED, fetchedAt: "2026-11-01T00:00:00.000Z", etag: '"v1"' };
+  /** The server: 304 when the request names `current`, else `body` tagged `current`. */
+  const server = (current: string, body: string) => (init?: RequestInit) =>
+    new Headers(init?.headers).get("If-None-Match") === current
+      ? new Response(null, { status: 304, headers: { ETag: current } })
+      : new Response(body, { status: 200, headers: { ETag: current } });
+
+  it("sends the saved copy's ETag; a 304 keeps the saved text and refreshes its date", async () => {
+    const { store, deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: server('"v1"', GOOD) }), { [KEY]: saved });
+    const r = await loadLayer(coffee, d);
+    expect(r.source).toBe("network");
+    expect(r.places.map((p) => p.name)).toEqual(["Cached"]);
+    expect(await store.get(KEY)).toEqual({ text: CACHED, fetchedAt: NOW.toISOString(), etag: '"v1"' });
+  });
+
+  it("a changed file comes back whole and is saved with its new ETag", async () => {
+    const { store, deps: d } = deps(scriptedFetch({ [coffee.dataUrl]: server('"v2"', GOOD) }), { [KEY]: saved });
+    const r = await loadLayer(coffee, d);
+    expect(r.places.map((p) => p.name)).toEqual(["Fresh"]);
+    expect(await store.get(KEY)).toEqual({ text: GOOD, fetchedAt: NOW.toISOString(), etag: '"v2"' });
+  });
+
+  it("no saved copy: no If-None-Match, and the first ETag is kept", async () => {
+    let sent: string | null = "unset";
+    const fetch = scriptedFetch({
+      [coffee.dataUrl]: (init) => {
+        sent = new Headers(init?.headers).get("If-None-Match");
+        return new Response(GOOD, { status: 200, headers: { ETag: '"v1"' } });
+      },
+    });
+    const { store, deps: d } = deps(fetch);
+    await loadLayer(coffee, d);
+    expect(sent).toBeNull();
+    expect((await store.get(KEY))?.etag).toBe('"v1"');
+  });
+
+  async function staged(fetch: FetchLike) {
+    const { deps: d } = deps(fetch, { [KEY]: saved });
+    const emitted: LoadResult[] = [];
+    await loadLayerStaged(coffee, d, (res) => emitted.push(res));
+    return emitted;
+  }
+
+  it("staged: an unchanged refresh hands back the saved places array itself, so the app can skip a redraw", async () => {
+    const [local, final] = await staged(scriptedFetch({ [coffee.dataUrl]: server('"v1"', GOOD) }));
+    expect(final!.source).toBe("network");
+    expect(final!.fetchedAt).toEqual(NOW);
+    expect(final!.places).toBe(local!.places);
+  });
+
+  it("staged: the same text under a new ETag (every deploy re-tags every file) is unchanged too", async () => {
+    const [local, final] = await staged(scriptedFetch({ [coffee.dataUrl]: server('"v2"', CACHED) }));
+    expect(final!.places).toBe(local!.places);
+  });
+
+  it("staged: a changed file replaces the places", async () => {
+    const [local, final] = await staged(scriptedFetch({ [coffee.dataUrl]: server('"v2"', GOOD) }));
+    expect(final!.places).not.toBe(local!.places);
+    expect(final!.places.map((p) => p.name)).toEqual(["Fresh"]);
   });
 });
 

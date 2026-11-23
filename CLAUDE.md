@@ -422,6 +422,14 @@ is used only as the **directions hand-off**.
    history. Keep the build deterministic: two builds of the same shell
    must give the same `sw.js` version (build, change only a CSV, build
    again, compare).
+14. **Weak signal stalls; it doesn't fail** (2026-11-23,
+   `docs/proposals/weak-signal.md`). Anything a launch waits for on the
+   network makes the app hang on the subway, not fall back. So the page
+   is cache-first in the service worker (a new version waits for the
+   update button or the next fresh launch), the places show the saved
+   copy first, and the refresh is conditional (If-None-Match, an empty
+   304 when nothing changed) and redraws nothing when nothing changed.
+   Keep new launch-time requests off the critical path.
 
 ## Basemap extracts (starting point)
 

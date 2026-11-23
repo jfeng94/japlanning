@@ -28,7 +28,8 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 
 export const cacheKey = (layerId: LayerId) => `layer:${layerId}`;
 
-type Attempt = { ok: true; result: LoadResult } | { ok: false; reason: string };
+/** `unchanged`: the network confirmed the saved copy (a 304, or the same text), so its places still stand. */
+type Attempt = { ok: true; result: LoadResult; unchanged?: boolean } | { ok: false; reason: string };
 type Source = (layer: LayerConfig, deps: LoadDeps, parse: (text: string) => ParseResult) => Promise<Attempt>;
 
 /**
@@ -73,7 +74,14 @@ export async function loadLayerStaged(
   if (local) emit(local, false);
 
   const net = await fromNetwork(layer, deps, parse);
-  const final = net.ok ? net.result : local ? withReasons(local, [net.reason]) : none(layer, [net.reason, ...localReasons]);
+  // Unchanged: keep the local result's places (the same array), so the app can see nothing moved and skip a redraw.
+  const final = net.ok
+    ? net.unchanged && local
+      ? { ...net.result, places: local.places, warnings: local.warnings }
+      : net.result
+    : local
+      ? withReasons(local, [net.reason])
+      : none(layer, [net.reason, ...localReasons]);
   emit(final, true);
   return final;
 }
@@ -109,13 +117,25 @@ export async function loadAllLayersStaged(
 
 // ---- sources ----
 
+/**
+ * The network copy, asked for conditionally (docs/proposals/weak-signal.md):
+ * the saved copy's ETag goes along as If-None-Match, so an unchanged file
+ * is an empty 304 rather than the whole CSV, which matters on weak signal.
+ * The same text under a new ETag (every deploy re-tags every file) also
+ * counts as unchanged.
+ */
 const fromNetwork: Source = async (layer, deps, parse) => {
   try {
-    const { text } = await fetchText(deps, layer.dataUrl);
+    const key = cacheKey(layer.id);
+    const saved = await deps.store.get(key).catch(() => undefined);
+    const got = await fetchText(deps, layer.dataUrl, saved?.etag);
+    if (got.notModified && !saved) throw new Error("HTTP 304 without a saved copy");
+    const text = got.notModified ? saved!.text : got.text;
+    const unchanged = saved !== undefined && text === saved.text;
     const parsed = parse(text); // throws ParseError on an unusable sheet
     const fetchedAt = deps.now();
-    await deps.store.set(cacheKey(layer.id), { text, fetchedAt: fetchedAt.toISOString() });
-    return { ok: true, result: { layerId: layer.id, source: "network", fetchedAt, ...parsed } };
+    await deps.store.set(key, { text, fetchedAt: fetchedAt.toISOString(), ...((got.etag ?? saved?.etag) ? { etag: got.etag ?? saved?.etag } : {}) });
+    return { ok: true, unchanged, result: { layerId: layer.id, source: "network", fetchedAt, ...parsed } };
   } catch (e) {
     return { ok: false, reason: `network: ${describe(e)}` };
   }
@@ -170,21 +190,36 @@ function none(layer: LayerConfig, reasons: string[]): LoadResult {
 
 const defaultBundledUrl = (layerId: LayerId) => `/data/${layerId}.csv`;
 
+interface Fetched {
+  text: string;
+  lastModified?: Date;
+  etag?: string;
+  /** The server answered 304 to `etag`: `text` is empty and the caller's saved copy stands. */
+  notModified?: boolean;
+}
+
 /**
- * GET a URL as text, with its Last-Modified date when the server sends a
- * valid one; fails on non-2xx or after the timeout. `cache: "no-store"`
- * bypasses the browser's HTTP cache so our store is the only cache in play.
+ * GET a URL as text, with its Last-Modified date and ETag when the server
+ * sends them; fails on other non-2xx or after the timeout. With `etag`, the
+ * request is conditional and a 304 comes back as `notModified`.
+ * `cache: "no-store"` bypasses the browser's HTTP cache so our store is the
+ * only cache in play; a conditional header set by the page passes through
+ * it untouched, and the 304 reaches us as itself.
  */
-async function fetchText(deps: LoadDeps, url: string): Promise<{ text: string; lastModified?: Date }> {
+async function fetchText(deps: LoadDeps, url: string, etag?: string): Promise<Fetched> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), deps.timeoutMs ?? DEFAULT_TIMEOUT_MS);
   try {
-    const res = await deps.fetch(url, { cache: "no-store", signal: controller.signal });
+    const init: RequestInit = { cache: "no-store", signal: controller.signal };
+    if (etag) init.headers = { "If-None-Match": etag };
+    const res = await deps.fetch(url, init);
+    const tag = res.headers.get("ETag") ?? undefined;
+    if (res.status === 304 && etag) return { text: "", etag: tag ?? etag, notModified: true };
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
     const header = res.headers.get("Last-Modified");
     const date = header ? new Date(header) : undefined;
-    return { text, lastModified: date && !Number.isNaN(date.getTime()) ? date : undefined };
+    return { text, etag: tag, lastModified: date && !Number.isNaN(date.getTime()) ? date : undefined };
   } finally {
     clearTimeout(timer);
   }
